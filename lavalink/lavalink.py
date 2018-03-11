@@ -4,10 +4,7 @@ from . import websocket
 from . import player_manager
 from . import rest_api
 
-from ..utils import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..bot import Red
+from discord.ext.commands import Bot
 
 __all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_listener']
 
@@ -16,7 +13,7 @@ _event_listeners = []
 _loop = None
 
 
-async def initialize(bot: "Red", host, password, rest_port, ws_port):
+async def initialize(bot: Bot, host, password, rest_port, ws_port):
     """
     Initializes the websocket connection to the lavalink player.
 
