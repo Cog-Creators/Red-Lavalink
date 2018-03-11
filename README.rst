@@ -5,6 +5,8 @@ Red-Lavalink
 A Lavalink client library written for Python 3.5 using the AsyncIO framework.
 This library may be used for other projects as it contains no Red specific code or logic.
 
+However, it is important to note that this library only supports projects using discord.py.
+
 To install::
 
     pip install red-lavalink
@@ -33,4 +35,4 @@ Usage
         player = await lavalink.connect(voice_channel)
         tracks = await lavalink.search_yt(search_terms)
         player.add(tracks[0])
-        player.play()
+        await player.play()
