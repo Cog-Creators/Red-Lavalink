@@ -36,3 +36,7 @@ Usage
         tracks = await lavalink.search_yt(search_terms)
         player.add(tracks[0])
         await player.play()
+
+When shutting down, be sure to do the following::
+
+    await lavalink.close()
