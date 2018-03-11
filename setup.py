@@ -13,6 +13,7 @@ setup(
     license='GPLv3',
     author='tekulvw',
     description='Lavalink client library for Red-DiscordBot',
+    include_package_data=True,
     python_requires='>3.5.1',
     install_requires=get_requirements(),
     classifiers=[
