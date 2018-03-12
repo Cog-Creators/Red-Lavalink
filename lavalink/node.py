@@ -14,7 +14,7 @@ __all__ = ['DiscordVoiceSocketResponses', 'LavalinkEvents',
            'LavalinkOutgoingOp', 'get_websocket', 'join_voice']
 
 SHUTDOWN = asyncio.Event()
-_websockets = {}  # type: Dict[WebSocket, List[int]]
+_websockets = {}  # type: Dict[Node, List[int]]
 
 
 class DiscordVoiceSocketResponses(Enum):
@@ -58,7 +58,7 @@ class Stats:
         self.uptime = uptime
 
 
-class WebSocket:
+class Node:
     def __init__(self, _loop, event_handler, voice_ws_func,
                  host, password, port, user_id, num_shards):
         """
@@ -257,7 +257,7 @@ class WebSocket:
         })
 
 
-def get_websocket(guild_id: int) -> WebSocket:
+def get_websocket(guild_id: int) -> Node:
     """
     Gets a websocket based on a guild ID, useful for noding separation. If the
     guild ID does not already have a websocket association, the least used
@@ -269,7 +269,7 @@ def get_websocket(guild_id: int) -> WebSocket:
 
     Returns
     -------
-    WebSocket
+    Node
     """
     guild_count = 1e10
     least_used = None

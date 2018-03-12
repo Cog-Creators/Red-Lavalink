@@ -1,6 +1,6 @@
 import asyncio
 
-from . import websocket
+from . import node
 from . import player_manager
 from . import rest_api
 
@@ -37,13 +37,13 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port):
     player_manager.channel_finder_func = bot.get_channel
     register_event_listener(player_manager.handle_event)
 
-    ws = websocket.WebSocket(
+    lavalink_node = node.Node(
         _loop, dispatch, bot._connection._get_websocket,
         host, password, port=ws_port,
         user_id=player_manager.user_id, num_shards=bot.shard_count
     )
 
-    await ws.connect()
+    await lavalink_node.connect()
 
     rest_api.initialize(loop=_loop, host=host, port=rest_port, password=password)
 
@@ -95,5 +95,5 @@ async def close():
     """
     unregister_event_listener(player_manager.handle_event)
     await player_manager.disconnect()
-    await websocket.disconnect()
+    await node.disconnect()
     await rest_api.close()

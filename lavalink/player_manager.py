@@ -6,7 +6,7 @@ from enum import Enum
 import discord
 
 from . import log
-from . import websocket
+from . import node
 
 __all__ = ['players', 'user_id', 'channel_finder_func', 'connect',
            'get_player', 'handle_event', 'TrackEndReason']
@@ -39,7 +39,7 @@ class TrackEndReason(Enum):
 
 
 class Player:
-    def __init__(self, websocket: websocket.WebSocket, channel: discord.VoiceChannel):
+    def __init__(self, websocket: node.Node, channel: discord.VoiceChannel):
         self.channel = channel
 
         self.queue = []
@@ -58,7 +58,7 @@ class Player:
         """
         Connects to the voice channel.
         """
-        await websocket.join_voice(self.channel.guild.id, self.channel.id)
+        await node.join_voice(self.channel.guild.id, self.channel.id)
 
     async def move_to(self, channel: discord.VoiceChannel):
         """
@@ -78,7 +78,7 @@ class Player:
         """
         Disconnects this player from it's voice channel.
         """
-        await websocket.join_voice(self.channel.guild.id, None)
+        await node.join_voice(self.channel.guild.id, None)
 
     def store(self, key, value):
         self._metadata[key] = value
@@ -86,7 +86,7 @@ class Player:
     def fetch(self, key, default=None):
         return self._metadata.get(key, default)
 
-    async def handle_event(self, event: websocket.LavalinkEvents, extra):
+    async def handle_event(self, event: node.LavalinkEvents, extra):
         """
         Handles various Lavalink Events.
 
@@ -98,14 +98,14 @@ class Player:
 
         Parameters
         ----------
-        event : websocket.LavalinkEvents
+        event : node.LavalinkEvents
         extra
         """
-        if event == websocket.LavalinkEvents.TRACK_END:
+        if event == node.LavalinkEvents.TRACK_END:
             if extra == TrackEndReason.FINISHED:
                 await self.play()
 
-    async def handle_player_update(self, state: websocket.PlayerState):
+    async def handle_player_update(self, state: node.PlayerState):
         """
         Handles player updates from lavalink.
 
@@ -226,7 +226,7 @@ async def connect(channel: discord.VoiceChannel) -> Player:
         p = get_player(channel.guild.id)
         await p.move_to(channel)
     else:
-        ws = websocket.get_websocket(channel.guild.id)
+        ws = node.get_websocket(channel.guild.id)
         p = Player(ws, channel)
         await p.connect()
         players.append(p)
@@ -259,10 +259,10 @@ def get_player(guild_id: int) -> Player:
     raise KeyError("No such player for that guild.")
 
 
-async def handle_event(op: websocket.LavalinkIncomingOp,
-                       data: Union[websocket.LavalinkEvents, websocket.PlayerState, websocket.Stats],
+async def handle_event(op: node.LavalinkIncomingOp,
+                       data: Union[node.LavalinkEvents, node.PlayerState, node.Stats],
                        raw_data: dict):
-    if op == websocket.LavalinkIncomingOp.STATS:
+    if op == node.LavalinkIncomingOp.STATS:
         return
 
     guild_id = int(raw_data.get('guildId'))
@@ -273,16 +273,16 @@ async def handle_event(op: websocket.LavalinkIncomingOp,
         log.debug("Got an event for a guild that we have no player for.")
         return
 
-    if op == websocket.LavalinkIncomingOp.EVENT:
+    if op == node.LavalinkIncomingOp.EVENT:
         extra = None
-        if data == websocket.LavalinkEvents.TRACK_END:
+        if data == node.LavalinkEvents.TRACK_END:
             extra = TrackEndReason(raw_data.get('reason'))
-        elif data == websocket.LavalinkEvents.TRACK_EXCEPTION:
+        elif data == node.LavalinkEvents.TRACK_EXCEPTION:
             extra = raw_data.get('error')
-        elif data == websocket.LavalinkEvents.TRACK_STUCK:
+        elif data == node.LavalinkEvents.TRACK_STUCK:
             extra = raw_data.get('thresholdMs')
         await player.handle_event(data, extra)
-    elif op == websocket.LavalinkIncomingOp.PLAYER_UPDATE:
+    elif op == node.LavalinkIncomingOp.PLAYER_UPDATE:
         await player.handle_player_update(data)
 
 
@@ -293,7 +293,7 @@ def _ensure_player(channel_id: int):
             get_player(channel.guild.id)
         except KeyError:
             log.debug("Received voice channel connection without a player.")
-            ws = websocket.get_websocket(channel.guild.id)
+            ws = node.get_websocket(channel.guild.id)
             players.append(Player(ws, channel))
 
 
@@ -309,7 +309,7 @@ def _remove_player(guild_id: int):
 async def on_socket_response(data):
     raw_event = data.get('t')
     try:
-        event = websocket.DiscordVoiceSocketResponses(raw_event)
+        event = node.DiscordVoiceSocketResponses(raw_event)
     except ValueError:
         return
 
@@ -319,7 +319,7 @@ async def on_socket_response(data):
     if guild_id not in _voice_states:
         _voice_states[guild_id] = {}
 
-    if event == websocket.DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
+    if event == node.DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
         # Connected for the first time
         socket_event_data = data['d']
 
@@ -327,7 +327,7 @@ async def on_socket_response(data):
             'guild_id': guild_id,
             'event': socket_event_data
         })
-    elif event == websocket.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
+    elif event == node.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
         channel_id = data['d']['channel_id']
 
         if channel_id is None:
@@ -346,7 +346,7 @@ async def on_socket_response(data):
             _voice_states[guild_id]['session_id'] = session_id
 
     if len(_voice_states[guild_id]) == 3:
-        ws = websocket.get_websocket(int(guild_id))
+        ws = node.get_websocket(int(guild_id))
         await ws.send_lavalink_voice_update(**_voice_states[guild_id])
 
 
