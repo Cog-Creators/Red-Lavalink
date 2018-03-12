@@ -1,0 +1,14 @@
+dist: trusty
+language: python
+cache: pip
+notifications:
+  email: false
+
+python:
+  - 3.5.2
+  - 3.5.4
+  - 3.6.4
+install:
+  - pip install .[tests]
+script:
+  - python -m pytest
