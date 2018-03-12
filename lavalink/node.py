@@ -11,10 +11,10 @@ from . import log
 
 
 __all__ = ['DiscordVoiceSocketResponses', 'LavalinkEvents',
-           'LavalinkOutgoingOp', 'get_websocket', 'join_voice']
+           'LavalinkOutgoingOp', 'get_node', 'join_voice']
 
 SHUTDOWN = asyncio.Event()
-_websockets = {}  # type: Dict[WebSocket, List[int]]
+_nodes = {}  # type: Dict[Node, List[int]]
 
 
 class DiscordVoiceSocketResponses(Enum):
@@ -58,7 +58,7 @@ class Stats:
         self.uptime = uptime
 
 
-class WebSocket:
+class Node:
     def __init__(self, _loop, event_handler, voice_ws_func,
                  host, password, port, user_id, num_shards):
         """
@@ -94,19 +94,22 @@ class WebSocket:
 
         self._queue = []
 
-        _websockets[self] = []
+        _nodes[self] = []
 
-    async def connect(self):
+    async def connect(self, timeout=None):
         """
         Connects to the Lavalink player event websocket.
 
         Parameters
         ----------
+        timeout : int
+            Time after which to timeout on attempting to connect to the Lavalink websocket,
+            ``None`` is considered never.
 
         Raises
         ------
-        OSError
-            If the websocket connection failed.
+        asyncio.TimeoutError
+            If the websocket failed to connect after the given time.
         """
         SHUTDOWN.clear()
 
@@ -115,7 +118,11 @@ class WebSocket:
         log.debug('Lavalink WS connecting to {} with headers {}'.format(
             uri, self.headers
         ))
-        self._ws = await websockets.connect(uri, extra_headers=self.headers)
+
+        await asyncio.wait_for(
+            self._multi_try_connect(uri),
+            timeout=timeout
+        )
 
         log.debug('Creating Lavalink WS listener.')
         self._listener_task = self.loop.create_task(self.listener())
@@ -130,6 +137,20 @@ class WebSocket:
             'User-Id': user_id,
             'Num-Shards': num_shards
         }
+
+    async def _multi_try_connect(self, uri):
+        backoff = ExponentialBackoff()
+        attempt = 1
+        while not SHUTDOWN.is_set() and (self._ws is None or not self._ws.open):
+            try:
+                self._ws = await websockets.connect(uri, extra_headers=self.headers)
+            except OSError:
+                delay = backoff.delay()
+                log.debug("Failed connect attempt {}, retrying in {}".format(
+                    attempt, delay
+                ))
+                await asyncio.sleep(delay)
+                attempt += 1
 
     async def listener(self):
         """
@@ -150,7 +171,9 @@ class WebSocket:
                 log.debug("Received known op: {}".format(data))
                 self.loop.create_task(self._handle_op(op, data))
 
-        log.debug('Listener exited.')
+        log.debug('Listener exited: ws {} SHUTDOWN {}.'.format(
+            self._ws.open, SHUTDOWN.is_set()
+        ))
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
@@ -180,22 +203,12 @@ class WebSocket:
             return
 
         log.debug("Attempting Lavalink WS reconnect.")
-        backoff = ExponentialBackoff()
-
-        for x in range(5):
-            delay = backoff.delay()
-            log.debug("Reconnecting in {} seconds".format(delay))
-            await asyncio.sleep(delay)
-
-            try:
-                await self.connect()
-            except OSError:
-                log.debug("Could not reconnect.")
-            else:
-                log.debug("Reconnect successful.")
-                break
-        else:
+        try:
+            await self.connect()
+        except asyncio.TimeoutError:
             log.debug("Failed to reconnect, please reinitialize lavalink when ready.")
+        else:
+            log.debug("Reconnect successful.")
 
     async def disconnect(self):
         """
@@ -203,7 +216,7 @@ class WebSocket:
         """
         SHUTDOWN.set()
         await self._ws.close()
-        del _websockets[self]
+        del _nodes[self]
         log.debug("Shutdown Lavalink WS.")
 
     async def send(self, data):
@@ -257,11 +270,11 @@ class WebSocket:
         })
 
 
-def get_websocket(guild_id: int) -> WebSocket:
+def get_node(guild_id: int) -> Node:
     """
-    Gets a websocket based on a guild ID, useful for noding separation. If the
-    guild ID does not already have a websocket association, the least used
-    websocket is returned.
+    Gets a node based on a guild ID, useful for noding separation. If the
+    guild ID does not already have a node association, the least used
+    node is returned.
 
     Parameters
     ----------
@@ -269,19 +282,19 @@ def get_websocket(guild_id: int) -> WebSocket:
 
     Returns
     -------
-    WebSocket
+    Node
     """
     guild_count = 1e10
     least_used = None
-    for ws, guild_ids in _websockets.items():
+    for node, guild_ids in _nodes.items():
         if len(guild_ids) < guild_count:
             guild_count = len(guild_ids)
-            least_used = ws
+            least_used = node
 
         if guild_id in guild_ids:
-            return ws
+            return node
 
-    _websockets[least_used].append(guild_id)
+    _nodes[least_used].append(guild_id)
     return least_used
 
 
@@ -294,12 +307,12 @@ async def join_voice(guild_id: int, channel_id: int):
     guild_id : int
     channel_id : int
     """
-    ws = get_websocket(guild_id)
-    voice_ws = ws.voice_ws_func(guild_id)
+    node = get_node(guild_id)
+    voice_ws = node.voice_ws_func(guild_id)
     await voice_ws.voice_state(guild_id, channel_id)
 
 
 async def disconnect():
-    ws_list = list(_websockets.keys())
-    for ws in ws_list:
-        await ws.disconnect()
+    nodes = list(_nodes.keys())
+    for node in nodes:
+        await node.disconnect()
