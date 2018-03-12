@@ -39,7 +39,7 @@ class TrackEndReason(Enum):
 
 
 class Player:
-    def __init__(self, websocket: node.Node, channel: discord.VoiceChannel):
+    def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
         self.channel = channel
 
         self.queue = []
@@ -52,7 +52,7 @@ class Player:
         self.volume = 100
 
         self._metadata = {}
-        self._ws = websocket
+        self._node = node_
 
     async def connect(self):
         """
@@ -149,7 +149,7 @@ class Player:
                 track = self.queue.pop(0)
 
             self.current = track
-            await self._ws.play(self.channel.guild.id, track.track_identifier)
+            await self._node.play(self.channel.guild.id, track.track_identifier)
 
     async def stop(self):
         """
@@ -159,7 +159,7 @@ class Player:
 
             This method will clear the queue.
         """
-        await self._ws.stop(self.channel.guild.id)
+        await self._node.stop(self.channel.guild.id)
         self.queue = []
         self.current = None
         self.position = 0
@@ -180,7 +180,7 @@ class Player:
         pause : bool
             Set to ``False`` to resume.
         """
-        await self._ws.pause(self.channel.guild.id, pause)
+        await self._node.pause(self.channel.guild.id, pause)
         self.paused = pause
 
     async def volume(self, volume: int):
@@ -193,7 +193,7 @@ class Player:
             Between 0 and 150
         """
         self.volume = max(min(volume, 150), 0)
-        await self._ws.volume(self.channel.guild.id, self.volume)
+        await self._node.volume(self.channel.guild.id, self.volume)
 
     async def seek(self, position: int):
         """
@@ -206,7 +206,7 @@ class Player:
         """
         if self.current.info.isSeekable:
             position = max(min(position, self.current.info.length), 0)
-            await self._ws.seek(self.channel.guild.id, position)
+            await self._node.seek(self.channel.guild.id, position)
 
 
 async def connect(channel: discord.VoiceChannel) -> Player:
@@ -226,7 +226,7 @@ async def connect(channel: discord.VoiceChannel) -> Player:
         p = get_player(channel.guild.id)
         await p.move_to(channel)
     else:
-        ws = node.get_websocket(channel.guild.id)
+        ws = node.get_node(channel.guild.id)
         p = Player(ws, channel)
         await p.connect()
         players.append(p)
@@ -293,8 +293,8 @@ def _ensure_player(channel_id: int):
             get_player(channel.guild.id)
         except KeyError:
             log.debug("Received voice channel connection without a player.")
-            ws = node.get_websocket(channel.guild.id)
-            players.append(Player(ws, channel))
+            node_ = node.get_node(channel.guild.id)
+            players.append(Player(node_, channel))
 
 
 def _remove_player(guild_id: int):
@@ -346,8 +346,8 @@ async def on_socket_response(data):
             _voice_states[guild_id]['session_id'] = session_id
 
     if len(_voice_states[guild_id]) == 3:
-        ws = node.get_websocket(int(guild_id))
-        await ws.send_lavalink_voice_update(**_voice_states[guild_id])
+        node_ = node.get_node(int(guild_id))
+        await node_.send_lavalink_voice_update(**_voice_states[guild_id])
 
 
 async def disconnect():

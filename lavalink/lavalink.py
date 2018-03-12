@@ -13,7 +13,8 @@ _event_listeners = []
 _loop = None
 
 
-async def initialize(bot: Bot, host, password, rest_port, ws_port):
+async def initialize(bot: Bot, host, password, rest_port, ws_port,
+                     timeout=30):
     """
     Initializes the websocket connection to the lavalink player.
 
@@ -29,6 +30,8 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port):
     password : str
     rest_port : int
     ws_port : int
+    timeout : int
+        Amount of time to allow retries to occur, ``None`` is considered forever.
     """
     global _loop
     _loop = bot.loop
@@ -43,7 +46,7 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port):
         user_id=player_manager.user_id, num_shards=bot.shard_count
     )
 
-    await lavalink_node.connect()
+    await lavalink_node.connect(timeout=timeout)
 
     rest_api.initialize(loop=_loop, host=host, port=rest_port, password=password)
 
