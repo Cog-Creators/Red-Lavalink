@@ -10,6 +10,8 @@ __all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_l
 
 
 _event_listeners = []
+_update_listeners = []
+_stats_listeners = []
 _loop = None
 
 
@@ -39,6 +41,7 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port,
     player_manager.user_id = bot.user.id
     player_manager.channel_finder_func = bot.get_channel
     register_event_listener(player_manager.handle_event)
+    register_update_listener(player_manager.handle_update)
 
     lavalink_node = node.Node(
         _loop, dispatch, bot._connection._get_websocket,
@@ -87,9 +90,85 @@ def unregister_event_listener(coro):
         pass
 
 
+def register_update_listener(coro):
+    """
+    Registers a coroutine to receive lavalink player update information.
+
+    Parameters
+    ----------
+    coro
+
+    Raises
+    ------
+    TypeError
+        If ``coro`` is not a coroutine.
+    """
+    if not asyncio.iscoroutinefunction(coro):
+        raise TypeError("Function is not a coroutine.")
+
+    if coro not in _update_listeners:
+        _update_listeners.append(coro)
+
+
+def unregister_update_listener(coro):
+    """
+    Unregisters coroutines from being player update listeners.
+
+    Parameters
+    ----------
+    coro
+    """
+    try:
+        _update_listeners.remove(coro)
+    except ValueError:
+        pass
+
+
+def register_stats_listener(coro):
+    """
+    Registers a coroutine to receive lavalink server stats information.
+
+    Parameters
+    ----------
+    coro
+
+    Raises
+    ------
+    TypeError
+        If ``coro`` is not a coroutine.
+    """
+    if not asyncio.iscoroutinefunction(coro):
+        raise TypeError("Function is not a coroutine.")
+
+    if coro not in _stats_listeners:
+        _stats_listeners.append(coro)
+
+
+def unregister_stats_listener(coro):
+    """
+    Unregisters coroutines from being server stats listeners.
+
+    Parameters
+    ----------
+    coro
+    """
+    try:
+        _stats_listeners.remove(coro)
+    except ValueError:
+        pass
+
+
 def dispatch(op, data, raw_data):
-    for coro in _event_listeners:
-        _loop.create_task(coro(op, data, raw_data))
+    listeners = []
+    if op == node.LavalinkIncomingOp.EVENT:
+        listeners = _event_listeners
+    elif op == node.LavalinkIncomingOp.PLAYER_UPDATE:
+        listeners = _update_listeners
+    elif op == node.LavalinkIncomingOp.STATS:
+        listeners = _stats_listeners
+
+    for coro in listeners:
+        _loop.create_task(coro(data, raw_data))
 
 
 async def close():
@@ -97,6 +176,7 @@ async def close():
     Closes the lavalink connection completely.
     """
     unregister_event_listener(player_manager.handle_event)
+    unregister_update_listener(player_manager.handle_update)
     await player_manager.disconnect()
     await node.disconnect()
     await rest_api.close()
