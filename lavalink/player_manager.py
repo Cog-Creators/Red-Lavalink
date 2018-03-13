@@ -341,17 +341,18 @@ async def on_socket_response(data):
         })
     elif event == node.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
         channel_id = data['d']['channel_id']
+        event_user_id = int(data['d'].get('user_id'))
+
+        if event_user_id != user_id:
+            return
 
         if channel_id is None:
             # We disconnected
+            log.debug("Received voice disconnect from discord, removing player.")
             _voice_states[guild_id] = {}
             _remove_player(int(guild_id))
         else:
             # After initial connection, get session ID
-            event_user_id = int(data['d'].get('user_id'))
-            if event_user_id != user_id:
-                return
-
             _ensure_player(int(channel_id))
 
             session_id = data['d']['session_id']
