@@ -51,8 +51,13 @@ class Player:
 
         self.volume = 100
 
+        self._is_playing = False
         self._metadata = {}
         self._node = node_
+
+    @property
+    def is_playing(self):
+        return self._is_playing
 
     async def connect(self):
         """
@@ -104,6 +109,8 @@ class Player:
         if event == node.LavalinkEvents.TRACK_END:
             if extra == TrackEndReason.FINISHED:
                 await self.play()
+            else:
+                self._is_playing = False
 
     async def handle_player_update(self, state: node.PlayerState):
         """
@@ -143,6 +150,7 @@ class Player:
         if not self.queue:
             await self.stop()
         else:
+            self._is_playing = True
             if self.shuffle:
                 track = self.queue.pop(randrange(len(self.queue)))
             else:
