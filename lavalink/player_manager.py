@@ -1,6 +1,5 @@
 from collections import namedtuple
 from random import randrange
-from typing import Union
 from enum import Enum
 
 import discord
@@ -9,7 +8,7 @@ from . import log
 from . import node
 
 __all__ = ['players', 'user_id', 'channel_finder_func', 'connect',
-           'get_player', 'handle_event', 'TrackEndReason']
+           'get_player', 'TrackEndReason']
 
 players = []
 user_id = None
@@ -267,12 +266,7 @@ def get_player(guild_id: int) -> Player:
     raise KeyError("No such player for that guild.")
 
 
-async def handle_event(op: node.LavalinkIncomingOp,
-                       data: Union[node.LavalinkEvents, node.PlayerState, node.Stats],
-                       raw_data: dict):
-    if op == node.LavalinkIncomingOp.STATS:
-        return
-
+async def handle_event(data: node.LavalinkEvents, raw_data: dict):
     guild_id = int(raw_data.get('guildId'))
 
     try:
@@ -281,17 +275,27 @@ async def handle_event(op: node.LavalinkIncomingOp,
         log.debug("Got an event for a guild that we have no player for.")
         return
 
-    if op == node.LavalinkIncomingOp.EVENT:
-        extra = None
-        if data == node.LavalinkEvents.TRACK_END:
-            extra = TrackEndReason(raw_data.get('reason'))
-        elif data == node.LavalinkEvents.TRACK_EXCEPTION:
-            extra = raw_data.get('error')
-        elif data == node.LavalinkEvents.TRACK_STUCK:
-            extra = raw_data.get('thresholdMs')
-        await player.handle_event(data, extra)
-    elif op == node.LavalinkIncomingOp.PLAYER_UPDATE:
-        await player.handle_player_update(data)
+    extra = None
+    if data == node.LavalinkEvents.TRACK_END:
+        extra = TrackEndReason(raw_data.get('reason'))
+    elif data == node.LavalinkEvents.TRACK_EXCEPTION:
+        extra = raw_data.get('error')
+    elif data == node.LavalinkEvents.TRACK_STUCK:
+        extra = raw_data.get('thresholdMs')
+
+    await player.handle_event(data, extra)
+
+
+async def handle_update(data: node.PlayerState, raw_data: dict):
+    guild_id = int(raw_data.get('guildId'))
+
+    try:
+        player = get_player(guild_id)
+    except KeyError:
+        log.debug("Got a player update for a guild that we have no player for.")
+        return
+
+    await player.handle_player_update(data)
 
 
 def _ensure_player(channel_id: int):
