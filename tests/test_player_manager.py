@@ -1,5 +1,4 @@
 import pytest
-from unittest.mock import patch
 
 import lavalink.player_manager
 import lavalink.node

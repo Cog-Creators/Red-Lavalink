@@ -1,6 +1,7 @@
 from collections import namedtuple
 
 import pytest
+from async_generator import yield_, async_generator
 import asyncio
 from unittest.mock import MagicMock, patch
 
@@ -99,6 +100,7 @@ def patch_node():
 
 
 @pytest.fixture
+@async_generator
 async def node(bot):
     node_ = lavalink.node.Node(
         _loop=bot.loop,
@@ -114,7 +116,7 @@ async def node(bot):
     # node_.send = MagicMock(wraps=send)
 
     await node_.connect()
-    yield node_
+    await yield_(node_)
 
     try:
         await node_.disconnect()
@@ -123,7 +125,8 @@ async def node(bot):
 
 
 @pytest.fixture()
+@async_generator
 async def initialize_lavalink(bot):
     await lavalink.initialize(bot, 'localhost', 'password', 2332, 2333)
-    yield
+    await yield_(None)
     await lavalink.close()
