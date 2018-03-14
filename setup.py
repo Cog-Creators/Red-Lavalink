@@ -27,6 +27,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     extras_require={
-        'tests': ['pytest>3.0.6', 'pytest-asyncio']
+        'tests': ['pytest>3.0.6', 'pytest-asyncio', 'async_generator']
     }
 )
