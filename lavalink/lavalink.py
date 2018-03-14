@@ -6,7 +6,9 @@ from . import rest_api
 
 from discord.ext.commands import Bot
 
-__all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_listener']
+__all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_listener',
+           'register_update_listener', 'unregister_update_listener',
+           'register_stats_listener', 'unregister_stats_listener']
 
 
 _event_listeners = []
