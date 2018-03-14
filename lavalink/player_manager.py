@@ -73,11 +73,10 @@ class Player:
         The channel the bot is connected to.
     queue : list of Track
     position : int
+        The seeked position in the track of the current playback.
     current : Track
-    paused : bool
     repeat : bool
     shuffle : bool
-    volume : int
     """
     def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
         self.channel = channel
@@ -85,11 +84,11 @@ class Player:
         self.queue = []
         self.position = 0
         self.current = None  # type: Track
-        self.paused = False
+        self._paused = False
         self.repeat = False
         self.shuffle = False
 
-        self.volume = 100
+        self._volume = 100
 
         self._is_playing = False
         self._metadata = {}
@@ -100,7 +99,21 @@ class Player:
         """
         Current status of playback
         """
-        return self._is_playing
+        return self._is_playing and not self._paused
+
+    @property
+    def paused(self) -> bool:
+        """
+        Player's paused state.
+        """
+        return self._paused
+
+    @property
+    def volume(self) -> int:
+        """
+        The current volume.
+        """
+        return self._volume
 
     async def connect(self):
         """
@@ -176,6 +189,9 @@ class Player:
         ----------
         state : websocket.PlayerState
         """
+        if state.position > self.position:
+            self._paused = False
+            self._is_playing = True
         self.position = state.position
 
     # Play commands
@@ -201,7 +217,7 @@ class Player:
 
         self.current = None
         self.position = 0
-        self.paused = False
+        self._paused = False
 
         if not self.queue:
             await self.stop()
@@ -227,7 +243,7 @@ class Player:
         self.queue = []
         self.current = None
         self.position = 0
-        self.paused = False
+        self._paused = False
 
     async def skip(self):
         """
@@ -245,9 +261,9 @@ class Player:
             Set to ``False`` to resume.
         """
         await self._node.pause(self.channel.guild.id, pause)
-        self.paused = pause
+        self._paused = pause
 
-    async def volume(self, volume: int):
+    async def set_volume(self, volume: int):
         """
         Sets the volume of Lavalink.
 
