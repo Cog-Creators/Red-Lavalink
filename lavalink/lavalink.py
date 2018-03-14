@@ -6,7 +6,9 @@ from . import rest_api
 
 from discord.ext.commands import Bot
 
-__all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_listener']
+__all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_listener',
+           'register_update_listener', 'unregister_update_listener',
+           'register_stats_listener', 'unregister_stats_listener']
 
 
 _event_listeners = []
@@ -27,11 +29,16 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port,
 
     Parameters
     ----------
-    bot
+    bot : Bot
+        An instance of a discord.py `Bot` object.
     host : str
+        The hostname or IP address of the Lavalink node.
     password : str
+        The password of the Lavalink node.
     rest_port : int
+        The port of the REST API on the Lavalink node.
     ws_port : int
+        The websocket port on the Lavalink Node.
     timeout : int
         Amount of time to allow retries to occur, ``None`` is considered forever.
     """

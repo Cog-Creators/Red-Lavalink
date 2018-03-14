@@ -23,6 +23,17 @@ TrackInfo = namedtuple(
 
 
 class Track:
+    """
+    Information about a Lavalink track.
+
+    Attributes
+    ----------
+    requester : discord.User
+        The user who requested the track.
+
+    info : TrackInfo
+        Information about the track provided by Lavalink.
+    """
     def __init__(self, requester, data):
         self.requester = requester
         self.track_identifier = data.get('track')
@@ -30,6 +41,17 @@ class Track:
 
 
 class TrackEndReason(Enum):
+    """
+    The reasons why track playback has ended.
+
+    Attributes
+    ----------
+    FINISHED
+    LOAD_FAILED
+    STOPPED
+    REPLACED
+    CLEANUP
+    """
     FINISHED = 'FINISHED'
     LOAD_FAILED = 'LOAD_FAILED'
     STOPPED = 'STOPPED'
@@ -38,6 +60,25 @@ class TrackEndReason(Enum):
 
 
 class Player:
+    """
+    The Player class represents the current state of playback.
+    It also is used to control playback and queue tracks.
+
+    The existence of this object guarantees that the bot is connected
+    to a voice voice channel.
+
+    Attributes
+    ----------
+    channel: discord.VoiceChannel
+        The channel the bot is connected to.
+    queue : list of Track
+    position : int
+    current : Track
+    paused : bool
+    repeat : bool
+    shuffle : bool
+    volume : int
+    """
     def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
         self.channel = channel
 
@@ -55,12 +96,15 @@ class Player:
         self._node = node_
 
     @property
-    def is_playing(self):
+    def is_playing(self) -> bool:
+        """
+        Current status of playback
+        """
         return self._is_playing
 
     async def connect(self):
         """
-        Connects to the voice channel.
+        Connects to the voice channel associated with this Player.
         """
         await node.join_voice(self.channel.guild.id, self.channel.id)
 
@@ -85,12 +129,25 @@ class Player:
         await node.join_voice(self.channel.guild.id, None)
 
     def store(self, key, value):
+        """
+        Stores a metadata value by key.
+        """
         self._metadata[key] = value
 
     def fetch(self, key, default=None):
+        """
+        Returns a stored metadata value.
+
+        Parameters
+        ----------
+        key
+            Key used to store metadata.
+        default
+            Optional, used if the key doesn't exist.
+        """
         return self._metadata.get(key, default)
 
-    async def handle_event(self, event: node.LavalinkEvents, extra):
+    async def _handle_event(self, event: node.LavalinkEvents, extra):
         """
         Handles various Lavalink Events.
 
@@ -111,7 +168,7 @@ class Player:
             else:
                 self._is_playing = False
 
-    async def handle_player_update(self, state: node.PlayerState):
+    async def _handle_player_update(self, state: node.PlayerState):
         """
         Handles player updates from lavalink.
 
@@ -259,6 +316,12 @@ def get_player(guild_id: int) -> Player:
     Returns
     -------
     Player
+
+    Raises
+    ------
+    KeyError
+        If that guild does not have a Player, e.g. is not connected to any
+        voice channel.
     """
     for p in players:
         if p.channel.guild.id == guild_id:
@@ -283,7 +346,7 @@ async def handle_event(data: node.LavalinkEvents, raw_data: dict):
     elif data == node.LavalinkEvents.TRACK_STUCK:
         extra = raw_data.get('thresholdMs')
 
-    await player.handle_event(data, extra)
+    await player._handle_event(data, extra)
 
 
 async def handle_update(data: node.PlayerState, raw_data: dict):
@@ -295,7 +358,7 @@ async def handle_update(data: node.PlayerState, raw_data: dict):
         log.debug("Got a player update for a guild that we have no player for.")
         return
 
-    await player.handle_player_update(data)
+    await player._handle_player_update(data)
 
 
 def _ensure_player(channel_id: int):
