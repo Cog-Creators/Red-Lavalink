@@ -38,6 +38,18 @@ class LavalinkOutgoingOp(Enum):
 
 
 class LavalinkEvents(Enum):
+    """
+    An enumeration of the Lavalink Track Events.
+
+    Attributes
+    ----------
+    TRACK_END
+        The track playback has ended.
+    TRACK_EXCEPTION
+        There was an exception during track playback.
+    TRACK_STUCK
+        Track playback got stuck during playback.
+    """
     TRACK_END = 'TrackEndEvent'
     TRACK_EXCEPTION = 'TrackExceptionEvent'
     TRACK_STUCK = 'TrackStuckEvent'

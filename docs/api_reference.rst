@@ -40,11 +40,9 @@ Enums
 
 .. autoclass:: LavalinkEvents
     :members:
-    :undoc-members:
 
 .. autoclass:: TrackEndReason
     :members:
-    :undoc-members:
 
 ******
 Player
@@ -53,9 +51,6 @@ Player
 .. py:currentmodule:: lavalink.player_manager
 
 .. autoclass:: Player
-    :members:
-
-.. autoclass:: Track
     :members:
 
 ****
@@ -70,6 +65,9 @@ Node
 ************
 Data Classes
 ************
+
+.. autoclass:: lavalink.player_manager.Track
+    :members:
 
 .. autoclass:: lavalink.node.PlayerState
     :members:
