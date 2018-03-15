@@ -272,7 +272,7 @@ class Player:
         volume : int
             Between 0 and 150
         """
-        self.volume = max(min(volume, 150), 0)
+        self._volume = max(min(volume, 150), 0)
         await self._node.volume(self.channel.guild.id, self.volume)
 
     async def seek(self, position: int):
