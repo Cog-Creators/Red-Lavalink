@@ -4,6 +4,8 @@ from aiohttp import ClientSession
 
 from . import log
 
+__all__ = ['Track', 'RESTClient']
+
 
 class Track:
     """

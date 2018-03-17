@@ -65,9 +65,25 @@ def register_event_listener(coro):
     """
     Registers a coroutine to receive lavalink event information.
 
+    This coroutine will accept three arguments: :py:class:`Player`,
+    :py:class:`LavalinkEvents`, and possibly an extra. The value of the extra depends
+    on the value of the second argument.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_END`, the extra will
+    be a :py:class:`TrackEndReason`.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_EXCEPTION`, the extra
+    will be an error string.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_STUCK`, the extra will
+    be the threshold milliseconds that the track has been stuck for.
+
+    If the second argument is any other value, the third argument will not exist.
+
     Parameters
     ----------
     coro
+        A coroutine function that accepts the arguments listed above.
 
     Raises
     ------
@@ -123,6 +139,9 @@ def register_update_listener(coro):
     """
     Registers a coroutine to receive lavalink player update information.
 
+    This coroutine will accept a two arguments: an instance of :py:class:`Player`
+    and an instance of :py:class:`PlayerState`.
+
     Parameters
     ----------
     coro
@@ -172,6 +191,9 @@ def unregister_update_listener(coro):
 def register_stats_listener(coro):
     """
     Registers a coroutine to receive lavalink server stats information.
+
+    This coroutine will accept a single argument which will be an instance
+    of :py:class:`Stats`.
 
     Parameters
     ----------

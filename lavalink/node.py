@@ -11,7 +11,7 @@ from . import log
 
 
 __all__ = ['DiscordVoiceSocketResponses', 'LavalinkEvents', 'TrackEndReason',
-           'LavalinkOutgoingOp', 'PlayerState', 'Stats', 'get_node', 'join_voice']
+           'LavalinkOutgoingOp', 'PlayerState', 'Stats', 'Node', 'get_node', 'join_voice']
 
 SHUTDOWN = asyncio.Event()
 _nodes = {}  # type: Dict[Node, List[int]]

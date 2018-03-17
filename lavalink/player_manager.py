@@ -7,7 +7,7 @@ from . import node
 from .rest_api import Track, RESTClient
 
 __all__ = ['players', 'user_id', 'channel_finder_func', 'connect',
-           'get_player']
+           'get_player', 'Player']
 
 players = []
 user_id = None
