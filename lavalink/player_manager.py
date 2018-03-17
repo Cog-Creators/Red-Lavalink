@@ -190,7 +190,7 @@ class Player(RESTClient):
 
             self.current = track
             log.debug("Assigned current.")
-            await self._node.play(self.channel.guild.id, track.track_identifier)
+            await self._node.play(self.channel.guild.id, track)
 
     async def stop(self):
         """

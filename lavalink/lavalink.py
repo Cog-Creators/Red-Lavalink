@@ -78,6 +78,9 @@ def register_event_listener(coro):
     If the second argument is :py:attr:`LavalinkEvents.TRACK_STUCK`, the extra will
     be the threshold milliseconds that the track has been stuck for.
 
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_START`, the extra will be
+    a :py:class:`Track` object.
+
     If the second argument is any other value, the third argument will not exist.
 
     Parameters
@@ -117,6 +120,8 @@ def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
         extra = raw_data.get('error')
     elif data == node.LavalinkEvents.TRACK_STUCK:
         extra = raw_data.get('thresholdMs')
+    elif data == node.LavalinkEvents.TRACK_START:
+        extra = raw_data.get('track')
 
     return player, data, extra
 

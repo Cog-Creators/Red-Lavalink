@@ -8,6 +8,7 @@ import websockets
 from discord.backoff import ExponentialBackoff
 
 from . import log
+from .rest_api import Track
 
 
 __all__ = ['DiscordVoiceSocketResponses', 'LavalinkEvents', 'TrackEndReason',
@@ -286,13 +287,28 @@ class Node:
             'op': LavalinkOutgoingOp.STOP.value,
             'guildId': str(guild_id)
         })
+        self.event_handler(
+            LavalinkIncomingOp.EVENT,
+            LavalinkEvents.QUEUE_END,
+            {
+                'guildId': str(guild_id)
+            }
+        )
 
-    async def play(self, guild_id: int, track_identifier: str):
+    async def play(self, guild_id: int, track: Track):
         await self.send({
             'op': LavalinkOutgoingOp.PLAY.value,
             'guildId': str(guild_id),
-            'track': track_identifier
+            'track': track.track_identifier
         })
+        self.event_handler(
+            LavalinkIncomingOp.EVENT,
+            LavalinkEvents.TRACK_START,
+            {
+                'guildId': str(guild_id),
+                'track': track
+            }
+        )
 
     async def pause(self, guild_id, paused):
         await self.send({
