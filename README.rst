@@ -18,7 +18,7 @@ Usage
 .. code-block:: python
 
     import lavalink
-    from discord.commands.ext import Bot
+    from discord.ext.commands import Bot
 
     bot = Bot()
 
@@ -33,7 +33,7 @@ Usage
 
     async def search_and_play(voice_channel, search_terms):
         player = await lavalink.connect(voice_channel)
-        tracks = await lavalink.search_yt(search_terms)
+        tracks = await player.search_yt(search_terms)
         player.add(tracks[0])
         await player.play()
 

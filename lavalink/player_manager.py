@@ -1,15 +1,13 @@
-from collections import namedtuple
 from random import randrange
-from typing import Union
-from enum import Enum
 
 import discord
 
 from . import log
-from . import websocket
+from . import node
+from .rest_api import Track, RESTClient
 
 __all__ = ['players', 'user_id', 'channel_finder_func', 'connect',
-           'get_player', 'handle_event', 'TrackEndReason']
+           'get_player', 'Player']
 
 players = []
 user_id = None
@@ -18,47 +16,68 @@ channel_finder_func = lambda channel_id: None
 _voice_states = {}
 
 
-TrackInfo = namedtuple(
-    'TrackInfo', 'identifier isSeekable author length isStream position title uri'
-)
+class Player(RESTClient):
+    """
+    The Player class represents the current state of playback.
+    It also is used to control playback and queue tracks.
 
+    The existence of this object guarantees that the bot is connected
+    to a voice voice channel.
 
-class Track:
-    def __init__(self, requester, data):
-        self.requester = requester
-        self.track_identifier = data.get('track')
-        self.info = TrackInfo(**data.get('info'))
-
-
-class TrackEndReason(Enum):
-    FINISHED = 'FINISHED'
-    LOAD_FAILED = 'LOAD_FAILED'
-    STOPPED = 'STOPPED'
-    REPLACED = 'REPLACED'
-    CLEANUP = 'CLEANUP'
-
-
-class Player:
-    def __init__(self, websocket: websocket.WebSocket, channel: discord.VoiceChannel):
+    Attributes
+    ----------
+    channel: discord.VoiceChannel
+        The channel the bot is connected to.
+    queue : list of Track
+    position : int
+        The seeked position in the track of the current playback.
+    current : Track
+    repeat : bool
+    shuffle : bool
+    """
+    def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
+        super().__init__(node_)
         self.channel = channel
 
         self.queue = []
         self.position = 0
         self.current = None  # type: Track
-        self.paused = False
+        self._paused = False
         self.repeat = False
         self.shuffle = False
 
-        self.volume = 100
+        self._volume = 100
 
+        self._is_playing = False
         self._metadata = {}
-        self._ws = websocket
+        self._node = node_
+
+    @property
+    def is_playing(self) -> bool:
+        """
+        Current status of playback
+        """
+        return self._is_playing and not self._paused
+
+    @property
+    def paused(self) -> bool:
+        """
+        Player's paused state.
+        """
+        return self._paused
+
+    @property
+    def volume(self) -> int:
+        """
+        The current volume.
+        """
+        return self._volume
 
     async def connect(self):
         """
-        Connects to the voice channel.
+        Connects to the voice channel associated with this Player.
         """
-        await websocket.join_voice(self.channel.guild.id, self.channel.id)
+        await node.join_voice(self.channel.guild.id, self.channel.id)
 
     async def move_to(self, channel: discord.VoiceChannel):
         """
@@ -78,15 +97,29 @@ class Player:
         """
         Disconnects this player from it's voice channel.
         """
-        await websocket.join_voice(self.channel.guild.id, None)
+        await node.join_voice(self.channel.guild.id, None)
+        await self.close()
 
     def store(self, key, value):
+        """
+        Stores a metadata value by key.
+        """
         self._metadata[key] = value
 
     def fetch(self, key, default=None):
+        """
+        Returns a stored metadata value.
+
+        Parameters
+        ----------
+        key
+            Key used to store metadata.
+        default
+            Optional, used if the key doesn't exist.
+        """
         return self._metadata.get(key, default)
 
-    async def handle_event(self, event: websocket.LavalinkEvents, extra):
+    async def _handle_event(self, event: node.LavalinkEvents, extra):
         """
         Handles various Lavalink Events.
 
@@ -98,14 +131,16 @@ class Player:
 
         Parameters
         ----------
-        event : websocket.LavalinkEvents
+        event : node.LavalinkEvents
         extra
         """
-        if event == websocket.LavalinkEvents.TRACK_END:
-            if extra == TrackEndReason.FINISHED:
+        if event == node.LavalinkEvents.TRACK_END:
+            if extra == node.TrackEndReason.FINISHED:
                 await self.play()
+            else:
+                self._is_playing = False
 
-    async def handle_player_update(self, state: websocket.PlayerState):
+    async def _handle_player_update(self, state: node.PlayerState):
         """
         Handles player updates from lavalink.
 
@@ -113,10 +148,13 @@ class Player:
         ----------
         state : websocket.PlayerState
         """
+        if state.position > self.position:
+            self._paused = False
+            self._is_playing = True
         self.position = state.position
 
     # Play commands
-    def add(self, requester: discord.User, track_info: dict):
+    def add(self, requester: discord.User, track: Track):
         """
         Adds a track to the queue.
 
@@ -124,10 +162,11 @@ class Player:
         ----------
         requester : discord.User
             User who requested the track.
-        track_info : dict
+        track : Track
             Result from any of the lavalink track search methods.
         """
-        self.queue.append(Track(requester, track_info))
+        track.requester = requester
+        self.queue.append(track)
 
     async def play(self):
         """
@@ -138,18 +177,20 @@ class Player:
 
         self.current = None
         self.position = 0
-        self.paused = False
+        self._paused = False
 
         if not self.queue:
             await self.stop()
         else:
+            self._is_playing = True
             if self.shuffle:
                 track = self.queue.pop(randrange(len(self.queue)))
             else:
                 track = self.queue.pop(0)
 
             self.current = track
-            await self._ws.play(self.channel.guild.id, track.track_identifier)
+            log.debug("Assigned current.")
+            await self._node.play(self.channel.guild.id, track)
 
     async def stop(self):
         """
@@ -159,11 +200,11 @@ class Player:
 
             This method will clear the queue.
         """
-        await self._ws.stop(self.channel.guild.id)
+        await self._node.stop(self.channel.guild.id)
         self.queue = []
         self.current = None
         self.position = 0
-        self.paused = False
+        self._paused = False
 
     async def skip(self):
         """
@@ -180,10 +221,10 @@ class Player:
         pause : bool
             Set to ``False`` to resume.
         """
-        await self._ws.pause(self.channel.guild.id, pause)
-        self.paused = pause
+        await self._node.pause(self.channel.guild.id, pause)
+        self._paused = pause
 
-    async def volume(self, volume: int):
+    async def set_volume(self, volume: int):
         """
         Sets the volume of Lavalink.
 
@@ -192,8 +233,8 @@ class Player:
         volume : int
             Between 0 and 150
         """
-        self.volume = max(min(volume, 150), 0)
-        await self._ws.volume(self.channel.guild.id, self.volume)
+        self._volume = max(min(volume, 150), 0)
+        await self._node.volume(self.channel.guild.id, self.volume)
 
     async def seek(self, position: int):
         """
@@ -204,9 +245,9 @@ class Player:
         position : int
             Between 0 and track length.
         """
-        if self.current.info.isSeekable:
-            position = max(min(position, self.current.info.length), 0)
-            await self._ws.seek(self.channel.guild.id, position)
+        if self.current.seekable:
+            position = max(min(position, self.current.length), 0)
+            await self._node.seek(self.channel.guild.id, position)
 
 
 async def connect(channel: discord.VoiceChannel) -> Player:
@@ -226,7 +267,7 @@ async def connect(channel: discord.VoiceChannel) -> Player:
         p = get_player(channel.guild.id)
         await p.move_to(channel)
     else:
-        ws = websocket.get_websocket(channel.guild.id)
+        ws = node.get_node(channel.guild.id)
         p = Player(ws, channel)
         await p.connect()
         players.append(p)
@@ -252,38 +293,17 @@ def get_player(guild_id: int) -> Player:
     Returns
     -------
     Player
+
+    Raises
+    ------
+    KeyError
+        If that guild does not have a Player, e.g. is not connected to any
+        voice channel.
     """
     for p in players:
         if p.channel.guild.id == guild_id:
             return p
     raise KeyError("No such player for that guild.")
-
-
-async def handle_event(op: websocket.LavalinkIncomingOp,
-                       data: Union[websocket.LavalinkEvents, websocket.PlayerState, websocket.Stats],
-                       raw_data: dict):
-    if op == websocket.LavalinkIncomingOp.STATS:
-        return
-
-    guild_id = int(raw_data.get('guildId'))
-
-    try:
-        player = get_player(guild_id)
-    except KeyError:
-        log.debug("Got an event for a guild that we have no player for.")
-        return
-
-    if op == websocket.LavalinkIncomingOp.EVENT:
-        extra = None
-        if data == websocket.LavalinkEvents.TRACK_END:
-            extra = TrackEndReason(raw_data.get('reason'))
-        elif data == websocket.LavalinkEvents.TRACK_EXCEPTION:
-            extra = raw_data.get('error')
-        elif data == websocket.LavalinkEvents.TRACK_STUCK:
-            extra = raw_data.get('thresholdMs')
-        await player.handle_event(data, extra)
-    elif op == websocket.LavalinkIncomingOp.PLAYER_UPDATE:
-        await player.handle_player_update(data)
 
 
 def _ensure_player(channel_id: int):
@@ -293,23 +313,24 @@ def _ensure_player(channel_id: int):
             get_player(channel.guild.id)
         except KeyError:
             log.debug("Received voice channel connection without a player.")
-            ws = websocket.get_websocket(channel.guild.id)
-            players.append(Player(ws, channel))
+            node_ = node.get_node(channel.guild.id)
+            players.append(Player(node_, channel))
 
 
-def _remove_player(guild_id: int):
+async def _remove_player(guild_id: int):
     try:
         p = get_player(guild_id)
     except KeyError:
         pass
     else:
         players.remove(p)
+        await p.close()
 
 
 async def on_socket_response(data):
     raw_event = data.get('t')
     try:
-        event = websocket.DiscordVoiceSocketResponses(raw_event)
+        event = node.DiscordVoiceSocketResponses(raw_event)
     except ValueError:
         return
 
@@ -319,7 +340,7 @@ async def on_socket_response(data):
     if guild_id not in _voice_states:
         _voice_states[guild_id] = {}
 
-    if event == websocket.DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
+    if event == node.DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
         # Connected for the first time
         socket_event_data = data['d']
 
@@ -327,27 +348,28 @@ async def on_socket_response(data):
             'guild_id': guild_id,
             'event': socket_event_data
         })
-    elif event == websocket.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
+    elif event == node.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
         channel_id = data['d']['channel_id']
+        event_user_id = int(data['d'].get('user_id'))
+
+        if event_user_id != user_id:
+            return
 
         if channel_id is None:
             # We disconnected
+            log.debug("Received voice disconnect from discord, removing player.")
             _voice_states[guild_id] = {}
-            _remove_player(int(guild_id))
+            await _remove_player(int(guild_id))
         else:
             # After initial connection, get session ID
-            event_user_id = int(data['d'].get('user_id'))
-            if event_user_id != user_id:
-                return
-
             _ensure_player(int(channel_id))
 
             session_id = data['d']['session_id']
             _voice_states[guild_id]['session_id'] = session_id
 
     if len(_voice_states[guild_id]) == 3:
-        ws = websocket.get_websocket(int(guild_id))
-        await ws.send_lavalink_voice_update(**_voice_states[guild_id])
+        node_ = node.get_node(int(guild_id))
+        await node_.send_lavalink_voice_update(**_voice_states[guild_id])
 
 
 async def disconnect():

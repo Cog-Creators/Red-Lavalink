@@ -7,7 +7,7 @@ def get_requirements():
 
 setup(
     name='Red-Lavalink',
-    version='0.0.3',
+    version='0.0.4',
     packages=['lavalink',],
     url='https://github.com/Cog-Creators/Red-Lavalink',
     license='GPLv3',
@@ -27,6 +27,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     extras_require={
-        'tests': ['pytest>3', 'pytest-asyncio']
+        'tests': ['pytest>3.0.6', 'pytest-asyncio', 'async_generator'],
+        'docs': ['sphinx', 'sphinxcontrib-asyncio', 'sphinx_rtd_theme']
     }
 )
