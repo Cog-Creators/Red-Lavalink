@@ -1,81 +1,110 @@
+from typing import Tuple
+
 from aiohttp import ClientSession
 
 from . import log
 
-__all__ = ['initialize', 'get_tracks', 'search_yt', 'search_sc']
+__all__ = ['Track', 'RESTClient']
 
-_session = None  # type: ClientSession
-_uri = ''
-_headers = {}
 
-def initialize(loop, host, port, password):
+class Track:
     """
-    Does initialization for the Lavalink REST client.
+    Information about a Lavalink track.
 
-    Parameters
+    Attributes
     ----------
-    host : str
-    port : int
-    password : str
+    requester : discord.User
+        The user who requested the track.
+    track_identifier : str
+        Track identifier used by the Lavalink player to play tracks.
+    seekable : bool
+        Boolean determining if seeking can be done on this track.
+    author : str
+        The author of this track.
+    length : int
+        The length of this track in milliseconds.
+    is_stream : bool
+        Determines whether Lavalink will stream this track.
+    position : int
+        Current seeked position to begin playback.
+    title : str
+        Title of this track.
+    uri : str
+        The playback url of this track.
     """
-    global _session
-    global _uri
+    def __init__(self, data):
+        self.requester = None
 
-    if _session is None:
-        _session = ClientSession(loop=loop)
-    _uri = "http://{}:{}/loadtracks?identifier=".format(host, port)
-    _headers['Authorization'] = password
+        self.track_identifier = data.get('track')
+        self._info = data.get('info', {})
+        self.seekable = self._info.get('isSeekable', False)
+        self.author = self._info.get('author')
+        self.length = self._info.get('length', 0)
+        self.is_stream = self._info.get('isStream', False)
+        self.position = self._info.get('position')
+        self.title = self._info.get('title')
+        self.uri = self._info.get('uri')
 
 
-async def get_tracks(query):
+class RESTClient:
     """
-    Gets tracks from lavalink.
-
-    Parameters
-    ----------
-    query : str
-
-    Returns
-    -------
-    list of dict
+    Client class used to access the REST endpoints on a Lavalink node.
     """
-    url = _uri + str(query)
-    async with _session.get(url, headers=_headers) as resp:
-        return await resp.json(content_type=None)
+    def __init__(self, node):
+        self._node = node
+        self._session = ClientSession(loop=node.loop)
+        self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
+        self._headers = {
+            'Authorization': node.password
+        }
 
+    def _tracks_from_resp(self, resp) -> Tuple[Track, ...]:
+        return tuple(Track(d) for d in resp)
 
-async def search_yt(query):
-    """
-    Gets track results from YouTube from Lavalink.
+    async def get_tracks(self, query):
+        """
+        Gets tracks from lavalink.
 
-    Parameters
-    ----------
-    query : str
+        Parameters
+        ----------
+        query : str
 
-    Returns
-    -------
-    list of dict
-    """
-    return await get_tracks('ytsearch:{}'.format(query))
+        Returns
+        -------
+        list of dict
+        """
+        url = self._uri + str(query)
+        async with self._session.get(url, headers=self._headers) as resp:
+            return self._tracks_from_resp(await resp.json(content_type=None))
 
+    async def search_yt(self, query) -> Tuple[Track, ...]:
+        """
+        Gets track results from YouTube from Lavalink.
 
-async def search_sc(query):
-    """
-    Gets track results from SoundCloud from Lavalink.
+        Parameters
+        ----------
+        query : str
 
-    Parameters
-    ----------
-    query : str
+        Returns
+        -------
+        list of Track
+        """
+        return await self.get_tracks('ytsearch:{}'.format(query))
 
-    Returns
-    -------
-    list of dict
-    """
-    return await get_tracks('scsearch:{}'.format(query))
+    async def search_sc(self, query) -> Tuple[Track, ...]:
+        """
+        Gets track results from SoundCloud from Lavalink.
 
+        Parameters
+        ----------
+        query : str
 
-async def close():
-    global _session
-    await _session.close()
-    _session = None
-    log.debug("Closed REST session.")
+        Returns
+        -------
+        list of Track
+        """
+        return await self.get_tracks('scsearch:{}'.format(query))
+
+    async def close(self):
+        await self._session.close()
+        log.debug("Closed REST session.")

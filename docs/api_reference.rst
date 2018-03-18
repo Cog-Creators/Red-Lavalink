@@ -22,12 +22,6 @@ API Reference
 
 .. autofunction:: unregister_stats_listener
 
-.. autocofunction:: get_tracks
-
-.. autocofunction:: search_yt
-
-.. autocofunction:: search_sc
-
 .. autocofunction:: close
 
 .. automodule:: lavalink.utils
@@ -44,21 +38,22 @@ Enums
 .. autoclass:: TrackEndReason
     :members:
 
+.. autoclass:: PlayerState
+    :members:
+
+.. autoclass:: Stats
+    :members:
+
 ******
 Player
 ******
-
-.. py:currentmodule:: lavalink.player_manager
-
 .. autoclass:: Player
     :members:
+    :inherited-members:
 
 ****
 Node
 ****
-
-.. py:currentmodule:: lavalink.node
-
 .. autoclass:: Node
     :members:
 
@@ -66,11 +61,5 @@ Node
 Data Classes
 ************
 
-.. autoclass:: lavalink.player_manager.Track
-    :members:
-
-.. autoclass:: lavalink.node.PlayerState
-    :members:
-
-.. autoclass:: lavalink.node.Stats
+.. autoclass:: lavalink.Track
     :members:

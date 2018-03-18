@@ -1,14 +1,13 @@
-from collections import namedtuple
 from random import randrange
-from enum import Enum
 
 import discord
 
 from . import log
 from . import node
+from .rest_api import Track, RESTClient
 
 __all__ = ['players', 'user_id', 'channel_finder_func', 'connect',
-           'get_player', 'TrackEndReason']
+           'get_player', 'Player']
 
 players = []
 user_id = None
@@ -17,49 +16,7 @@ channel_finder_func = lambda channel_id: None
 _voice_states = {}
 
 
-TrackInfo = namedtuple(
-    'TrackInfo', 'identifier isSeekable author length isStream position title uri'
-)
-
-
-class Track:
-    """
-    Information about a Lavalink track.
-
-    Attributes
-    ----------
-    requester : discord.User
-        The user who requested the track.
-
-    info : TrackInfo
-        Information about the track provided by Lavalink.
-    """
-    def __init__(self, requester, data):
-        self.requester = requester
-        self.track_identifier = data.get('track')
-        self.info = TrackInfo(**data.get('info'))
-
-
-class TrackEndReason(Enum):
-    """
-    The reasons why track playback has ended.
-
-    Attributes
-    ----------
-    FINISHED
-    LOAD_FAILED
-    STOPPED
-    REPLACED
-    CLEANUP
-    """
-    FINISHED = 'FINISHED'
-    LOAD_FAILED = 'LOAD_FAILED'
-    STOPPED = 'STOPPED'
-    REPLACED = 'REPLACED'
-    CLEANUP = 'CLEANUP'
-
-
-class Player:
+class Player(RESTClient):
     """
     The Player class represents the current state of playback.
     It also is used to control playback and queue tracks.
@@ -79,6 +36,7 @@ class Player:
     shuffle : bool
     """
     def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
+        super().__init__(node_)
         self.channel = channel
 
         self.queue = []
@@ -140,6 +98,7 @@ class Player:
         Disconnects this player from it's voice channel.
         """
         await node.join_voice(self.channel.guild.id, None)
+        await self.close()
 
     def store(self, key, value):
         """
@@ -176,7 +135,7 @@ class Player:
         extra
         """
         if event == node.LavalinkEvents.TRACK_END:
-            if extra == TrackEndReason.FINISHED:
+            if extra == node.TrackEndReason.FINISHED:
                 await self.play()
             else:
                 self._is_playing = False
@@ -195,7 +154,7 @@ class Player:
         self.position = state.position
 
     # Play commands
-    def add(self, requester: discord.User, track_info: dict):
+    def add(self, requester: discord.User, track: Track):
         """
         Adds a track to the queue.
 
@@ -203,10 +162,11 @@ class Player:
         ----------
         requester : discord.User
             User who requested the track.
-        track_info : dict
+        track : Track
             Result from any of the lavalink track search methods.
         """
-        self.queue.append(Track(requester, track_info))
+        track.requester = requester
+        self.queue.append(track)
 
     async def play(self):
         """
@@ -229,7 +189,8 @@ class Player:
                 track = self.queue.pop(0)
 
             self.current = track
-            await self._node.play(self.channel.guild.id, track.track_identifier)
+            log.debug("Assigned current.")
+            await self._node.play(self.channel.guild.id, track)
 
     async def stop(self):
         """
@@ -284,8 +245,8 @@ class Player:
         position : int
             Between 0 and track length.
         """
-        if self.current.info.isSeekable:
-            position = max(min(position, self.current.info.length), 0)
+        if self.current.seekable:
+            position = max(min(position, self.current.length), 0)
             await self._node.seek(self.channel.guild.id, position)
 
 
@@ -345,38 +306,6 @@ def get_player(guild_id: int) -> Player:
     raise KeyError("No such player for that guild.")
 
 
-async def handle_event(data: node.LavalinkEvents, raw_data: dict):
-    guild_id = int(raw_data.get('guildId'))
-
-    try:
-        player = get_player(guild_id)
-    except KeyError:
-        log.debug("Got an event for a guild that we have no player for.")
-        return
-
-    extra = None
-    if data == node.LavalinkEvents.TRACK_END:
-        extra = TrackEndReason(raw_data.get('reason'))
-    elif data == node.LavalinkEvents.TRACK_EXCEPTION:
-        extra = raw_data.get('error')
-    elif data == node.LavalinkEvents.TRACK_STUCK:
-        extra = raw_data.get('thresholdMs')
-
-    await player._handle_event(data, extra)
-
-
-async def handle_update(data: node.PlayerState, raw_data: dict):
-    guild_id = int(raw_data.get('guildId'))
-
-    try:
-        player = get_player(guild_id)
-    except KeyError:
-        log.debug("Got a player update for a guild that we have no player for.")
-        return
-
-    await player._handle_player_update(data)
-
-
 def _ensure_player(channel_id: int):
     channel = channel_finder_func(channel_id)
     if channel is not None:
@@ -388,13 +317,14 @@ def _ensure_player(channel_id: int):
             players.append(Player(node_, channel))
 
 
-def _remove_player(guild_id: int):
+async def _remove_player(guild_id: int):
     try:
         p = get_player(guild_id)
     except KeyError:
         pass
     else:
         players.remove(p)
+        await p.close()
 
 
 async def on_socket_response(data):
@@ -429,7 +359,7 @@ async def on_socket_response(data):
             # We disconnected
             log.debug("Received voice disconnect from discord, removing player.")
             _voice_states[guild_id] = {}
-            _remove_player(int(guild_id))
+            await _remove_player(int(guild_id))
         else:
             # After initial connection, get session ID
             _ensure_player(int(channel_id))

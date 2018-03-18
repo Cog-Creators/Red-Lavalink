@@ -1,8 +1,8 @@
 import asyncio
 
+from . import log
 from . import node
 from . import player_manager
-from . import rest_api
 
 from discord.ext.commands import Bot
 
@@ -47,18 +47,16 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port,
 
     player_manager.user_id = bot.user.id
     player_manager.channel_finder_func = bot.get_channel
-    register_event_listener(player_manager.handle_event)
-    register_update_listener(player_manager.handle_update)
+    register_event_listener(_handle_event)
+    register_update_listener(_handle_update)
 
     lavalink_node = node.Node(
         _loop, dispatch, bot._connection._get_websocket,
-        host, password, port=ws_port,
+        host, password, port=ws_port, rest=rest_port,
         user_id=player_manager.user_id, num_shards=bot.shard_count
     )
 
     await lavalink_node.connect(timeout=timeout)
-
-    rest_api.initialize(loop=_loop, host=host, port=rest_port, password=password)
 
     bot.add_listener(player_manager.on_socket_response)
 
@@ -67,9 +65,28 @@ def register_event_listener(coro):
     """
     Registers a coroutine to receive lavalink event information.
 
+    This coroutine will accept three arguments: :py:class:`Player`,
+    :py:class:`LavalinkEvents`, and possibly an extra. The value of the extra depends
+    on the value of the second argument.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_END`, the extra will
+    be a :py:class:`TrackEndReason`.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_EXCEPTION`, the extra
+    will be an error string.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_STUCK`, the extra will
+    be the threshold milliseconds that the track has been stuck for.
+
+    If the second argument is :py:attr:`LavalinkEvents.TRACK_START`, the extra will be
+    a :py:class:`Track` object.
+
+    If the second argument is any other value, the third argument will not exist.
+
     Parameters
     ----------
     coro
+        A coroutine function that accepts the arguments listed above.
 
     Raises
     ------
@@ -81,6 +98,32 @@ def register_event_listener(coro):
 
     if coro not in _event_listeners:
         _event_listeners.append(coro)
+
+
+async def _handle_event(player, data: node.LavalinkEvents, extra):
+    await player._handle_event(data, extra)
+
+
+def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
+    guild_id = int(raw_data.get('guildId'))
+
+    try:
+        player = player_manager.get_player(guild_id)
+    except KeyError:
+        log.exception("Got an event for a guild that we have no player for.")
+        raise
+
+    extra = None
+    if data == node.LavalinkEvents.TRACK_END:
+        extra = node.TrackEndReason(raw_data.get('reason'))
+    elif data == node.LavalinkEvents.TRACK_EXCEPTION:
+        extra = raw_data.get('error')
+    elif data == node.LavalinkEvents.TRACK_STUCK:
+        extra = raw_data.get('thresholdMs')
+    elif data == node.LavalinkEvents.TRACK_START:
+        extra = raw_data.get('track')
+
+    return player, data, extra
 
 
 def unregister_event_listener(coro):
@@ -101,6 +144,9 @@ def register_update_listener(coro):
     """
     Registers a coroutine to receive lavalink player update information.
 
+    This coroutine will accept a two arguments: an instance of :py:class:`Player`
+    and an instance of :py:class:`PlayerState`.
+
     Parameters
     ----------
     coro
@@ -115,6 +161,22 @@ def register_update_listener(coro):
 
     if coro not in _update_listeners:
         _update_listeners.append(coro)
+
+
+async def _handle_update(player, data: node.PlayerState):
+    await player._handle_player_update(data)
+
+
+def _get_update_args(data: node.PlayerState, raw_data: dict):
+    guild_id = int(raw_data.get('guildId'))
+
+    try:
+        player = player_manager.get_player(guild_id)
+    except KeyError:
+        log.exception("Got a player update for a guild that we have no player for.")
+        raise
+
+    return player, data
 
 
 def unregister_update_listener(coro):
@@ -134,6 +196,9 @@ def unregister_update_listener(coro):
 def register_stats_listener(coro):
     """
     Registers a coroutine to receive lavalink server stats information.
+
+    This coroutine will accept a single argument which will be an instance
+    of :py:class:`Stats`.
 
     Parameters
     ----------
@@ -165,25 +230,29 @@ def unregister_stats_listener(coro):
         pass
 
 
-def dispatch(op, data, raw_data):
+def dispatch(op: node.LavalinkIncomingOp, data, raw_data: dict):
     listeners = []
+    args = []
+
     if op == node.LavalinkIncomingOp.EVENT:
         listeners = _event_listeners
+        args = _get_event_args(data, raw_data)
     elif op == node.LavalinkIncomingOp.PLAYER_UPDATE:
         listeners = _update_listeners
+        args = _get_update_args(data, raw_data)
     elif op == node.LavalinkIncomingOp.STATS:
         listeners = _stats_listeners
+        args = [data,]
 
     for coro in listeners:
-        _loop.create_task(coro(data, raw_data))
+        _loop.create_task(coro(*args))
 
 
 async def close():
     """
     Closes the lavalink connection completely.
     """
-    unregister_event_listener(player_manager.handle_event)
-    unregister_update_listener(player_manager.handle_update)
+    unregister_event_listener(_handle_event)
+    unregister_update_listener(_handle_update)
     await player_manager.disconnect()
     await node.disconnect()
-    await rest_api.close()
