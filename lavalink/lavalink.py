@@ -110,8 +110,10 @@ def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
     try:
         player = player_manager.get_player(guild_id)
     except KeyError:
-        log.exception("Got an event for a guild that we have no player for.")
-        raise
+        log.exception("Got an event for a guild that we have no player for."
+                      " This may be because of a forced voice channel"
+                      " disconnect. If this message repeats forever, report it.")
+        return
 
     extra = None
     if data == node.LavalinkEvents.TRACK_END:
@@ -173,8 +175,10 @@ def _get_update_args(data: node.PlayerState, raw_data: dict):
     try:
         player = player_manager.get_player(guild_id)
     except KeyError:
-        log.exception("Got a player update for a guild that we have no player for.")
-        raise
+        log.exception("Got a player update for a guild that we have no player for."
+                      " This may be because of a forced voice channel disconnect."
+                      " If this message repeats forever, report it.")
+        return
 
     return player, data
 

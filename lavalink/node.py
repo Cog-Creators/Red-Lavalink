@@ -31,6 +31,7 @@ class LavalinkIncomingOp(Enum):
 
 class LavalinkOutgoingOp(Enum):
     VOICE_UPDATE = 'voiceUpdate'
+    DESTROY = 'destroy'
     PLAY = 'play'
     STOP = 'stop'
     PAUSE = 'pause'
@@ -279,6 +280,12 @@ class Node:
             'guildId': str(guild_id),
             'sessionId': session_id,
             'event': event
+        })
+
+    async def destroy_guild(self, guild_id: int):
+        await self.send({
+            'op': LavalinkOutgoingOp.DESTROY.value,
+            'guildId': str(guild_id)
         })
 
     # Player commands
