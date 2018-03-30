@@ -150,7 +150,6 @@ class Player(RESTClient):
         state : websocket.PlayerState
         """
         if state.position > self.position:
-            self._paused = False
             self._is_playing = True
         self.position = state.position
 
