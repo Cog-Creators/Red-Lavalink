@@ -59,7 +59,7 @@ class RESTClient:
         }
 
     def _tracks_from_resp(self, resp) -> Tuple[Track, ...]:
-        return tuple(Track(d) for d in resp)
+        return tuple(Track(d) for d in resp) if resp else tuple([])
 
     async def get_tracks(self, query):
         """
