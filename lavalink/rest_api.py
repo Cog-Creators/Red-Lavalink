@@ -58,9 +58,6 @@ class RESTClient:
             'Authorization': node.password
         }
 
-    def _tracks_from_resp(self, resp) -> Tuple[Track, ...]:
-        return tuple(Track(d) for d in resp) if resp else tuple([])
-
     async def get_tracks(self, query):
         """
         Gets tracks from lavalink.
@@ -75,7 +72,12 @@ class RESTClient:
         """
         url = self._uri + str(query)
         async with self._session.get(url, headers=self._headers) as resp:
-            return self._tracks_from_resp(await resp.json(content_type=None))
+            data = await resp.json(content_type=None)
+            if data is not None:
+                tracks = tuple(Track(d) for d in data)
+            else:
+                tracks = ()
+        return tracks
 
     async def search_yt(self, query) -> Tuple[Track, ...]:
         """
