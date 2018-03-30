@@ -98,6 +98,7 @@ class Player(RESTClient):
         Disconnects this player from it's voice channel.
         """
         await node.join_voice(self.channel.guild.id, None)
+        await self._node.destroy_guild(self.channel.guild.id)
         await self.close()
 
     def store(self, key, value):
@@ -324,7 +325,7 @@ async def _remove_player(guild_id: int):
         pass
     else:
         players.remove(p)
-        await p.close()
+        await p.disconnect()
 
 
 async def on_socket_response(data):
@@ -360,12 +361,15 @@ async def on_socket_response(data):
             log.debug("Received voice disconnect from discord, removing player.")
             _voice_states[guild_id] = {}
             await _remove_player(int(guild_id))
+
         else:
             # After initial connection, get session ID
             _ensure_player(int(channel_id))
 
-            session_id = data['d']['session_id']
-            _voice_states[guild_id]['session_id'] = session_id
+        session_id = data['d']['session_id']
+        _voice_states[guild_id]['session_id'] = session_id
+    else:
+        return
 
     if len(_voice_states[guild_id]) == 3:
         node_ = node.get_node(int(guild_id))
