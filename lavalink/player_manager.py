@@ -310,11 +310,13 @@ def _ensure_player(channel_id: int):
     channel = channel_finder_func(channel_id)
     if channel is not None:
         try:
-            get_player(channel.guild.id)
+            p = get_player(channel.guild.id)
         except KeyError:
             log.debug("Received voice channel connection without a player.")
             node_ = node.get_node(channel.guild.id)
-            players.append(Player(node_, channel))
+            p = Player(node_, channel)
+            players.append(p)
+        return p, channel
 
 
 async def _remove_player(guild_id: int):
@@ -363,7 +365,9 @@ async def on_socket_response(data):
 
         else:
             # After initial connection, get session ID
-            _ensure_player(int(channel_id))
+            p, channel = _ensure_player(int(channel_id))
+            if channel != p.channel:
+                p.channel = channel
 
         session_id = data['d']['session_id']
         _voice_states[guild_id]['session_id'] = session_id

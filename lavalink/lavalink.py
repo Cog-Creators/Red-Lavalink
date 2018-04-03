@@ -248,6 +248,10 @@ def dispatch(op: node.LavalinkIncomingOp, data, raw_data: dict):
         listeners = _stats_listeners
         args = [data,]
 
+    if args is None:
+        # For example, no player because channel got removed.
+        return
+
     for coro in listeners:
         _loop.create_task(coro(*args))
 
