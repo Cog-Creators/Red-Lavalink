@@ -98,6 +98,7 @@ class Player(RESTClient):
         Disconnects this player from it's voice channel.
         """
         await node.join_voice(self.channel.guild.id, None)
+        await self._node.destroy_guild(self.channel.guild.id)
         await self.close()
 
     def store(self, key, value):
@@ -149,7 +150,6 @@ class Player(RESTClient):
         state : websocket.PlayerState
         """
         if state.position > self.position:
-            self._paused = False
             self._is_playing = True
         self.position = state.position
 
@@ -221,8 +221,8 @@ class Player(RESTClient):
         pause : bool
             Set to ``False`` to resume.
         """
-        await self._node.pause(self.channel.guild.id, pause)
         self._paused = pause
+        await self._node.pause(self.channel.guild.id, pause)
 
     async def set_volume(self, volume: int):
         """
@@ -310,11 +310,13 @@ def _ensure_player(channel_id: int):
     channel = channel_finder_func(channel_id)
     if channel is not None:
         try:
-            get_player(channel.guild.id)
+            p = get_player(channel.guild.id)
         except KeyError:
             log.debug("Received voice channel connection without a player.")
             node_ = node.get_node(channel.guild.id)
-            players.append(Player(node_, channel))
+            p = Player(node_, channel)
+            players.append(p)
+        return p, channel
 
 
 async def _remove_player(guild_id: int):
@@ -324,7 +326,7 @@ async def _remove_player(guild_id: int):
         pass
     else:
         players.remove(p)
-        await p.close()
+        await p.disconnect()
 
 
 async def on_socket_response(data):
@@ -360,12 +362,17 @@ async def on_socket_response(data):
             log.debug("Received voice disconnect from discord, removing player.")
             _voice_states[guild_id] = {}
             await _remove_player(int(guild_id))
+
         else:
             # After initial connection, get session ID
-            _ensure_player(int(channel_id))
+            p, channel = _ensure_player(int(channel_id))
+            if channel != p.channel:
+                p.channel = channel
 
-            session_id = data['d']['session_id']
-            _voice_states[guild_id]['session_id'] = session_id
+        session_id = data['d']['session_id']
+        _voice_states[guild_id]['session_id'] = session_id
+    else:
+        return
 
     if len(_voice_states[guild_id]) == 3:
         node_ = node.get_node(int(guild_id))
