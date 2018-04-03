@@ -150,7 +150,6 @@ class Player(RESTClient):
         state : websocket.PlayerState
         """
         if state.position > self.position:
-            self._paused = False
             self._is_playing = True
         self.position = state.position
 
@@ -222,8 +221,8 @@ class Player(RESTClient):
         pause : bool
             Set to ``False`` to resume.
         """
-        await self._node.pause(self.channel.guild.id, pause)
         self._paused = pause
+        await self._node.pause(self.channel.guild.id, pause)
 
     async def set_volume(self, volume: int):
         """
