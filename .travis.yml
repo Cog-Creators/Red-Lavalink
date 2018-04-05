@@ -26,6 +26,6 @@ jobs:
       skip_cleanup: true
       on:
         repo: Cog-Creators/Red-Lavalink
-        branch: develop
+        branch: master
         python: 3.5.4
         tags: true
