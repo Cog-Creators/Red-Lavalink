@@ -1,1 +1,1 @@
-websockets>=3.4,<5
+websockets>=3.0,<5
