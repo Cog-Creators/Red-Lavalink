@@ -14,7 +14,7 @@ setup(
     author='tekulvw',
     description='Lavalink client library for Red-DiscordBot',
     include_package_data=True,
-    python_requires='>3.5.1',
+    python_requires='>=3.5.3',
     install_requires=get_requirements(),
     classifiers=[
         'Development Status :: 4 - Beta',
