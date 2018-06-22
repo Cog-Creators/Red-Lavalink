@@ -4,7 +4,7 @@ from aiohttp import ClientSession
 
 from . import log
 
-__all__ = ['Track', 'RESTClient']
+__all__ = ["Track", "RESTClient"]
 
 
 class Track:
@@ -32,31 +32,31 @@ class Track:
     uri : str
         The playback url of this track.
     """
+
     def __init__(self, data):
         self.requester = None
 
-        self.track_identifier = data.get('track')
-        self._info = data.get('info', {})
-        self.seekable = self._info.get('isSeekable', False)
-        self.author = self._info.get('author')
-        self.length = self._info.get('length', 0)
-        self.is_stream = self._info.get('isStream', False)
-        self.position = self._info.get('position')
-        self.title = self._info.get('title')
-        self.uri = self._info.get('uri')
+        self.track_identifier = data.get("track")
+        self._info = data.get("info", {})
+        self.seekable = self._info.get("isSeekable", False)
+        self.author = self._info.get("author")
+        self.length = self._info.get("length", 0)
+        self.is_stream = self._info.get("isStream", False)
+        self.position = self._info.get("position")
+        self.title = self._info.get("title")
+        self.uri = self._info.get("uri")
 
 
 class RESTClient:
     """
     Client class used to access the REST endpoints on a Lavalink node.
     """
+
     def __init__(self, node):
         self._node = node
         self._session = ClientSession(loop=node.loop)
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
-        self._headers = {
-            'Authorization': node.password
-        }
+        self._headers = {"Authorization": node.password}
 
     async def get_tracks(self, query):
         """
@@ -91,7 +91,7 @@ class RESTClient:
         -------
         list of Track
         """
-        return await self.get_tracks('ytsearch:{}'.format(query))
+        return await self.get_tracks("ytsearch:{}".format(query))
 
     async def search_sc(self, query) -> Tuple[Track, ...]:
         """
@@ -105,7 +105,7 @@ class RESTClient:
         -------
         list of Track
         """
-        return await self.get_tracks('scsearch:{}'.format(query))
+        return await self.get_tracks("scsearch:{}".format(query))
 
     async def close(self):
         await self._session.close()
