@@ -5,9 +5,16 @@ name = "pypi"
 
 [packages]
 websockets = ">=5,<6"
+"discord.py" = { git = 'git://github.com/Rapptz/discord.py', ref = 'rewrite', editable = true}
 
 [dev-packages]
 black = "*"
+pytest = "*"
+pytest-asyncio = "*"
+async-generator = "*"
+sphinx = "*"
+sphinxcontrib-asyncio = "*"
+sphinx-rtd-theme = "*"
 
 [requires]
 python_version = "3.6"
