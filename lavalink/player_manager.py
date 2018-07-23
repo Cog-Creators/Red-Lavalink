@@ -6,8 +6,7 @@ from . import log
 from . import node
 from .rest_api import Track, RESTClient
 
-__all__ = ['players', 'user_id', 'channel_finder_func', 'connect',
-           'get_player', 'Player']
+__all__ = ["players", "user_id", "channel_finder_func", "connect", "get_player", "Player"]
 
 players = []
 user_id = None
@@ -35,6 +34,7 @@ class Player(RESTClient):
     repeat : bool
     shuffle : bool
     """
+
     def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
         super().__init__(node_)
         self.channel = channel
@@ -212,7 +212,7 @@ class Player(RESTClient):
         """
         await self.play()
 
-    async def pause(self, pause: bool=True):
+    async def pause(self, pause: bool = True):
         """
         Pauses the current song.
 
@@ -330,29 +330,26 @@ async def _remove_player(guild_id: int):
 
 
 async def on_socket_response(data):
-    raw_event = data.get('t')
+    raw_event = data.get("t")
     try:
         event = node.DiscordVoiceSocketResponses(raw_event)
     except ValueError:
         return
 
-    log.debug('Received Discord WS voice response: {}'.format(data))
+    log.debug("Received Discord WS voice response: {}".format(data))
 
-    guild_id = data['d']['guild_id']
+    guild_id = data["d"]["guild_id"]
     if guild_id not in _voice_states:
         _voice_states[guild_id] = {}
 
     if event == node.DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
         # Connected for the first time
-        socket_event_data = data['d']
+        socket_event_data = data["d"]
 
-        _voice_states[guild_id].update({
-            'guild_id': guild_id,
-            'event': socket_event_data
-        })
+        _voice_states[guild_id].update({"guild_id": guild_id, "event": socket_event_data})
     elif event == node.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
-        channel_id = data['d']['channel_id']
-        event_user_id = int(data['d'].get('user_id'))
+        channel_id = data["d"]["channel_id"]
+        event_user_id = int(data["d"].get("user_id"))
 
         if event_user_id != user_id:
             return
@@ -369,8 +366,8 @@ async def on_socket_response(data):
             if channel != p.channel:
                 p.channel = channel
 
-        session_id = data['d']['session_id']
-        _voice_states[guild_id]['session_id'] = session_id
+        session_id = data["d"]["session_id"]
+        _voice_states[guild_id]["session_id"] = session_id
     else:
         return
 
