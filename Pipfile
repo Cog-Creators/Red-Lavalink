@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-websockets = ">=5.0.1,<6"
+websockets = ">=6.0,<7.0"
 "discord.py" = { git = 'git://github.com/Rapptz/discord.py', ref = 'rewrite', editable = true}
 
 [dev-packages]
