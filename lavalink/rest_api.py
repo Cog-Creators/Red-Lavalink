@@ -46,6 +46,11 @@ class Track:
         self.title = self._info.get("title")
         self.uri = self._info.get("uri")
 
+    @property
+    def thumbnail(self):
+        if "youtube" in self.uri and "identifier" in self._info:
+            return "https://img.youtube.com/vi/{}/mqdefault.jpg".format(self._info["identifier"])
+
 
 class RESTClient:
     """
