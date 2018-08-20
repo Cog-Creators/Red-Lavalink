@@ -4,7 +4,9 @@ from aiohttp import ClientSession
 
 from . import log
 
-__all__ = ["Track", "RESTClient"]
+from urllib.parse import quote
+
+__all__ = ['Track', 'RESTClient']
 
 
 class Track:
@@ -76,7 +78,7 @@ class RESTClient:
         -------
         list of dict
         """
-        url = self._uri + str(query)
+        url = self._uri + quote(str(query))
         async with self._session.get(url, headers=self._headers) as resp:
             data = await resp.json(content_type=None)
             if data is not None:
