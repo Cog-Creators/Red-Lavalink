@@ -48,6 +48,7 @@ class Track:
 
     @property
     def thumbnail(self):
+        """Optional[str]: Returns a thumbnail URL for YouTube tracks."""
         if "youtube" in self.uri and "identifier" in self._info:
             return "https://img.youtube.com/vi/{}/mqdefault.jpg".format(self._info["identifier"])
 
