@@ -16,7 +16,7 @@ class ProxyWebSocket:
         self.open = open_
 
         self.EMIT = asyncio.Event()
-        self.emit_data = '{}'
+        self.emit_data = "{}"
 
         self.recv = MagicMock(wraps=self._recv)
         self.send = MagicMock(wraps=self._send)
@@ -39,19 +39,19 @@ class ProxyWebSocket:
 
 @pytest.fixture
 def user():
-    User = namedtuple('User', 'id')
+    User = namedtuple("User", "id")
     return User(1234567890)
 
 
 @pytest.fixture
 def guild():
-    Guild = namedtuple('Guild', 'id')
+    Guild = namedtuple("Guild", "id")
     return Guild(987654321)
 
 
 @pytest.fixture()
 def voice_channel(guild):
-    VoiceChannel = namedtuple('VoiceChannel', 'id guild')
+    VoiceChannel = namedtuple("VoiceChannel", "id guild")
     return VoiceChannel(9999999999, guild)
 
 
@@ -84,14 +84,8 @@ def patch_node():
     async def send(data):
         pass
 
-    websockets_patch = patch(
-        'websockets.connect',
-        new=MagicMock(wraps=connect)
-    )
-    node_patch = patch.multiple(
-        'lavalink.node.Node',
-        send=MagicMock(wraps=send)
-    )
+    websockets_patch = patch("websockets.connect", new=MagicMock(wraps=connect))
+    node_patch = patch.multiple("lavalink.node.Node", send=MagicMock(wraps=send))
     websockets_patch.start()
     node_patch.start()
     yield
@@ -106,12 +100,12 @@ async def node(bot):
         _loop=bot.loop,
         event_handler=MagicMock(),
         voice_ws_func=bot._connection._get_websocket,
-        host='localhost',
-        password='password',
+        host="localhost",
+        password="password",
         port=2333,
         rest=2332,
         user_id=bot.user.id,
-        num_shards=bot.shard_count
+        num_shards=bot.shard_count,
     )
 
     # node_.send = MagicMock(wraps=send)
@@ -128,6 +122,6 @@ async def node(bot):
 @pytest.fixture()
 @async_generator
 async def initialize_lavalink(bot):
-    await lavalink.initialize(bot, 'localhost', 'password', 2332, 2333)
+    await lavalink.initialize(bot, "localhost", "password", 2332, 2333)
     await yield_(None)
     await lavalink.close()

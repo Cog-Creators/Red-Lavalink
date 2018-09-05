@@ -6,9 +6,16 @@ from . import player_manager
 
 from discord.ext.commands import Bot
 
-__all__ = ['initialize', 'close', 'register_event_listener', 'unregister_event_listener',
-           'register_update_listener', 'unregister_update_listener',
-           'register_stats_listener', 'unregister_stats_listener']
+__all__ = [
+    "initialize",
+    "close",
+    "register_event_listener",
+    "unregister_event_listener",
+    "register_update_listener",
+    "unregister_update_listener",
+    "register_stats_listener",
+    "unregister_stats_listener",
+]
 
 
 _event_listeners = []
@@ -17,8 +24,7 @@ _stats_listeners = []
 _loop = None
 
 
-async def initialize(bot: Bot, host, password, rest_port, ws_port,
-                     timeout=30):
+async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
     """
     Initializes the websocket connection to the lavalink player.
 
@@ -51,10 +57,15 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port,
     register_update_listener(_handle_update)
 
     lavalink_node = node.Node(
-        _loop, dispatch, bot._connection._get_websocket,
-        host, password, port=ws_port, rest=rest_port,
-        user_id=player_manager.user_id, 
-        num_shards=bot.shard_count if bot.shard_count is not None else 1
+        _loop,
+        dispatch,
+        bot._connection._get_websocket,
+        host,
+        password,
+        port=ws_port,
+        rest=rest_port,
+        user_id=player_manager.user_id,
+        num_shards=bot.shard_count if bot.shard_count is not None else 1,
     )
 
     await lavalink_node.connect(timeout=timeout)
@@ -106,25 +117,27 @@ async def _handle_event(player, data: node.LavalinkEvents, extra):
 
 
 def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
-    guild_id = int(raw_data.get('guildId'))
+    guild_id = int(raw_data.get("guildId"))
 
     try:
         player = player_manager.get_player(guild_id)
     except KeyError:
-        log.exception("Got an event for a guild that we have no player for."
-                      " This may be because of a forced voice channel"
-                      " disconnect. If this message repeats forever, report it.")
+        log.exception(
+            "Got an event for a guild that we have no player for."
+            " This may be because of a forced voice channel"
+            " disconnect. If this message repeats forever, report it."
+        )
         return
 
     extra = None
     if data == node.LavalinkEvents.TRACK_END:
-        extra = node.TrackEndReason(raw_data.get('reason'))
+        extra = node.TrackEndReason(raw_data.get("reason"))
     elif data == node.LavalinkEvents.TRACK_EXCEPTION:
-        extra = raw_data.get('error')
+        extra = raw_data.get("error")
     elif data == node.LavalinkEvents.TRACK_STUCK:
-        extra = raw_data.get('thresholdMs')
+        extra = raw_data.get("thresholdMs")
     elif data == node.LavalinkEvents.TRACK_START:
-        extra = raw_data.get('track')
+        extra = raw_data.get("track")
 
     return player, data, extra
 
@@ -171,14 +184,16 @@ async def _handle_update(player, data: node.PlayerState):
 
 
 def _get_update_args(data: node.PlayerState, raw_data: dict):
-    guild_id = int(raw_data.get('guildId'))
+    guild_id = int(raw_data.get("guildId"))
 
     try:
         player = player_manager.get_player(guild_id)
     except KeyError:
-        log.exception("Got a player update for a guild that we have no player for."
-                      " This may be because of a forced voice channel disconnect."
-                      " If this message repeats forever, report it.")
+        log.exception(
+            "Got a player update for a guild that we have no player for."
+            " This may be because of a forced voice channel disconnect."
+            " If this message repeats forever, report it."
+        )
         return
 
     return player, data
@@ -247,7 +262,7 @@ def dispatch(op: node.LavalinkIncomingOp, data, raw_data: dict):
         args = _get_update_args(data, raw_data)
     elif op == node.LavalinkIncomingOp.STATS:
         listeners = _stats_listeners
-        args = [data,]
+        args = [data]
 
     if args is None:
         # For example, no player because channel got removed.
