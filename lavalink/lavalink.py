@@ -65,7 +65,7 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
         port=ws_port,
         rest=rest_port,
         user_id=player_manager.user_id,
-        num_shards=bot.shard_count,
+        num_shards=bot.shard_count if bot.shard_count is not None else 1,
     )
 
     await lavalink_node.connect(timeout=timeout)
