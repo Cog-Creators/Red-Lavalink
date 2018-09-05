@@ -97,7 +97,7 @@ class Stats:
         self.memory = MemoryInfo(**memory)
         self.players = players
         self.active_players = active_players
-        self.cpu = CPUInfo(**cpu)
+        self.cpu_info = CPUInfo(**cpu)
         self.uptime = uptime
 
 
