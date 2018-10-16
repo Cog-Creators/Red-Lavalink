@@ -8,7 +8,7 @@ from . import log
 
 from urllib.parse import quote
 
-__all__ = ['Track', 'RESTClient', 'LoadType', 'PlaylistInfo']
+__all__ = ["Track", "RESTClient", "LoadType", "PlaylistInfo"]
 
 
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")

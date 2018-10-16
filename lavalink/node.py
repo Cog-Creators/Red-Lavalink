@@ -172,11 +172,23 @@ class Node:
         """
         SHUTDOWN.clear()
 
+        combo_uri = "ws://{}:{}".format(self.host, self.rest)
         uri = "ws://{}:{}".format(self.host, self.port)
 
-        log.debug("Lavalink WS connecting to {} with headers {}".format(uri, self.headers))
+        log.debug(
+            "Lavalink WS connecting to {} or {} with headers {}".format(combo_uri, uri, self.headers)
+        )
 
-        await asyncio.wait_for(self._multi_try_connect(uri), timeout=timeout)
+        tasks = {self._multi_try_connect(u) for u in (combo_uri, uri)}
+
+        done, pending = await asyncio.wait(tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
+
+        for task in pending:
+            task.cancel()
+            try:
+                await task
+            except Exception:
+                pass
 
         log.debug("Creating Lavalink WS listener.")
         self._listener_task = self.loop.create_task(self.listener())
