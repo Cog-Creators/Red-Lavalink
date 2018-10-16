@@ -188,6 +188,11 @@ class Node:
     def _get_connect_headers(password, user_id, num_shards):
         return {"Authorization": password, "User-Id": user_id, "Num-Shards": num_shards}
 
+    @property
+    def lavalink_major_version(self):
+        assert self._ws, "not connected"
+        return self._ws.response_headers.get("Lavalink-Major-Version")
+
     async def _multi_try_connect(self, uri):
         backoff = ExponentialBackoff()
         attempt = 1

@@ -72,6 +72,8 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
 
     bot.add_listener(player_manager.on_socket_response)
 
+    return lavalink_node
+
 
 def register_event_listener(coro):
     """

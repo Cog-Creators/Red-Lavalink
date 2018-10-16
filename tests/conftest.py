@@ -103,7 +103,7 @@ async def node(bot):
         host="localhost",
         password="password",
         port=2333,
-        rest=2332,
+        rest=2333,
         user_id=bot.user.id,
         num_shards=bot.shard_count,
     )
@@ -122,6 +122,6 @@ async def node(bot):
 @pytest.fixture()
 @async_generator
 async def initialize_lavalink(bot):
-    await lavalink.initialize(bot, "localhost", "password", 2332, 2333)
+    await lavalink.initialize(bot, "localhost", "password", 2333, 2333)
     await yield_(None)
     await lavalink.close()
