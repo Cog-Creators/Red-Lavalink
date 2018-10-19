@@ -9,7 +9,7 @@ def get_requirements():
 
 setup(
     name="Red-Lavalink",
-    version="0.1.2",
+    version="0.2.0",
     packages=["lavalink"],
     url="https://github.com/Cog-Creators/Red-Lavalink",
     license="GPLv3",
