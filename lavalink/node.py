@@ -355,6 +355,10 @@ def get_node(guild_id: int) -> Node:
     """
     guild_count = 1e10
     least_used = None
+
+    if not _nodes:
+        raise IndexError("No nodes found.")
+
     for node, guild_ids in _nodes.items():
         if len(guild_ids) < guild_count:
             guild_count = len(guild_ids)
