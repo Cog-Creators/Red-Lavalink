@@ -181,12 +181,10 @@ class Node:
 
         tasks = {self._multi_try_connect(u) for u in (combo_uri, uri)}
 
-        done, pending = await asyncio.wait(tasks, timeout=timeout, return_when=asyncio.FIRST_COMPLETED)
-
-        for task in pending:
-            task.cancel()
+        for task in asyncio.as_completed(tasks, timeout=timeout):
             try:
-                await task
+                if await task:
+                    break
             except Exception:
                 pass
 
@@ -208,14 +206,18 @@ class Node:
     async def _multi_try_connect(self, uri):
         backoff = ExponentialBackoff()
         attempt = 1
+
         while not SHUTDOWN.is_set() and (self._ws is None or not self._ws.open):
             try:
-                self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                ws = self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                return ws
             except OSError:
                 delay = backoff.delay()
                 log.debug("Failed connect attempt {}, retrying in {}".format(attempt, delay))
                 await asyncio.sleep(delay)
                 attempt += 1
+            except websockets.InvalidStatusCode:
+                return None
 
     async def listener(self):
         """
