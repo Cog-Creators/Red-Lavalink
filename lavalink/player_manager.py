@@ -15,6 +15,7 @@ user_id = None
 channel_finder_func = lambda channel_id: None
 
 _voice_states = {}
+_players_dict = {}
 
 
 class Player(RESTClient):
@@ -53,6 +54,13 @@ class Player(RESTClient):
         self._is_playing = False
         self._metadata = {}
         self._node = node_
+
+        if channel.guild.id in _players_dict:
+            raise ValueError("player for guild {} already exists".format(channel.guild.id))
+
+        _players_dict[channel.guild.id] = self
+        players.append(self)
+        self._node._players.add(self)
 
     @property
     def is_playing(self) -> bool:
@@ -134,6 +142,17 @@ class Player(RESTClient):
 
         await self._node.destroy_guild(guild_id)
         await self.close()
+
+    async def destroy(self):
+        if self in players:
+            players.remove(self)
+
+        if _players_dict.get(self.channel.guild.id) is self:
+            _players_dict.pop(self.channel.guild.id)
+
+        self._node._players.discard(self)
+
+        await self.disconnect()
 
     def store(self, key, value):
         """
@@ -304,7 +323,6 @@ async def connect(channel: discord.VoiceChannel) -> Player:
         ws = node.get_node(channel.guild.id)
         p = Player(ws, channel)
         await p.connect()
-        players.append(p)
     return p
 
 
@@ -334,9 +352,8 @@ def get_player(guild_id: int) -> Player:
         If that guild does not have a Player, e.g. is not connected to any
         voice channel.
     """
-    for p in players:
-        if p.channel.guild.id == guild_id:
-            return p
+    if guild_id in _players_dict:
+        return _players_dict[guild_id]
     raise KeyError("No such player for that guild.")
 
 
@@ -349,7 +366,6 @@ def _ensure_player(channel_id: int):
             log.debug("Received voice channel connection without a player.")
             node_ = node.get_node(channel.guild.id)
             p = Player(node_, channel)
-            players.append(p)
         return p, channel
 
 
@@ -359,8 +375,7 @@ async def _remove_player(guild_id: int):
     except KeyError:
         pass
     else:
-        players.remove(p)
-        await p.disconnect()
+        await p.destroy()
 
 
 async def on_socket_response(data):
@@ -415,5 +430,5 @@ async def disconnect():
     Disconnects all players.
     """
     for p in players:
-        await p.disconnect()
+        await p.destroy()
     log.debug("Disconnected players.")
