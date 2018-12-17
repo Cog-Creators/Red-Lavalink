@@ -374,12 +374,20 @@ def get_node(guild_id: int) -> Node:
     ----------
     guild_id : int
 
+    Raises
+    ------
+    IndexError
+        If no Nodes have been instantiated yet.
+
     Returns
     -------
     Node
     """
     guild_count = 1e10
     least_used = None
+
+    if not _nodes:
+        raise IndexError("no Nodes have been instantiated")
 
     for node, guild_ids in _nodes.items():
         if not node.ready.is_set():
