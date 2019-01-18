@@ -280,7 +280,8 @@ class Node:
         Shuts down and disconnects the websocket.
         """
         SHUTDOWN.set()
-        await self._ws.close()
+        if self._ws is not None and not self._ws.closed:
+            await self._ws.close()
         del _nodes[self]
         log.debug("Shutdown Lavalink WS.")
 
