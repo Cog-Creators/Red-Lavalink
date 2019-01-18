@@ -341,7 +341,7 @@ async def on_socket_response(data):
     except ValueError:
         return
 
-    log.debug("Received Discord WS voice response: {}".format(data))
+    log.debug("Received Discord WS voice response: %s", data)
 
     guild_id = data["d"]["guild_id"]
     if guild_id not in _voice_states:
