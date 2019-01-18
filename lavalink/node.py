@@ -176,7 +176,9 @@ class Node:
         uri = "ws://{}:{}".format(self.host, self.port)
 
         log.debug(
-            "Lavalink WS connecting to {} or {} with headers {}".format(combo_uri, uri, self.headers)
+            "Lavalink WS connecting to {} or {} with headers {}".format(
+                combo_uri, uri, self.headers
+            )
         )
 
         tasks = {self._multi_try_connect(u) for u in (combo_uri, uri)}

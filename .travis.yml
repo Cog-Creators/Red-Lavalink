@@ -1,12 +1,12 @@
-dist: trusty
+dist: xenial
 language: python
 cache: pip
 notifications:
   email: false
 python:
-- 3.5.3
 - 3.5.4
-- 3.6.4
+- 3.6.6
+- 3.7
 install:
 - pip install git+https://github.com/Rapptz/discord.py@rewrite
 - pip install .[tests]
@@ -17,7 +17,7 @@ jobs:
   include:
   - stage: PyPi Deployment
     if: tag IS present
-    python: 3.5.4
+    python: 3.6.6
     deploy:
     - provider: pypi
       user: Red-Lavalink
@@ -27,5 +27,5 @@ jobs:
       on:
         repo: Cog-Creators/Red-Lavalink
         branch: master
-        python: 3.5.4
+        python: 3.6.6
         tags: true
