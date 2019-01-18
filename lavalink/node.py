@@ -172,11 +172,21 @@ class Node:
         """
         SHUTDOWN.clear()
 
+        combo_uri = "ws://{}:{}".format(self.host, self.rest)
         uri = "ws://{}:{}".format(self.host, self.port)
 
-        log.debug("Lavalink WS connecting to {} with headers {}".format(uri, self.headers))
+        log.debug(
+            "Lavalink WS connecting to {} or {} with headers {}".format(combo_uri, uri, self.headers)
+        )
 
-        await asyncio.wait_for(self._multi_try_connect(uri), timeout=timeout)
+        tasks = {self._multi_try_connect(u) for u in (combo_uri, uri)}
+
+        for task in asyncio.as_completed(tasks, timeout=timeout):
+            try:
+                if await task:
+                    break
+            except Exception:
+                pass
 
         log.debug("Creating Lavalink WS listener.")
         self._listener_task = self.loop.create_task(self.listener())
@@ -188,17 +198,26 @@ class Node:
     def _get_connect_headers(password, user_id, num_shards):
         return {"Authorization": password, "User-Id": user_id, "Num-Shards": num_shards}
 
+    @property
+    def lavalink_major_version(self):
+        assert self._ws, "not connected"
+        return self._ws.response_headers.get("Lavalink-Major-Version")
+
     async def _multi_try_connect(self, uri):
         backoff = ExponentialBackoff()
         attempt = 1
+
         while not SHUTDOWN.is_set() and (self._ws is None or not self._ws.open):
             try:
-                self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                ws = self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                return ws
             except OSError:
                 delay = backoff.delay()
                 log.debug("Failed connect attempt {}, retrying in {}".format(attempt, delay))
                 await asyncio.sleep(delay)
                 attempt += 1
+            except websockets.InvalidStatusCode:
+                return None
 
     async def listener(self):
         """
@@ -338,6 +357,10 @@ def get_node(guild_id: int) -> Node:
     """
     guild_count = 1e10
     least_used = None
+
+    if not _nodes:
+        raise IndexError("No nodes found.")
+
     for node, guild_ids in _nodes.items():
         if len(guild_ids) < guild_count:
             guild_count = len(guild_ids)

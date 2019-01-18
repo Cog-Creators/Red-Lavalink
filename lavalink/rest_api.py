@@ -1,12 +1,38 @@
 from typing import Tuple
 
 from aiohttp import ClientSession
+from collections import namedtuple
+from enum import Enum
 
 from . import log
 
 from urllib.parse import quote
 
-__all__ = ['Track', 'RESTClient']
+__all__ = ["Track", "RESTClient", "LoadType", "PlaylistInfo"]
+
+
+PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
+
+
+class LoadType(Enum):
+    """
+    The result type of a loadtracks request
+
+    Attributes
+    ----------
+    TRACK_LOADED
+    TRACK_LOADED
+    PLAYLIST_LOADED
+    SEARCH_RESULT
+    NO_MATCHES
+    LOAD_FAILED
+    """
+
+    TRACK_LOADED = "TRACK_LOADED"
+    PLAYLIST_LOADED = "PLAYLIST_LOADED"
+    SEARCH_RESULT = "SEARCH_RESULT"
+    NO_MATCHES = "NO_MATCHES"
+    LOAD_FAILED = "LOAD_FAILED"
 
 
 class Track:
@@ -55,6 +81,32 @@ class Track:
             return "https://img.youtube.com/vi/{}/mqdefault.jpg".format(self._info["identifier"])
 
 
+class LoadResult:
+    """
+    The result of a load_tracks request.
+
+    Attributes
+    ----------
+    load_type : LoadType
+        The result of the loadtracks request
+    playlist_info : Optional[PlaylistInfo]
+        The playlist information detected by Lavalink
+    tracks : Tuple[Track, ...]
+        The tracks that were loaded, if any
+    """
+
+    def __init__(self, data):
+        self._raw = data
+        self.load_type = LoadType(data["loadType"])
+
+        if data.get("playlistInfo"):
+            self.playlist_info = PlaylistInfo(**data["playlistInfo"])
+        else:
+            self.playlist_info = None
+
+        self.tracks = tuple(Track(t) for t in data["tracks"])
+
+
 class RESTClient:
     """
     Client class used to access the REST endpoints on a Lavalink node.
@@ -66,7 +118,27 @@ class RESTClient:
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
         self._headers = {"Authorization": node.password}
 
-    async def get_tracks(self, query):
+    async def load_tracks(self, query) -> LoadResult:
+        """
+        Executes a loadtracks request. Only works on Lavalink V3.
+
+        Parameters
+        ----------
+        query : str
+
+        Returns
+        -------
+        LoadResult
+        """
+        url = self._uri + quote(str(query))
+
+        async with self._session.get(url, headers=self._headers) as resp:
+            data = await resp.json(content_type=None)
+
+        assert type(data) is dict, "Lavalink V3 is required for this method"
+        return LoadResult(data)
+
+    async def get_tracks(self, query) -> Tuple[Track, ...]:
         """
         Gets tracks from lavalink.
 
@@ -76,16 +148,15 @@ class RESTClient:
 
         Returns
         -------
-        list of dict
+        Tuple[Track, ...]
         """
         url = self._uri + quote(str(query))
+
         async with self._session.get(url, headers=self._headers) as resp:
             data = await resp.json(content_type=None)
-            if data is not None:
-                tracks = tuple(Track(d) for d in data)
-            else:
-                tracks = ()
-        return tracks
+
+        tracks = data["tracks"] if type(data) is dict else data
+        return tuple(Track(t) for t in tracks)
 
     async def search_yt(self, query) -> Tuple[Track, ...]:
         """

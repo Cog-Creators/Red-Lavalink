@@ -97,8 +97,13 @@ class Player(RESTClient):
         """
         Disconnects this player from it's voice channel.
         """
-        await node.join_voice(self.channel.guild.id, None)
-        await self._node.destroy_guild(self.channel.guild.id)
+        guild_id = self.channel.guild.id
+        voice_ws = self._node.voice_ws_func(guild_id)
+
+        if not voice_ws.closed:
+            await voice_ws.voice_state(guild_id, None)
+
+        await self._node.destroy_guild(guild_id)
         await self.close()
 
     def store(self, key, value):
