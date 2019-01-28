@@ -172,11 +172,21 @@ class Node:
         """
         SHUTDOWN.clear()
 
+        combo_uri = "ws://{}:{}".format(self.host, self.rest)
         uri = "ws://{}:{}".format(self.host, self.port)
 
-        log.debug("Lavalink WS connecting to {} with headers {}".format(uri, self.headers))
+        log.debug(
+            "Lavalink WS connecting to %s or %s with headers %s", combo_uri, uri, self.headers
+        )
 
-        await asyncio.wait_for(self._multi_try_connect(uri), timeout=timeout)
+        tasks = {self._multi_try_connect(u) for u in (combo_uri, uri)}
+
+        for task in asyncio.as_completed(tasks, timeout=timeout):
+            try:
+                if await task:
+                    break
+            except Exception:
+                pass
 
         log.debug("Creating Lavalink WS listener.")
         self._listener_task = self.loop.create_task(self.listener())
@@ -188,17 +198,26 @@ class Node:
     def _get_connect_headers(password, user_id, num_shards):
         return {"Authorization": password, "User-Id": user_id, "Num-Shards": num_shards}
 
+    @property
+    def lavalink_major_version(self):
+        assert self._ws, "not connected"
+        return self._ws.response_headers.get("Lavalink-Major-Version")
+
     async def _multi_try_connect(self, uri):
         backoff = ExponentialBackoff()
         attempt = 1
+
         while not SHUTDOWN.is_set() and (self._ws is None or not self._ws.open):
             try:
-                self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                ws = self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                return ws
             except OSError:
                 delay = backoff.delay()
-                log.debug("Failed connect attempt {}, retrying in {}".format(attempt, delay))
+                log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
+            except websockets.InvalidStatusCode:
+                return None
 
     async def listener(self):
         """
@@ -214,12 +233,12 @@ class Node:
             try:
                 op = LavalinkIncomingOp(raw_op)
             except ValueError:
-                log.debug("Received unknown op: {}".format(data))
+                log.debug("Received unknown op: %s", data)
             else:
-                log.debug("Received known op: {}".format(data))
+                log.debug("Received known op: %s", data)
                 self.loop.create_task(self._handle_op(op, data))
 
-        log.debug("Listener exited: ws {} SHUTDOWN {}.".format(self._ws.open, SHUTDOWN.is_set()))
+        log.debug("Listener exited: ws %s SHUTDOWN %s.", self._ws.open, SHUTDOWN.is_set())
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
@@ -227,7 +246,7 @@ class Node:
             try:
                 event = LavalinkEvents(data.get("type"))
             except ValueError:
-                log.debug("Unknown event type: {}".format(data))
+                log.debug("Unknown event type: %s", data)
             else:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
@@ -261,7 +280,8 @@ class Node:
         Shuts down and disconnects the websocket.
         """
         SHUTDOWN.set()
-        await self._ws.close()
+        if self._ws is not None and self._ws.open:
+            await self._ws.close()
         del _nodes[self]
         log.debug("Shutdown Lavalink WS.")
 
@@ -269,7 +289,7 @@ class Node:
         if self._ws is None or not self._ws.open:
             self._queue.append(data)
         else:
-            log.debug("Sending data to Lavalink: {}".format(data))
+            log.debug("Sending data to Lavalink: %s", data)
             await self._ws.send(json.dumps(data))
 
     async def send_lavalink_voice_update(self, guild_id, session_id, event):
@@ -338,6 +358,10 @@ def get_node(guild_id: int) -> Node:
     """
     guild_count = 1e10
     least_used = None
+
+    if not _nodes:
+        raise IndexError("No nodes found.")
+
     for node, guild_ids in _nodes.items():
         if len(guild_ids) < guild_count:
             guild_count = len(guild_ids)
