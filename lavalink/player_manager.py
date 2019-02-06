@@ -1,4 +1,6 @@
+import asyncio
 from random import randrange
+from typing import Optional
 
 import discord
 
@@ -72,6 +74,33 @@ class Player(RESTClient):
         The current volume.
         """
         return self._volume
+
+    @property
+    def ready(self) -> bool:
+        """
+        Whether the underlying node is ready for requests.
+        """
+        return self._node.ready.is_set()
+
+    async def wait_until_ready(
+        self, timeout: Optional[float] = None, no_raise: bool = False
+    ) -> bool:
+        """
+        Waits for the underlying node to become ready.
+
+        If no_raise is set, returns false when a timeout occurs instead of propogating TimeoutError.
+        A timeout of None means to wait indefinitely.
+        """
+        if self._node.ready.is_set():
+            return True
+
+        try:
+            return await self._node.wait_until_ready(timeout=timeout)
+        except asyncio.TimeoutError:
+            if no_raise:
+                return False
+            else:
+                raise
 
     async def connect(self):
         """

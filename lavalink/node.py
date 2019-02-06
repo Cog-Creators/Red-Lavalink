@@ -2,7 +2,7 @@ from collections import namedtuple
 from enum import Enum
 import asyncio
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import websockets
 from discord.backoff import ExponentialBackoff
@@ -138,6 +138,8 @@ class Node:
             User ID of the bot.
         num_shards : int
             Number of shards to which the bot is currently connected.
+        ready : asyncio.Event
+            Set when the connection is up and running, unset when not.
         """
         self.loop = _loop
         self.event_handler = event_handler
@@ -147,6 +149,8 @@ class Node:
         self.rest = rest
         self.password = password
         self.headers = self._get_connect_headers(self.password, user_id, num_shards)
+
+        self.ready = asyncio.Event()
 
         self._ws = None
         self._listener_task = None
@@ -194,6 +198,11 @@ class Node:
         for data in self._queue:
             await self.send(data)
 
+        self.ready.set()
+
+    async def wait_until_ready(self, timeout: Optional[float] = None):
+        await asyncio.wait_for(self.ready.wait(), timeout=timeout)
+
     @staticmethod
     def _get_connect_headers(password, user_id, num_shards):
         return {"Authorization": password, "User-Id": user_id, "Num-Shards": num_shards}
@@ -238,6 +247,7 @@ class Node:
                 log.debug("Received known op: %s", data)
                 self.loop.create_task(self._handle_op(op, data))
 
+        self.ready.clear()
         log.debug("Listener exited: ws %s SHUTDOWN %s.", self._ws.open, SHUTDOWN.is_set())
         self.loop.create_task(self._reconnect())
 
@@ -263,6 +273,8 @@ class Node:
             self.event_handler(op, stats, data)
 
     async def _reconnect(self):
+        self.ready.clear()
+
         if SHUTDOWN.is_set():
             log.debug("Shutting down Lavalink WS.")
             return
@@ -280,8 +292,11 @@ class Node:
         Shuts down and disconnects the websocket.
         """
         SHUTDOWN.set()
+        self.ready.clear()
+
         if self._ws is not None and self._ws.open:
             await self._ws.close()
+
         del _nodes[self]
         log.debug("Shutdown Lavalink WS.")
 
@@ -346,7 +361,7 @@ def get_node(guild_id: int) -> Node:
     """
     Gets a node based on a guild ID, useful for noding separation. If the
     guild ID does not already have a node association, the least used
-    node is returned.
+    node is returned. Skips over nodes that are not yet ready.
 
     Parameters
     ----------
@@ -359,16 +374,18 @@ def get_node(guild_id: int) -> Node:
     guild_count = 1e10
     least_used = None
 
-    if not _nodes:
-        raise IndexError("No nodes found.")
-
     for node, guild_ids in _nodes.items():
-        if len(guild_ids) < guild_count:
+        if not node.ready.is_set():
+            continue
+        elif len(guild_ids) < guild_count:
             guild_count = len(guild_ids)
             least_used = node
 
         if guild_id in guild_ids:
             return node
+
+    if least_used is None:
+        raise IndexError("No nodes found.")
 
     _nodes[least_used].append(guild_id)
     return least_used
