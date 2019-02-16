@@ -175,7 +175,8 @@ class Node:
         ----------
         timeout : int
             Time after which to timeout on attempting to connect to the Lavalink websocket,
-            ``None`` is considered never.
+            ``None`` is considered never, but the underlying code may stop trying past a
+            certain point.
 
         Raises
         ------
@@ -197,6 +198,8 @@ class Node:
             with contextlib.suppress(Exception):
                 if await cast(Awaitable[Optional[websockets.WebSocketClientProtocol]], task):
                     break
+        else:
+            raise asyncio.TimeoutError
 
         _nodes[self] = []
 
