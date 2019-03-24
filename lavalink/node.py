@@ -165,7 +165,8 @@ class Node:
         self._listener_task = None
 
         self._queue = []
-        self._players = set()
+
+        _nodes[self] = []
 
     async def connect(self, timeout=None):
         """
@@ -200,8 +201,6 @@ class Node:
                     break
         else:
             raise asyncio.TimeoutError
-
-        _nodes[self] = []
 
         log.debug("Creating Lavalink WS listener.")
         self._listener_task = self.loop.create_task(self.listener())
@@ -308,11 +307,8 @@ class Node:
         if self._ws is not None and self._ws.open:
             await self._ws.close()
 
-        while self._players:
-            await self._players.pop().destroy()
-
-        if _nodes.pop(self, None):
-            log.debug("Shutdown Lavalink WS.")
+        del _nodes[self]
+        log.debug("Shutdown Lavalink WS.")
 
     async def send(self, data):
         if self._ws is None or not self._ws.open:
@@ -381,20 +377,12 @@ def get_node(guild_id: int) -> Node:
     ----------
     guild_id : int
 
-    Raises
-    ------
-    IndexError
-        If no Nodes have been instantiated yet.
-
     Returns
     -------
     Node
     """
     guild_count = 1e10
     least_used = None
-
-    if not _nodes:
-        raise IndexError("no Nodes have been instantiated")
 
     for node, guild_ids in _nodes.items():
         if not node.ready.is_set():
