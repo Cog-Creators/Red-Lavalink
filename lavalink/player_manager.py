@@ -62,8 +62,6 @@ class Player(RESTClient):
         self._metadata = {}
         self.node = node_
 
-        self.state = PlayerState.CONNECTING
-
     @property
     def is_playing(self) -> bool:
         """
@@ -172,6 +170,10 @@ class Player(RESTClient):
 
         log.debug(f"player for guild {self.channel.guild.id} changing state:"
                   f" {self.state.name} -> {state.name}")
+
+        if self.state == PlayerState.NODE_BUSY and state == PlayerState.READY:
+            self.reset_session()
+
         self.state = state
 
     async def handle_event(self, event: "node.LavalinkEvents", extra):

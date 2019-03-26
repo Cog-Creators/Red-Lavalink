@@ -1,3 +1,4 @@
+import asyncio
 from typing import Tuple
 
 from aiohttp import ClientSession
@@ -5,6 +6,7 @@ from collections import namedtuple
 from enum import Enum
 
 from . import log
+from .enums import *
 
 from urllib.parse import quote
 
@@ -118,6 +120,16 @@ class RESTClient:
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
         self._headers = {"Authorization": node.password}
 
+        self.state = PlayerState.CONNECTING
+
+    def reset_session(self):
+        if self._session.closed:
+            self._session = ClientSession(loop=self.node.loop)
+
+    def __check_node_ready(self):
+        if self.state != PlayerState.READY:
+            raise RuntimeError("Cannot execute REST request when node not ready.")
+
     async def load_tracks(self, query) -> LoadResult:
         """
         Executes a loadtracks request. Only works on Lavalink V3.
@@ -130,6 +142,7 @@ class RESTClient:
         -------
         LoadResult
         """
+        self.__check_node_ready()
         url = self._uri + quote(str(query))
 
         async with self._session.get(url, headers=self._headers) as resp:
@@ -150,6 +163,7 @@ class RESTClient:
         -------
         Tuple[Track, ...]
         """
+        self.__check_node_ready()
         url = self._uri + quote(str(query))
 
         async with self._session.get(url, headers=self._headers) as resp:
