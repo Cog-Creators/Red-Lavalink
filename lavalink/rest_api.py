@@ -115,7 +115,7 @@ class RESTClient:
 
     def __init__(self, node):
         self.node = node
-        self._session = ClientSession(loop=node.loop)
+        self._session = None
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
         self._headers = {"Authorization": node.password}
 
@@ -200,5 +200,6 @@ class RESTClient:
         return await self.get_tracks("scsearch:{}".format(query))
 
     async def close(self):
-        await self._session.close()
+        if self._session is not None:
+            await self._session.close()
         log.debug("Closed REST session.")

@@ -236,6 +236,9 @@ class Node:
         log.debug(f"Changing node state: {self.state.name} -> {next_state.name}")
         old_state = self.state
         self.state = next_state
+        if self.loop.is_closed():
+            log.debug("Event loop closed, not notifying state handlers.")
+            return
         for handler in self._state_handlers:
             self.loop.create_task(handler(next_state, old_state))
 
@@ -267,6 +270,9 @@ class Node:
 
         if self._ws is not None and self._ws.open:
             await self._ws.close()
+
+        if self._listener_task is not None and not self.loop.is_closed():
+            self._listener_task.cancel()
 
         await self.player_manager.disconnect()
 

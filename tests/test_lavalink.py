@@ -14,4 +14,4 @@ async def test_initialize(bot):
 
     assert len(lavalink.node._nodes) == bot.shard_count
 
-    bot.add_listener.assert_called_with(lavalink.player_manager.on_socket_response)
+    bot.add_listener.assert_called()

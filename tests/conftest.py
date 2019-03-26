@@ -1,7 +1,6 @@
 from collections import namedtuple
 
 import pytest
-from async_generator import yield_, async_generator
 import asyncio
 from unittest.mock import MagicMock, patch
 
@@ -56,7 +55,7 @@ def voice_channel(guild):
 
 
 @pytest.fixture
-def bot(event_loop, user, voice_channel):
+async def bot(event_loop, user, voice_channel):
     async def voice_state(guild_id=None, channel_id=None):
         pass
 
@@ -73,28 +72,26 @@ def bot(event_loop, user, voice_channel):
     bot_.get_channel = lambda channel_id: voice_channel
     bot_.shard_count = 1
 
-    return bot_
+    yield bot_
 
 
 @pytest.fixture(autouse=True)
-def patch_node():
+def patch_node(monkeypatch):
     async def connect(*args, **kwargs):
         return ProxyWebSocket()
 
-    async def send(data):
-        pass
+    async def send(self, data):
+        self._MOCK_send(data)
 
     websockets_patch = patch("websockets.connect", new=MagicMock(wraps=connect))
-    node_patch = patch.multiple("lavalink.node.Node", send=MagicMock(wraps=send))
+    monkeypatch.setattr(lavalink.node.Node, "send", send)
+    monkeypatch.setattr(lavalink.node.Node, "_MOCK_send", MagicMock(), raising=False)
     websockets_patch.start()
-    node_patch.start()
     yield
-    node_patch.stop()
     websockets_patch.stop()
 
 
 @pytest.fixture
-@async_generator
 async def node(bot):
     node_ = lavalink.node.Node(
         _loop=bot.loop,
@@ -111,7 +108,8 @@ async def node(bot):
     # node_.send = MagicMock(wraps=send)
 
     await node_.connect()
-    await yield_(node_)
+
+    yield node_
 
     try:
         await node_.disconnect()
@@ -119,9 +117,8 @@ async def node(bot):
         pass
 
 
-@pytest.fixture()
-@async_generator
+@pytest.fixture
 async def initialize_lavalink(bot):
     await lavalink.initialize(bot, "localhost", "password", 2333, 2333)
-    await yield_(None)
+    yield
     await lavalink.close()

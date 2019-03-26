@@ -134,7 +134,10 @@ class Player(RESTClient):
         """
         Disconnects this player from it's voice channel.
         """
-        self.update_state(PlayerState.DISCONNECTING)
+        if self.state == PlayerState.DISCONNECTING:
+            return
+
+        await self.update_state(PlayerState.DISCONNECTING)
 
         guild_id = self.channel.guild.id
         voice_ws = self.node.get_voice_ws(guild_id)
@@ -164,21 +167,22 @@ class Player(RESTClient):
         """
         return self._metadata.get(key, default)
 
-    def update_state(self, state: PlayerState):
+    async def update_state(self, state: PlayerState):
         if state == self.state:
             return
 
         log.debug(f"player for guild {self.channel.guild.id} changing state:"
                   f" {self.state.name} -> {state.name}")
 
-        if self.state == PlayerState.NODE_BUSY and state == PlayerState.READY:
+        old_state = self.state
+        self.state = state
+
+        if old_state == PlayerState.NODE_BUSY and state == PlayerState.READY:
             self.reset_session()
         elif state == PlayerState.DISCONNECTING:
             log.debug(f"Forcing player disconnect for guild {self.channel.guild.id}"
                       f" due to player manager request.")
-            self.node.loop.create_task(self.disconnect())
-
-        self.state = state
+            await self.disconnect()
 
     async def handle_event(self, event: "node.LavalinkEvents", extra):
         """
@@ -349,7 +353,7 @@ class PlayerManager:
             p = Player(self.node, channel)
             await p.connect()
             self._player_dict[channel.guild.id] = p
-            self.refresh_player_state(p)
+            await self.refresh_player_state(p)
         return p
 
     def _already_in_guild(self, channel: discord.VoiceChannel) -> bool:
@@ -396,28 +400,28 @@ class PlayerManager:
             pass
         else:
             del self._player_dict[guild_id]
-            p.update_state(PlayerState.DISCONNECTING)
+            await p.update_state(PlayerState.DISCONNECTING)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")
         if next_state == NodeState.READY:
-            self.update_player_states(PlayerState.READY)
+            await self.update_player_states(PlayerState.READY)
         elif next_state == NodeState.DISCONNECTING:
-            self.update_player_states(PlayerState.DISCONNECTING)
+            await self.update_player_states(PlayerState.DISCONNECTING)
         elif next_state in (NodeState.CONNECTING, NodeState.RECONNECTING):
-            self.update_player_states(PlayerState.NODE_BUSY)
+            await self.update_player_states(PlayerState.NODE_BUSY)
 
-    def update_player_states(self, state: PlayerState):
+    async def update_player_states(self, state: PlayerState):
         for p in self.players:
-            p.update_state(state)
+            await p.update_state(state)
 
-    def refresh_player_state(self, player: Player):
+    async def refresh_player_state(self, player: Player):
         if self.node.state == NodeState.READY:
-            player.update_state(PlayerState.READY)
+            await player.update_state(PlayerState.READY)
         elif self.node.state == NodeState.DISCONNECTING:
-            player.update_state(PlayerState.DISCONNECTING)
+            await player.update_state(PlayerState.DISCONNECTING)
         else:
-            player.update_state(PlayerState.NODE_BUSY)
+            await player.update_state(PlayerState.NODE_BUSY)
 
     async def on_socket_response(self, data):
         raw_event = data.get("t")
