@@ -45,8 +45,8 @@ class Player(RESTClient):
     shuffle : bool
     """
 
-    def __init__(self, node_: "node.Node", channel: discord.VoiceChannel):
-        super().__init__(node_)
+    def __init__(self, manager: "PlayerManager", channel: discord.VoiceChannel):
+        super().__init__(manager.node)
         self.channel = channel
 
         self.queue = []
@@ -60,7 +60,7 @@ class Player(RESTClient):
 
         self._is_playing = False
         self._metadata = {}
-        self.node = node_
+        self.manager = manager
 
     @property
     def is_playing(self) -> bool:
@@ -147,6 +147,7 @@ class Player(RESTClient):
 
         await self.node.destroy_guild(guild_id)
         await self.close()
+        self.manager.remove_player(self)
 
     def store(self, key, value):
         """
@@ -350,7 +351,7 @@ class PlayerManager:
             p = self.get_player(channel.guild.id)
             await p.move_to(channel)
         else:
-            p = Player(self.node, channel)
+            p = Player(self, channel)
             await p.connect()
             self._player_dict[channel.guild.id] = p
             await self.refresh_player_state(p)
@@ -475,3 +476,12 @@ class PlayerManager:
         for p in self.players:
             await p.disconnect()
         log.debug("Disconnected players.")
+
+    def remove_player(self, player: Player):
+        if player.state != PlayerState.DISCONNECTING:
+            log.error("Attempting to remove a player from player list with state:"
+                      f" {player.state.name}")
+            return
+        guild_id = player.channel.guild.id
+        if guild_id in self._player_dict:
+            del self._player_dict[guild_id]
