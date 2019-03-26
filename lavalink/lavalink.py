@@ -78,6 +78,7 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
     await lavalink_node.connect(timeout=timeout)
 
     bot.add_listener(node.on_socket_response)
+    bot.add_listener(_on_guild_remove, name="on_guild_remove")
 
     return lavalink_node
 
@@ -108,9 +109,18 @@ async def connect(channel: discord.VoiceChannel):
     return p
 
 
-def get_player(guild_id: int):
+def get_player(guild_id: int) -> player_manager.Player:
     node_ = node.get_node(guild_id)
     return node_.player_manager.get_player(guild_id)
+
+
+async def _on_guild_remove(guild):
+    try:
+        p = get_player(guild.id)
+    except (IndexError, KeyError):
+        pass
+    else:
+        await p.disconnect()
 
 
 def register_event_listener(coro):
