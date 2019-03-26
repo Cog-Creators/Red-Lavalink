@@ -113,7 +113,7 @@ class RESTClient:
     """
 
     def __init__(self, node):
-        self._node = node
+        self.node = node
         self._session = ClientSession(loop=node.loop)
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
         self._headers = {"Authorization": node.password}
