@@ -2,6 +2,7 @@ import asyncio
 
 from . import log
 from . import node
+from . import enums
 from . import player_manager
 
 import discord
@@ -148,11 +149,11 @@ def register_event_listener(coro):
         _event_listeners.append(coro)
 
 
-async def _handle_event(player, data: node.LavalinkEvents, extra):
+async def _handle_event(player, data: enums.LavalinkEvents, extra):
     await player.handle_event(data, extra)
 
 
-def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
+def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
     guild_id = int(raw_data.get("guildId"))
 
     try:
@@ -167,13 +168,13 @@ def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
         return
 
     extra = None
-    if data == player_manager.LavalinkEvents.TRACK_END:
-        extra = player_manager.TrackEndReason(raw_data.get("reason"))
-    elif data == player_manager.LavalinkEvents.TRACK_EXCEPTION:
+    if data == enums.LavalinkEvents.TRACK_END:
+        extra = enums.TrackEndReason(raw_data.get("reason"))
+    elif data == enums.LavalinkEvents.TRACK_EXCEPTION:
         extra = raw_data.get("error")
-    elif data == player_manager.LavalinkEvents.TRACK_STUCK:
+    elif data == enums.LavalinkEvents.TRACK_STUCK:
         extra = raw_data.get("thresholdMs")
-    elif data == player_manager.LavalinkEvents.TRACK_START:
+    elif data == enums.LavalinkEvents.TRACK_START:
         extra = raw_data.get("track")
 
     return player, data, extra
@@ -216,11 +217,11 @@ def register_update_listener(coro):
         _update_listeners.append(coro)
 
 
-async def _handle_update(player, data: node.PlayerState):
+async def _handle_update(player, data: enums.PlayerState):
     await player.handle_player_update(data)
 
 
-def _get_update_args(data: node.PlayerState, raw_data: dict):
+def _get_update_args(data: enums.PlayerState, raw_data: dict):
     guild_id = int(raw_data.get("guildId"))
 
     try:
@@ -287,17 +288,17 @@ def unregister_stats_listener(coro):
         pass
 
 
-def dispatch(op: node.LavalinkIncomingOp, data, raw_data: dict):
+def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
     listeners = []
     args = []
 
-    if op == node.LavalinkIncomingOp.EVENT:
+    if op == enums.LavalinkIncomingOp.EVENT:
         listeners = _event_listeners
         args = _get_event_args(data, raw_data)
-    elif op == node.LavalinkIncomingOp.PLAYER_UPDATE:
+    elif op == enums.LavalinkIncomingOp.PLAYER_UPDATE:
         listeners = _update_listeners
         args = _get_update_args(data, raw_data)
-    elif op == node.LavalinkIncomingOp.STATS:
+    elif op == enums.LavalinkIncomingOp.STATS:
         listeners = _stats_listeners
         args = [data]
 
