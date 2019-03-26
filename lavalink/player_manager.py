@@ -390,7 +390,7 @@ class PlayerManager:
                 p = self.get_player(channel.guild.id)
             except KeyError:
                 log.debug("Received voice channel connection without a player.")
-                p = Player(self.node, channel)
+                p = Player(self, channel)
                 self._player_dict[channel.guild.id] = p
             return p, channel
 
@@ -473,7 +473,7 @@ class PlayerManager:
         """
         Disconnects all players.
         """
-        for p in self.players:
+        for p in tuple(self.players):
             await p.disconnect()
         log.debug("Disconnected players.")
 
