@@ -173,6 +173,10 @@ class Player(RESTClient):
 
         if self.state == PlayerState.NODE_BUSY and state == PlayerState.READY:
             self.reset_session()
+        elif state == PlayerState.DISCONNECTING:
+            log.debug(f"Forcing player disconnect for guild {self.channel.guild.id}"
+                      f" due to player manager request.")
+            self.node.loop.create_task(self.disconnect())
 
         self.state = state
 
@@ -392,7 +396,7 @@ class PlayerManager:
             pass
         else:
             del self._player_dict[guild_id]
-            await p.disconnect()
+            p.update_state(PlayerState.DISCONNECTING)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")
