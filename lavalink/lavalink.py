@@ -1,4 +1,5 @@
 import asyncio
+from typing import List, Tuple
 
 from . import log
 from . import node
@@ -19,6 +20,8 @@ __all__ = [
     "unregister_update_listener",
     "register_stats_listener",
     "unregister_stats_listener",
+    "all_players",
+    "active_players",
 ]
 
 
@@ -317,3 +320,17 @@ async def close():
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
     await node.disconnect()
+
+
+# Helper methods
+
+
+def all_players() -> Tuple[player_manager.Player]:
+    nodes = node._nodes
+    ret = tuple(p for n in nodes for p in n.player_manager.players)
+    return ret
+
+
+def active_players() -> Tuple[player_manager.Player]:
+    ps = all_players()
+    return tuple(p for p in ps if p.current is not None)
