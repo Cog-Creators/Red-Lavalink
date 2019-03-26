@@ -62,6 +62,12 @@ class Player(RESTClient):
         self._metadata = {}
         self.manager = manager
 
+    def __repr__(self):
+        return (
+            f"<Player: Guild=\"{self.channel.guild.name}\", Channel=\"{self.channel.name}\","
+            f" Playing={self.is_playing}, Paused={self.paused}, Volume={self.volume}>"
+        )
+
     @property
     def is_playing(self) -> bool:
         """
