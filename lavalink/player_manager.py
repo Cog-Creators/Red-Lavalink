@@ -136,7 +136,7 @@ class Player(RESTClient):
         """
         Disconnects this player from it's voice channel.
         """
-        self.state = PlayerState.DISCONNECTING
+        self.update_state(PlayerState.DISCONNECTING)
 
         guild_id = self.channel.guild.id
         voice_ws = self.node.get_voice_ws(guild_id)
@@ -170,6 +170,8 @@ class Player(RESTClient):
         if state == self.state:
             return
 
+        log.debug(f"player for guild {self.channel.guild.id} changing state:"
+                  f" {self.state.name} -> {state.name}")
         self.state = state
 
     async def handle_event(self, event: "node.LavalinkEvents", extra):
@@ -341,6 +343,7 @@ class PlayerManager:
             p = Player(self.node, channel)
             await p.connect()
             self._player_dict[channel.guild.id] = p
+            self.refresh_player_state(p)
         return p
 
     def _already_in_guild(self, channel: discord.VoiceChannel) -> bool:
@@ -393,14 +396,22 @@ class PlayerManager:
         log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")
         if next_state == NodeState.READY:
             self.update_player_states(PlayerState.READY)
-        elif next_state == NodeState.RECONNECTING:
-            self.update_player_states(PlayerState.NODE_BUSY)
         elif next_state == NodeState.DISCONNECTING:
             self.update_player_states(PlayerState.DISCONNECTING)
+        elif next_state in (NodeState.CONNECTING, NodeState.RECONNECTING):
+            self.update_player_states(PlayerState.NODE_BUSY)
 
     def update_player_states(self, state: PlayerState):
         for p in self.players:
             p.update_state(state)
+
+    def refresh_player_state(self, player: Player):
+        if self.node.state == NodeState.READY:
+            player.update_state(PlayerState.READY)
+        elif self.node.state == NodeState.DISCONNECTING:
+            player.update_state(PlayerState.DISCONNECTING)
+        else:
+            player.update_state(PlayerState.NODE_BUSY)
 
     async def on_socket_response(self, data):
         raw_event = data.get("t")
