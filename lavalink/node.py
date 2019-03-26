@@ -2,24 +2,20 @@ import asyncio
 import contextlib
 import json
 from collections import namedtuple
-from enum import Enum
-from typing import Awaitable, Dict, List, Optional, cast
+from typing import Awaitable, List, Optional, cast
 
 import websockets
 from discord.backoff import ExponentialBackoff
 
 from . import log
+from .enums import *
 from .rest_api import Track
 from .player_manager import (
-    PlayerManager,
-    DiscordVoiceSocketResponses,
-    LavalinkEvents,
+    PlayerManager
 )
 
 
 __all__ = [
-    "LavalinkOutgoingOp",
-    "PlayerState",
     "Stats",
     "Node",
     "get_node",
@@ -27,22 +23,6 @@ __all__ = [
 ]
 
 _nodes = []  # type: List[Node]
-
-
-class LavalinkIncomingOp(Enum):
-    EVENT = "event"
-    PLAYER_UPDATE = "playerUpdate"
-    STATS = "stats"
-
-
-class LavalinkOutgoingOp(Enum):
-    VOICE_UPDATE = "voiceUpdate"
-    DESTROY = "destroy"
-    PLAY = "play"
-    STOP = "stop"
-    PAUSE = "pause"
-    SEEK = "seek"
-    VOLUME = "volume"
 
 
 PlayerState = namedtuple("PlayerState", "position time")
@@ -108,6 +88,9 @@ class Node:
 
         self._queue = []
 
+        self.state = NodeState.CONNECTING
+        self._state_handlers = []
+
         self.player_manager = PlayerManager(self)
 
         if self not in _nodes:
@@ -154,6 +137,7 @@ class Node:
             await self.send(data)
 
         self.ready.set()
+        self.update_state(NodeState.READY)
 
     async def wait_until_ready(self, timeout: Optional[float] = None):
         await asyncio.wait_for(self.ready.wait(), timeout=timeout)
@@ -234,6 +218,9 @@ class Node:
             log.debug("Shutting down Lavalink WS.")
             return
 
+        if self.state != NodeState.CONNECTING:
+            self.update_state(NodeState.RECONNECTING)
+
         log.debug("Attempting Lavalink WS reconnect.")
         try:
             await self.connect()
@@ -241,6 +228,26 @@ class Node:
             log.debug("Failed to reconnect, please reinitialize lavalink when ready.")
         else:
             log.debug("Reconnect successful.")
+
+    def update_state(self, next_state: NodeState):
+        if next_state == self.state:
+            return
+
+        log.debug(f"Changing node state: {self.state.name} -> {next_state.name}")
+        old_state = self.state
+        self.state = next_state
+        for handler in self._state_handlers:
+            self.loop.create_task(handler(next_state, old_state))
+
+    def register_state_handler(self, func):
+        if not asyncio.iscoroutinefunction(func):
+            raise ValueError("Argument must be a coroutine object.")
+
+        if func not in self._state_handlers:
+            self._state_handlers.append(func)
+
+    def unregister_state_handler(self, func):
+        self._state_handlers.remove(func)
 
     async def join_voice_channel(self, guild_id, channel_id):
         """
@@ -256,10 +263,14 @@ class Node:
         self._is_shutdown = True
         self.ready.clear()
 
+        self.update_state(NodeState.DISCONNECTING)
+
         if self._ws is not None and self._ws.open:
             await self._ws.close()
 
         await self.player_manager.disconnect()
+
+        self._state_handlers = []
 
         _nodes.remove(self)
         log.debug("Shutdown Lavalink WS.")
