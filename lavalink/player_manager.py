@@ -178,7 +178,7 @@ class Player(RESTClient):
         old_state = self.state
         self.state = state
 
-        if old_state == PlayerState.NODE_BUSY and state == PlayerState.READY:
+        if state == PlayerState.READY:
             self.reset_session()
         elif state == PlayerState.DISCONNECTING:
             log.debug(f"Forcing player disconnect for guild {self.channel.guild.id}"

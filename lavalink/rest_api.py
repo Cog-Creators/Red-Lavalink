@@ -122,7 +122,7 @@ class RESTClient:
         self.state = PlayerState.CONNECTING
 
     def reset_session(self):
-        if self._session.closed:
+        if self._session is None or self._session.closed:
             self._session = ClientSession(loop=self.node.loop)
 
     def __check_node_ready(self):
