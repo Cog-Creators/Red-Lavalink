@@ -261,13 +261,13 @@ class Node:
 
         self.update_state(NodeState.DISCONNECTING)
 
+        await self.player_manager.disconnect()
+
         if self._ws is not None and self._ws.open:
             await self._ws.close()
 
         if self._listener_task is not None and not self.loop.is_closed():
             self._listener_task.cancel()
-
-        await self.player_manager.disconnect()
 
         self._state_handlers = []
 
