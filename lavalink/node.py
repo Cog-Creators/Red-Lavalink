@@ -7,7 +7,7 @@ from typing import Awaitable, List, Optional, cast
 import websockets
 from discord.backoff import ExponentialBackoff
 
-from . import log
+from . import log, socket_log
 from .enums import *
 from .rest_api import Track
 from .player_manager import PlayerManager
@@ -174,9 +174,9 @@ class Node:
             try:
                 op = LavalinkIncomingOp(raw_op)
             except ValueError:
-                log.debug("Received unknown op: %s", data)
+                socket_log.debug("Received unknown op: %s", data)
             else:
-                log.debug("Received known op: %s", data)
+                socket_log.debug("Received known op: %s", data)
                 self.loop.create_task(self._handle_op(op, data))
 
         self.ready.clear()

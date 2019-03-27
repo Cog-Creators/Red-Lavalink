@@ -1,6 +1,8 @@
 import logging
 
 log = logging.getLogger("red.core.lavalink")
+socket_log = logging.getLogger("red.core.lavalink.socket")
+socket_log.setLevel(logging.INFO)
 
 from .lavalink import *
 from .node import Node, Stats
