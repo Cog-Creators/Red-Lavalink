@@ -10,17 +10,10 @@ from discord.backoff import ExponentialBackoff
 from . import log
 from .enums import *
 from .rest_api import Track
-from .player_manager import (
-    PlayerManager
-)
+from .player_manager import PlayerManager
 
 
-__all__ = [
-    "Stats",
-    "Node",
-    "get_node",
-    "join_voice",
-]
+__all__ = ["Stats", "Node", "get_node", "join_voice"]
 
 _nodes = []  # type: List[Node]
 

@@ -14,12 +14,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from . import node
 
-__all__ = [
-    "user_id",
-    "channel_finder_func",
-    "Player",
-    "PlayerManager",
-]
+__all__ = ["user_id", "channel_finder_func", "Player", "PlayerManager"]
 
 user_id = None
 channel_finder_func = lambda channel_id: None
@@ -64,8 +59,8 @@ class Player(RESTClient):
 
     def __repr__(self):
         return (
-            f"<Player: Guild=\"{self.channel.guild.name}\", Channel=\"{self.channel.name}\","
-            f" Playing={self.is_playing}, Paused={self.paused}, Volume={self.volume}>"
+            f'<Player: guild="{self.channel.guild.name}" channel="{self.channel.name}",'
+            f" playing={self.is_playing} paused={self.paused} volume={self.volume}>"
         )
 
     @property
@@ -178,8 +173,10 @@ class Player(RESTClient):
         if state == self.state:
             return
 
-        log.debug(f"player for guild {self.channel.guild.id} changing state:"
-                  f" {self.state.name} -> {state.name}")
+        log.debug(
+            f"player for guild {self.channel.guild.id} changing state:"
+            f" {self.state.name} -> {state.name}"
+        )
 
         old_state = self.state
         self.state = state
@@ -187,8 +184,10 @@ class Player(RESTClient):
         if state == PlayerState.READY:
             self.reset_session()
         elif state == PlayerState.DISCONNECTING:
-            log.debug(f"Forcing player disconnect for guild {self.channel.guild.id}"
-                      f" due to player manager request.")
+            log.debug(
+                f"Forcing player disconnect for guild {self.channel.guild.id}"
+                f" due to player manager request."
+            )
             await self.disconnect()
 
     async def handle_event(self, event: "node.LavalinkEvents", extra):
@@ -485,8 +484,10 @@ class PlayerManager:
 
     def remove_player(self, player: Player):
         if player.state != PlayerState.DISCONNECTING:
-            log.error("Attempting to remove a player from player list with state:"
-                      f" {player.state.name}")
+            log.error(
+                "Attempting to remove a player from player list with state:"
+                f" {player.state.name}"
+            )
             return
         guild_id = player.channel.guild.id
         if guild_id in self._player_dict:
