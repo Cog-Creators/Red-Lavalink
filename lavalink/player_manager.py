@@ -131,7 +131,7 @@ class Player(RESTClient):
         self.channel = channel
         await self.connect()
 
-    async def disconnect(self):
+    async def disconnect(self, requested=True):
         """
         Disconnects this player from it's voice channel.
         """
@@ -139,6 +139,11 @@ class Player(RESTClient):
             return
 
         await self.update_state(PlayerState.DISCONNECTING)
+        if not requested:
+            log.debug(
+                f"Forcing player disconnect for guild {self.channel.guild.id}"
+                f" due to player manager request."
+            )
 
         guild_id = self.channel.guild.id
         voice_ws = self.node.get_voice_ws(guild_id)
@@ -148,6 +153,7 @@ class Player(RESTClient):
 
         await self.node.destroy_guild(guild_id)
         await self.close()
+
         self.manager.remove_player(self)
 
     def store(self, key, value):
@@ -183,12 +189,6 @@ class Player(RESTClient):
 
         if state == PlayerState.READY:
             self.reset_session()
-        elif state == PlayerState.DISCONNECTING:
-            log.debug(
-                f"Forcing player disconnect for guild {self.channel.guild.id}"
-                f" due to player manager request."
-            )
-            await self.disconnect()
 
     async def handle_event(self, event: "node.LavalinkEvents", extra):
         """
@@ -406,7 +406,7 @@ class PlayerManager:
             pass
         else:
             del self._player_dict[guild_id]
-            await p.update_state(PlayerState.DISCONNECTING)
+            await p.disconnect(requested=False)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")
@@ -479,7 +479,7 @@ class PlayerManager:
         Disconnects all players.
         """
         for p in tuple(self.players):
-            await p.disconnect()
+            await p.disconnect(requested=False)
         log.debug("Disconnected players.")
 
     def remove_player(self, player: Player):
