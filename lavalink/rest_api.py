@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from aiohttp import ClientSession
+from aiohttp.client_exceptions import ServerDisconnectedError
 from collections import namedtuple
 from enum import Enum
 
@@ -129,6 +130,15 @@ class RESTClient:
         if self.state != PlayerState.READY:
             raise RuntimeError("Cannot execute REST request when node not ready.")
 
+    async def _get(self, url):
+        try:
+            async with self._session.get(url, headers=self._headers) as resp:
+                data = await resp.json(content_type=None)
+        except ServerDisconnectedError as e:
+            log.debug(f"Received server disconnected error when player state = {self.state}")
+            raise
+        return data
+
     async def load_tracks(self, query) -> LoadResult:
         """
         Executes a loadtracks request. Only works on Lavalink V3.
@@ -144,8 +154,7 @@ class RESTClient:
         self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        async with self._session.get(url, headers=self._headers) as resp:
-            data = await resp.json(content_type=None)
+        data = await self._get(url)
 
         assert type(data) is dict, "Lavalink V3 is required for this method"
         return LoadResult(data)
@@ -165,8 +174,7 @@ class RESTClient:
         self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        async with self._session.get(url, headers=self._headers) as resp:
-            data = await resp.json(content_type=None)
+        data = await self._get(url)
 
         tracks = data["tracks"] if type(data) is dict else data
         return tuple(Track(t) for t in tracks)
