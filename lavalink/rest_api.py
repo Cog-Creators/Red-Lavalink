@@ -130,11 +130,13 @@ class RESTClient:
         if self.state != PlayerState.READY:
             raise RuntimeError("Cannot execute REST request when node not ready.")
 
-    async def _get(self, url):
+    async def _get(self, url, default):
         try:
             async with self._session.get(url, headers=self._headers) as resp:
                 data = await resp.json(content_type=None)
-        except ServerDisconnectedError as e:
+        except ServerDisconnectedError:
+            if self.state == PlayerState.DISCONNECTING:
+                return default
             log.debug(f"Received server disconnected error when player state = {self.state}")
             raise
         return data
@@ -154,7 +156,7 @@ class RESTClient:
         self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        data = await self._get(url)
+        data = await self._get(url, default={})
 
         assert type(data) is dict, "Lavalink V3 is required for this method"
         return LoadResult(data)
@@ -174,7 +176,7 @@ class RESTClient:
         self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        data = await self._get(url)
+        data = await self._get(url, default=[])
 
         tracks = data["tracks"] if type(data) is dict else data
         return tuple(Track(t) for t in tracks)
