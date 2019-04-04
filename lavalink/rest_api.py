@@ -1,10 +1,12 @@
 from typing import Tuple
 
 from aiohttp import ClientSession
+from aiohttp.client_exceptions import ServerDisconnectedError
 from collections import namedtuple
 from enum import Enum
 
 from . import log
+from .enums import *
 
 from urllib.parse import quote
 
@@ -113,10 +115,31 @@ class RESTClient:
     """
 
     def __init__(self, node):
-        self._node = node
-        self._session = ClientSession(loop=node.loop)
+        self.node = node
+        self._session = None
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.rest)
         self._headers = {"Authorization": node.password}
+
+        self.state = PlayerState.CONNECTING
+
+    def reset_session(self):
+        if self._session is None or self._session.closed:
+            self._session = ClientSession(loop=self.node.loop)
+
+    def __check_node_ready(self):
+        if self.state != PlayerState.READY:
+            raise RuntimeError("Cannot execute REST request when node not ready.")
+
+    async def _get(self, url, default):
+        try:
+            async with self._session.get(url, headers=self._headers) as resp:
+                data = await resp.json(content_type=None)
+        except ServerDisconnectedError:
+            if self.state == PlayerState.DISCONNECTING:
+                return default
+            log.debug(f"Received server disconnected error when player state = {self.state}")
+            raise
+        return data
 
     async def load_tracks(self, query) -> LoadResult:
         """
@@ -130,10 +153,10 @@ class RESTClient:
         -------
         LoadResult
         """
+        self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        async with self._session.get(url, headers=self._headers) as resp:
-            data = await resp.json(content_type=None)
+        data = await self._get(url, default={})
 
         assert type(data) is dict, "Lavalink V3 is required for this method"
         return LoadResult(data)
@@ -150,10 +173,10 @@ class RESTClient:
         -------
         Tuple[Track, ...]
         """
+        self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        async with self._session.get(url, headers=self._headers) as resp:
-            data = await resp.json(content_type=None)
+        data = await self._get(url, default=[])
 
         tracks = data["tracks"] if type(data) is dict else data
         return tuple(Track(t) for t in tracks)
@@ -187,5 +210,6 @@ class RESTClient:
         return await self.get_tracks("scsearch:{}".format(query))
 
     async def close(self):
-        await self._session.close()
+        if self._session is not None:
+            await self._session.close()
         log.debug("Closed REST session.")

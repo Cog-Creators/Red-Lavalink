@@ -1,14 +1,14 @@
 import logging
 
 log = logging.getLogger("red.core.lavalink")
+socket_log = logging.getLogger("red.core.lavalink.socket")
+socket_log.setLevel(logging.INFO)
 
-try:
-    from .lavalink import *
-    from .node import Node, LavalinkEvents, TrackEndReason, PlayerState, Stats
-    from .player_manager import *
-    from .rest_api import Track
-    from . import utils
-except ImportError:
-    pass
+from .lavalink import *
+from .node import Node, Stats
+from .player_manager import *
+from .enums import NodeState, PlayerState, TrackEndReason, LavalinkEvents
+from .rest_api import Track
+from . import utils
 
 __version__ = "0.2.3"

@@ -1,21 +1,23 @@
 import asyncio
+
 from random import randrange
 from typing import Optional
 
 import discord
 
 from . import log
-from . import node
+from .enums import *
 from .rest_api import Track, RESTClient
 
-__all__ = ["players", "user_id", "channel_finder_func", "connect", "get_player", "Player"]
+from typing import TYPE_CHECKING
 
-players = []
+if TYPE_CHECKING:
+    from . import node
+
+__all__ = ["user_id", "channel_finder_func", "Player", "PlayerManager"]
+
 user_id = None
 channel_finder_func = lambda channel_id: None
-
-_voice_states = {}
-_players_dict = {}
 
 
 class Player(RESTClient):
@@ -38,8 +40,8 @@ class Player(RESTClient):
     shuffle : bool
     """
 
-    def __init__(self, node_: node.Node, channel: discord.VoiceChannel):
-        super().__init__(node_)
+    def __init__(self, manager: "PlayerManager", channel: discord.VoiceChannel):
+        super().__init__(manager.node)
         self.channel = channel
 
         self.queue = []
@@ -53,14 +55,13 @@ class Player(RESTClient):
 
         self._is_playing = False
         self._metadata = {}
-        self._node = node_
+        self.manager = manager
 
-        if channel.guild.id in _players_dict:
-            raise ValueError("player for guild {} already exists".format(channel.guild.id))
-
-        _players_dict[channel.guild.id] = self
-        players.append(self)
-        self._node._players.add(self)
+    def __repr__(self):
+        return (
+            f'<Player: guild="{self.channel.guild.name}" channel="{self.channel.name}",'
+            f" playing={self.is_playing} paused={self.paused} volume={self.volume}>"
+        )
 
     @property
     def is_playing(self) -> bool:
@@ -88,7 +89,7 @@ class Player(RESTClient):
         """
         Whether the underlying node is ready for requests.
         """
-        return self._node.ready.is_set()
+        return self.node.ready.is_set()
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -99,11 +100,11 @@ class Player(RESTClient):
         If no_raise is set, returns false when a timeout occurs instead of propogating TimeoutError.
         A timeout of None means to wait indefinitely.
         """
-        if self._node.ready.is_set():
+        if self.node.ready.is_set():
             return True
 
         try:
-            return await self._node.wait_until_ready(timeout=timeout)
+            return await self.node.wait_until_ready(timeout=timeout)
         except asyncio.TimeoutError:
             if no_raise:
                 return False
@@ -114,7 +115,7 @@ class Player(RESTClient):
         """
         Connects to the voice channel associated with this Player.
         """
-        await node.join_voice(self.channel.guild.id, self.channel.id)
+        await self.node.join_voice_channel(self.channel.guild.id, self.channel.id)
 
     async def move_to(self, channel: discord.VoiceChannel):
         """
@@ -130,29 +131,30 @@ class Player(RESTClient):
         self.channel = channel
         await self.connect()
 
-    async def disconnect(self):
+    async def disconnect(self, requested=True):
         """
         Disconnects this player from it's voice channel.
         """
+        if self.state == PlayerState.DISCONNECTING:
+            return
+
+        await self.update_state(PlayerState.DISCONNECTING)
+        if not requested:
+            log.debug(
+                f"Forcing player disconnect for guild {self.channel.guild.id}"
+                f" due to player manager request."
+            )
+
         guild_id = self.channel.guild.id
-        voice_ws = self._node.voice_ws_func(guild_id)
+        voice_ws = self.node.get_voice_ws(guild_id)
 
         if not voice_ws.closed:
             await voice_ws.voice_state(guild_id, None)
 
-        await self._node.destroy_guild(guild_id)
+        await self.node.destroy_guild(guild_id)
         await self.close()
 
-    async def destroy(self):
-        if self in players:
-            players.remove(self)
-
-        if _players_dict.get(self.channel.guild.id) is self:
-            _players_dict.pop(self.channel.guild.id)
-
-        self._node._players.discard(self)
-
-        await self.disconnect()
+        self.manager.remove_player(self)
 
     def store(self, key, value):
         """
@@ -173,7 +175,22 @@ class Player(RESTClient):
         """
         return self._metadata.get(key, default)
 
-    async def _handle_event(self, event: node.LavalinkEvents, extra):
+    async def update_state(self, state: PlayerState):
+        if state == self.state:
+            return
+
+        log.debug(
+            f"player for guild {self.channel.guild.id} changing state:"
+            f" {self.state.name} -> {state.name}"
+        )
+
+        old_state = self.state
+        self.state = state
+
+        if state == PlayerState.READY:
+            self.reset_session()
+
+    async def handle_event(self, event: "node.LavalinkEvents", extra):
         """
         Handles various Lavalink Events.
 
@@ -188,13 +205,13 @@ class Player(RESTClient):
         event : node.LavalinkEvents
         extra
         """
-        if event == node.LavalinkEvents.TRACK_END:
-            if extra == node.TrackEndReason.FINISHED:
+        if event == LavalinkEvents.TRACK_END:
+            if extra == TrackEndReason.FINISHED:
                 await self.play()
             else:
                 self._is_playing = False
 
-    async def _handle_player_update(self, state: node.PlayerState):
+    async def handle_player_update(self, state: "node.PlayerState"):
         """
         Handles player updates from lavalink.
 
@@ -243,7 +260,7 @@ class Player(RESTClient):
 
             self.current = track
             log.debug("Assigned current.")
-            await self._node.play(self.channel.guild.id, track)
+            await self.node.play(self.channel.guild.id, track)
 
     async def stop(self):
         """
@@ -253,7 +270,7 @@ class Player(RESTClient):
 
             This method will clear the queue.
         """
-        await self._node.stop(self.channel.guild.id)
+        await self.node.stop(self.channel.guild.id)
         self.queue = []
         self.current = None
         self.position = 0
@@ -275,7 +292,7 @@ class Player(RESTClient):
             Set to ``False`` to resume.
         """
         self._paused = pause
-        await self._node.pause(self.channel.guild.id, pause)
+        await self.node.pause(self.channel.guild.id, pause)
 
     async def set_volume(self, volume: int):
         """
@@ -287,7 +304,7 @@ class Player(RESTClient):
             Between 0 and 150
         """
         self._volume = max(min(volume, 150), 0)
-        await self._node.volume(self.channel.guild.id, self.volume)
+        await self.node.volume(self.channel.guild.id, self.volume)
 
     async def seek(self, position: int):
         """
@@ -300,135 +317,178 @@ class Player(RESTClient):
         """
         if self.current.seekable:
             position = max(min(position, self.current.length), 0)
-            await self._node.seek(self.channel.guild.id, position)
+            await self.node.seek(self.channel.guild.id, position)
 
 
-async def connect(channel: discord.VoiceChannel) -> Player:
-    """
-    Connects to a discord voice channel.
+class PlayerManager:
+    def __init__(self, node_: "node.Node"):
+        self._player_dict = {}
+        self.voice_states = {}
 
-    Parameters
-    ----------
-    channel
+        self.node = node_
+        self.node.register_state_handler(self.node_state_handler)
 
-    Returns
-    -------
-    Player
-        The created Player object.
-    """
-    if _already_in_guild(channel):
-        p = get_player(channel.guild.id)
-        await p.move_to(channel)
-    else:
-        ws = node.get_node(channel.guild.id)
-        p = Player(ws, channel)
-        await p.connect()
-    return p
+    @property
+    def players(self):
+        return self._player_dict.values()
 
+    @property
+    def guild_ids(self):
+        return self._player_dict.keys()
 
-def _already_in_guild(channel: discord.VoiceChannel) -> bool:
-    for p in players:
-        if p.channel.guild == channel.guild:
-            return True
-    return False
+    async def create_player(self, channel: discord.VoiceChannel) -> Player:
+        """
+        Connects to a discord voice channel.
 
+        This function is safe to repeatedly call as it will return an existing
+        player if there is one.
 
-def get_player(guild_id: int) -> Player:
-    """
-    Gets a Player object from a guild ID.
+        Parameters
+        ----------
+        channel
 
-    Parameters
-    ----------
-    guild_id : int
-        Discord guild ID.
+        Returns
+        -------
+        Player
+            The created Player object.
+        """
+        if self._already_in_guild(channel):
+            p = self.get_player(channel.guild.id)
+            await p.move_to(channel)
+        else:
+            p = Player(self, channel)
+            await p.connect()
+            self._player_dict[channel.guild.id] = p
+            await self.refresh_player_state(p)
+        return p
 
-    Returns
-    -------
-    Player
+    def _already_in_guild(self, channel: discord.VoiceChannel) -> bool:
+        return channel.guild.id in self._player_dict
 
-    Raises
-    ------
-    KeyError
-        If that guild does not have a Player, e.g. is not connected to any
-        voice channel.
-    """
-    if guild_id in _players_dict:
-        return _players_dict[guild_id]
-    raise KeyError("No such player for that guild.")
+    def get_player(self, guild_id: int) -> Player:
+        """
+        Gets a Player object from a guild ID.
 
+        Parameters
+        ----------
+        guild_id : int
+            Discord guild ID.
 
-def _ensure_player(channel_id: int):
-    channel = channel_finder_func(channel_id)
-    if channel is not None:
+        Returns
+        -------
+        Player
+
+        Raises
+        ------
+        KeyError
+            If that guild does not have a Player, e.g. is not connected to any
+            voice channel.
+        """
+        if guild_id in self._player_dict:
+            return self._player_dict[guild_id]
+        raise KeyError("No such player for that guild.")
+
+    def _ensure_player(self, channel_id: int):
+        channel = channel_finder_func(channel_id)
+        if channel is not None:
+            try:
+                p = self.get_player(channel.guild.id)
+            except KeyError:
+                log.debug("Received voice channel connection without a player.")
+                p = Player(self, channel)
+                self._player_dict[channel.guild.id] = p
+            return p, channel
+
+    async def _remove_player(self, guild_id: int):
         try:
-            p = get_player(channel.guild.id)
+            p = self.get_player(guild_id)
         except KeyError:
-            log.debug("Received voice channel connection without a player.")
-            node_ = node.get_node(channel.guild.id)
-            p = Player(node_, channel)
-        return p, channel
+            pass
+        else:
+            del self._player_dict[guild_id]
+            await p.disconnect(requested=False)
 
+    async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
+        log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")
+        if next_state == NodeState.READY:
+            await self.update_player_states(PlayerState.READY)
+        elif next_state == NodeState.DISCONNECTING:
+            await self.update_player_states(PlayerState.DISCONNECTING)
+        elif next_state in (NodeState.CONNECTING, NodeState.RECONNECTING):
+            await self.update_player_states(PlayerState.NODE_BUSY)
 
-async def _remove_player(guild_id: int):
-    try:
-        p = get_player(guild_id)
-    except KeyError:
-        pass
-    else:
-        await p.destroy()
+    async def update_player_states(self, state: PlayerState):
+        for p in self.players:
+            await p.update_state(state)
 
+    async def refresh_player_state(self, player: Player):
+        if self.node.state == NodeState.READY:
+            await player.update_state(PlayerState.READY)
+        elif self.node.state == NodeState.DISCONNECTING:
+            await player.update_state(PlayerState.DISCONNECTING)
+        else:
+            await player.update_state(PlayerState.NODE_BUSY)
 
-async def on_socket_response(data):
-    raw_event = data.get("t")
-    try:
-        event = node.DiscordVoiceSocketResponses(raw_event)
-    except ValueError:
-        return
-
-    log.debug("Received Discord WS voice response: %s", data)
-
-    guild_id = data["d"]["guild_id"]
-    if guild_id not in _voice_states:
-        _voice_states[guild_id] = {}
-
-    if event == node.DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
-        # Connected for the first time
-        socket_event_data = data["d"]
-
-        _voice_states[guild_id].update({"guild_id": guild_id, "event": socket_event_data})
-    elif event == node.DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
-        channel_id = data["d"]["channel_id"]
-        event_user_id = int(data["d"].get("user_id"))
-
-        if event_user_id != user_id:
+    async def on_socket_response(self, data):
+        raw_event = data.get("t")
+        try:
+            event = DiscordVoiceSocketResponses(raw_event)
+        except ValueError:
             return
 
-        if channel_id is None:
-            # We disconnected
-            log.debug("Received voice disconnect from discord, removing player.")
-            _voice_states[guild_id] = {}
-            await _remove_player(int(guild_id))
+        log.debug("Received Discord WS voice response: %s", data)
 
+        guild_id = data["d"]["guild_id"]
+        if guild_id not in self.voice_states:
+            self.voice_states[guild_id] = {}
+
+        if event == DiscordVoiceSocketResponses.VOICE_SERVER_UPDATE:
+            # Connected for the first time
+            socket_event_data = data["d"]
+
+            self.voice_states[guild_id].update({"guild_id": guild_id, "event": socket_event_data})
+        elif event == DiscordVoiceSocketResponses.VOICE_STATE_UPDATE:
+            channel_id = data["d"]["channel_id"]
+            event_user_id = int(data["d"].get("user_id"))
+
+            if event_user_id != user_id:
+                return
+
+            if channel_id is None:
+                # We disconnected
+                log.debug("Received voice disconnect from discord, removing player.")
+                self.voice_states[guild_id] = {}
+                await self._remove_player(int(guild_id))
+
+            else:
+                # After initial connection, get session ID
+                p, channel = self._ensure_player(int(channel_id))
+                if channel != p.channel:
+                    p.channel = channel
+
+            session_id = data["d"]["session_id"]
+            self.voice_states[guild_id]["session_id"] = session_id
         else:
-            # After initial connection, get session ID
-            p, channel = _ensure_player(int(channel_id))
-            if channel != p.channel:
-                p.channel = channel
+            return
 
-        session_id = data["d"]["session_id"]
-        _voice_states[guild_id]["session_id"] = session_id
-    else:
-        return
+        if len(self.voice_states[guild_id]) == 3:
+            await self.node.send_lavalink_voice_update(**self.voice_states[guild_id])
 
-    if len(_voice_states[guild_id]) == 3:
-        node_ = node.get_node(int(guild_id))
-        await node_.send_lavalink_voice_update(**_voice_states[guild_id])
+    async def disconnect(self):
+        """
+        Disconnects all players.
+        """
+        for p in tuple(self.players):
+            await p.disconnect(requested=False)
+        log.debug("Disconnected players.")
 
-
-async def disconnect():
-    """
-    Disconnects all players.
-    """
-    for p in players:
-        await p.destroy()
-    log.debug("Disconnected players.")
+    def remove_player(self, player: Player):
+        if player.state != PlayerState.DISCONNECTING:
+            log.error(
+                "Attempting to remove a player from player list with state:"
+                f" {player.state.name}"
+            )
+            return
+        guild_id = player.channel.guild.id
+        if guild_id in self._player_dict:
+            del self._player_dict[guild_id]

@@ -1,13 +1,18 @@
 import asyncio
+from typing import List, Tuple
 
 from . import log
 from . import node
+from . import enums
 from . import player_manager
 
+import discord
 from discord.ext.commands import Bot
 
 __all__ = [
     "initialize",
+    "connect",
+    "get_player",
     "close",
     "register_event_listener",
     "unregister_event_listener",
@@ -15,6 +20,8 @@ __all__ = [
     "unregister_update_listener",
     "register_stats_listener",
     "unregister_stats_listener",
+    "all_players",
+    "active_players",
 ]
 
 
@@ -70,9 +77,50 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
 
     await lavalink_node.connect(timeout=timeout)
 
-    bot.add_listener(player_manager.on_socket_response)
+    bot.add_listener(node.on_socket_response)
+    bot.add_listener(_on_guild_remove, name="on_guild_remove")
 
     return lavalink_node
+
+
+async def connect(channel: discord.VoiceChannel):
+    """
+    Connects to a discord voice channel.
+
+    This is the publicly exposed way to connect to a discord voice channel.
+    The :py:func:`initialize` function must be called first!
+
+    Parameters
+    ----------
+    channel
+
+    Returns
+    -------
+    Player
+        The created Player object.
+
+    Raises
+    ------
+    IndexError
+        If there are no available lavalink nodes ready to connect to discord.
+    """
+    node_ = node.get_node(channel.guild.id)
+    p = await node_.player_manager.create_player(channel)
+    return p
+
+
+def get_player(guild_id: int) -> player_manager.Player:
+    node_ = node.get_node(guild_id)
+    return node_.player_manager.get_player(guild_id)
+
+
+async def _on_guild_remove(guild):
+    try:
+        p = get_player(guild.id)
+    except (IndexError, KeyError):
+        pass
+    else:
+        await p.disconnect()
 
 
 def register_event_listener(coro):
@@ -114,16 +162,17 @@ def register_event_listener(coro):
         _event_listeners.append(coro)
 
 
-async def _handle_event(player, data: node.LavalinkEvents, extra):
-    await player._handle_event(data, extra)
+async def _handle_event(player, data: enums.LavalinkEvents, extra):
+    await player.handle_event(data, extra)
 
 
-def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
+def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
     guild_id = int(raw_data.get("guildId"))
 
     try:
-        player = player_manager.get_player(guild_id)
-    except KeyError:
+        node_ = node.get_node(guild_id, ignore_ready_status=True)
+        player = node_.player_manager.get_player(guild_id)
+    except (IndexError, KeyError):
         log.exception(
             "Got an event for a guild that we have no player for."
             " This may be because of a forced voice channel"
@@ -132,13 +181,13 @@ def _get_event_args(data: node.LavalinkEvents, raw_data: dict):
         return
 
     extra = None
-    if data == node.LavalinkEvents.TRACK_END:
-        extra = node.TrackEndReason(raw_data.get("reason"))
-    elif data == node.LavalinkEvents.TRACK_EXCEPTION:
+    if data == enums.LavalinkEvents.TRACK_END:
+        extra = enums.TrackEndReason(raw_data.get("reason"))
+    elif data == enums.LavalinkEvents.TRACK_EXCEPTION:
         extra = raw_data.get("error")
-    elif data == node.LavalinkEvents.TRACK_STUCK:
+    elif data == enums.LavalinkEvents.TRACK_STUCK:
         extra = raw_data.get("thresholdMs")
-    elif data == node.LavalinkEvents.TRACK_START:
+    elif data == enums.LavalinkEvents.TRACK_START:
         extra = raw_data.get("track")
 
     return player, data, extra
@@ -181,15 +230,15 @@ def register_update_listener(coro):
         _update_listeners.append(coro)
 
 
-async def _handle_update(player, data: node.PlayerState):
-    await player._handle_player_update(data)
+async def _handle_update(player, data: enums.PlayerState):
+    await player.handle_player_update(data)
 
 
-def _get_update_args(data: node.PlayerState, raw_data: dict):
+def _get_update_args(data: enums.PlayerState, raw_data: dict):
     guild_id = int(raw_data.get("guildId"))
 
     try:
-        player = player_manager.get_player(guild_id)
+        player = get_player(guild_id)
     except KeyError:
         log.exception(
             "Got a player update for a guild that we have no player for."
@@ -252,17 +301,17 @@ def unregister_stats_listener(coro):
         pass
 
 
-def dispatch(op: node.LavalinkIncomingOp, data, raw_data: dict):
+def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
     listeners = []
     args = []
 
-    if op == node.LavalinkIncomingOp.EVENT:
+    if op == enums.LavalinkIncomingOp.EVENT:
         listeners = _event_listeners
         args = _get_event_args(data, raw_data)
-    elif op == node.LavalinkIncomingOp.PLAYER_UPDATE:
+    elif op == enums.LavalinkIncomingOp.PLAYER_UPDATE:
         listeners = _update_listeners
         args = _get_update_args(data, raw_data)
-    elif op == node.LavalinkIncomingOp.STATS:
+    elif op == enums.LavalinkIncomingOp.STATS:
         listeners = _stats_listeners
         args = [data]
 
@@ -280,5 +329,18 @@ async def close():
     """
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
-    await player_manager.disconnect()
     await node.disconnect()
+
+
+# Helper methods
+
+
+def all_players() -> Tuple[player_manager.Player]:
+    nodes = node._nodes
+    ret = tuple(p for n in nodes for p in n.player_manager.players)
+    return ret
+
+
+def active_players() -> Tuple[player_manager.Player]:
+    ps = all_players()
+    return tuple(p for p in ps if p.current is not None)

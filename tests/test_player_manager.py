@@ -4,7 +4,7 @@ import lavalink.player_manager
 import lavalink.node
 
 
-@pytest.fixture()
+@pytest.fixture
 def voice_server_update(guild):
     def func(guild_id=guild.id):
         return {
@@ -21,7 +21,7 @@ def voice_server_update(guild):
     return func
 
 
-@pytest.fixture()
+@pytest.fixture
 def voice_state_update(bot, voice_channel):
     def func(user_id=bot.user.id, channel_id=voice_channel.id, guild_id=voice_channel.guild.id):
         return {
@@ -49,15 +49,16 @@ def voice_state_update(bot, voice_channel):
 async def test_autoconnect(
     initialize_lavalink, voice_channel, voice_server_update, voice_state_update
 ):
+    node = lavalink.node.get_node(voice_channel.guild.id)
     server = voice_server_update()
     state = voice_state_update()
-    await lavalink.player_manager.on_socket_response(server)
+    await node.player_manager.on_socket_response(server)
 
     assert voice_channel.guild.id not in set(
-        id for _, ids in lavalink.node._nodes.items() for id in ids
+        node.player_manager.guild_ids
     )
 
-    await lavalink.player_manager.on_socket_response(state)
+    await node.player_manager.on_socket_response(state)
 
     send_call = {
         "op": "voiceUpdate",
@@ -70,8 +71,7 @@ async def test_autoconnect(
         },
     }
 
-    node = lavalink.node.get_node(voice_channel.guild.id)
-    node.send.assert_called_once_with(send_call)
+    node._MOCK_send.assert_called_once_with(send_call)
 
-    assert len(lavalink.players) == 1
+    assert len(lavalink.all_players()) == 1
     assert lavalink.get_player(voice_channel.guild.id).channel == voice_channel
