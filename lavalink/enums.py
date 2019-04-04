@@ -123,6 +123,7 @@ class LoadType(enum.Enum):
     SEARCH_RESULT = "SEARCH_RESULT"
     NO_MATCHES = "NO_MATCHES"
     LOAD_FAILED = "LOAD_FAILED"
+    V2_COMPAT = "V2_COMPAT"
 
 
 class ExceptionSeverity(enum.Enum):

@@ -133,6 +133,8 @@ class RESTClient:
 
         self.state = PlayerState.CONNECTING
 
+        self._warned = False
+
     def reset_session(self):
         if self._session is None or self._session.closed:
             self._session = ClientSession(loop=self.node.loop)
@@ -169,8 +171,14 @@ class RESTClient:
 
         data = await self._get(url, default={})
 
-        assert type(data) is dict, "Lavalink V3 is required for this method"
-        return LoadResult(data)
+        if isinstance(data, dict):
+            return LoadResult(data)
+        elif isinstance(data, list):
+            modified_data = {
+                "loadType": LoadType.V2_COMPAT,
+                "tracks": data
+            }
+            return LoadResult(modified_data)
 
     async def get_tracks(self, query) -> Tuple[Track, ...]:
         """
@@ -184,13 +192,11 @@ class RESTClient:
         -------
         Tuple[Track, ...]
         """
-        self.__check_node_ready()
-        url = self._uri + quote(str(query))
-
-        data = await self._get(url, default=[])
-
-        tracks = data["tracks"] if type(data) is dict else data
-        return tuple(Track(t) for t in tracks)
+        if not self._warned:
+            log.warn("get_tracks() is now deprecated. Please switch to using load_tracks().")
+            self._warned = True
+        result = await self.load_tracks(query)
+        return result.tracks
 
     async def search_yt(self, query) -> Tuple[Track, ...]:
         """
