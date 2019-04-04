@@ -81,9 +81,15 @@ class LoadResult:
         self._raw = data
         self.load_type = LoadType(data["loadType"])
 
-        if data.get("playlistInfo"):
+        is_playlist = self._raw.get("isPlaylist")
+        if is_playlist is True:
+            self.is_playlist = True
             self.playlist_info = PlaylistInfo(**data["playlistInfo"])
+        elif is_playlist is False:
+            self.is_playlist = False
+            self.playlist_info = None
         else:
+            self.is_playlist = None
             self.playlist_info = None
 
         self.tracks = tuple(Track(t) for t in data["tracks"])
