@@ -3,38 +3,18 @@ from typing import Tuple
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ServerDisconnectedError
 from collections import namedtuple
-from enum import Enum
 
 from . import log
 from .enums import *
 
 from urllib.parse import quote
 
-__all__ = ["Track", "RESTClient", "LoadType", "PlaylistInfo"]
+from typing import Union
+
+__all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
-
-
-class LoadType(Enum):
-    """
-    The result type of a loadtracks request
-
-    Attributes
-    ----------
-    TRACK_LOADED
-    TRACK_LOADED
-    PLAYLIST_LOADED
-    SEARCH_RESULT
-    NO_MATCHES
-    LOAD_FAILED
-    """
-
-    TRACK_LOADED = "TRACK_LOADED"
-    PLAYLIST_LOADED = "PLAYLIST_LOADED"
-    SEARCH_RESULT = "SEARCH_RESULT"
-    NO_MATCHES = "NO_MATCHES"
-    LOAD_FAILED = "LOAD_FAILED"
 
 
 class Track:
@@ -107,6 +87,31 @@ class LoadResult:
             self.playlist_info = None
 
         self.tracks = tuple(Track(t) for t in data["tracks"])
+
+    @property
+    def has_error(self):
+        return self.load_type == LoadType.LOAD_FAILED
+
+    @property
+    def exception_message(self) -> Union[str, None]:
+        """
+        On Lavalink V3, if there was an exception during a load or get tracks call
+        this property will be populated with the error message.
+        If there was no error this property will be ``None``.
+        """
+        if self.has_error:
+            exception_data = self._raw.get("exception", {})
+            return exception_data.get("message")
+        return None
+
+    @property
+    def exception_severity(self) -> Union[ExceptionSeverity, None]:
+        if self.has_error:
+            exception_data = self._raw.get("exception", {})
+            severity = exception_data.get("severity")
+            if severity is not None:
+                return ExceptionSeverity(severity)
+        return None
 
 
 class RESTClient:
