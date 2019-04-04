@@ -198,7 +198,7 @@ class RESTClient:
         result = await self.load_tracks(query)
         return result.tracks
 
-    async def search_yt(self, query) -> Tuple[Track, ...]:
+    async def search_yt(self, query) -> LoadResult:
         """
         Gets track results from YouTube from Lavalink.
 
@@ -210,9 +210,9 @@ class RESTClient:
         -------
         list of Track
         """
-        return await self.get_tracks("ytsearch:{}".format(query))
+        return await self.load_tracks("ytsearch:{}".format(query))
 
-    async def search_sc(self, query) -> Tuple[Track, ...]:
+    async def search_sc(self, query) -> LoadResult:
         """
         Gets track results from SoundCloud from Lavalink.
 
@@ -224,7 +224,7 @@ class RESTClient:
         -------
         list of Track
         """
-        return await self.get_tracks("scsearch:{}".format(query))
+        return await self.load_tracks("scsearch:{}".format(query))
 
     async def close(self):
         if self._session is not None:
