@@ -3,38 +3,18 @@ from typing import Tuple
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ServerDisconnectedError
 from collections import namedtuple
-from enum import Enum
 
 from . import log
 from .enums import *
 
 from urllib.parse import quote
 
-__all__ = ["Track", "RESTClient", "LoadType", "PlaylistInfo"]
+from typing import Union
+
+__all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
-
-
-class LoadType(Enum):
-    """
-    The result type of a loadtracks request
-
-    Attributes
-    ----------
-    TRACK_LOADED
-    TRACK_LOADED
-    PLAYLIST_LOADED
-    SEARCH_RESULT
-    NO_MATCHES
-    LOAD_FAILED
-    """
-
-    TRACK_LOADED = "TRACK_LOADED"
-    PLAYLIST_LOADED = "PLAYLIST_LOADED"
-    SEARCH_RESULT = "SEARCH_RESULT"
-    NO_MATCHES = "NO_MATCHES"
-    LOAD_FAILED = "LOAD_FAILED"
 
 
 class Track:
@@ -101,12 +81,43 @@ class LoadResult:
         self._raw = data
         self.load_type = LoadType(data["loadType"])
 
-        if data.get("playlistInfo"):
+        is_playlist = self._raw.get("isPlaylist")
+        if is_playlist is True:
+            self.is_playlist = True
             self.playlist_info = PlaylistInfo(**data["playlistInfo"])
+        elif is_playlist is False:
+            self.is_playlist = False
+            self.playlist_info = None
         else:
+            self.is_playlist = None
             self.playlist_info = None
 
         self.tracks = tuple(Track(t) for t in data["tracks"])
+
+    @property
+    def has_error(self):
+        return self.load_type == LoadType.LOAD_FAILED
+
+    @property
+    def exception_message(self) -> Union[str, None]:
+        """
+        On Lavalink V3, if there was an exception during a load or get tracks call
+        this property will be populated with the error message.
+        If there was no error this property will be ``None``.
+        """
+        if self.has_error:
+            exception_data = self._raw.get("exception", {})
+            return exception_data.get("message")
+        return None
+
+    @property
+    def exception_severity(self) -> Union[ExceptionSeverity, None]:
+        if self.has_error:
+            exception_data = self._raw.get("exception", {})
+            severity = exception_data.get("severity")
+            if severity is not None:
+                return ExceptionSeverity(severity)
+        return None
 
 
 class RESTClient:
@@ -121,6 +132,8 @@ class RESTClient:
         self._headers = {"Authorization": node.password}
 
         self.state = PlayerState.CONNECTING
+
+        self._warned = False
 
     def reset_session(self):
         if self._session is None or self._session.closed:
@@ -158,8 +171,14 @@ class RESTClient:
 
         data = await self._get(url, default={})
 
-        assert type(data) is dict, "Lavalink V3 is required for this method"
-        return LoadResult(data)
+        if isinstance(data, dict):
+            return LoadResult(data)
+        elif isinstance(data, list):
+            modified_data = {
+                "loadType": LoadType.V2_COMPAT,
+                "tracks": data
+            }
+            return LoadResult(modified_data)
 
     async def get_tracks(self, query) -> Tuple[Track, ...]:
         """
@@ -173,15 +192,13 @@ class RESTClient:
         -------
         Tuple[Track, ...]
         """
-        self.__check_node_ready()
-        url = self._uri + quote(str(query))
+        if not self._warned:
+            log.warn("get_tracks() is now deprecated. Please switch to using load_tracks().")
+            self._warned = True
+        result = await self.load_tracks(query)
+        return result.tracks
 
-        data = await self._get(url, default=[])
-
-        tracks = data["tracks"] if type(data) is dict else data
-        return tuple(Track(t) for t in tracks)
-
-    async def search_yt(self, query) -> Tuple[Track, ...]:
+    async def search_yt(self, query) -> LoadResult:
         """
         Gets track results from YouTube from Lavalink.
 
@@ -193,9 +210,9 @@ class RESTClient:
         -------
         list of Track
         """
-        return await self.get_tracks("ytsearch:{}".format(query))
+        return await self.load_tracks("ytsearch:{}".format(query))
 
-    async def search_sc(self, query) -> Tuple[Track, ...]:
+    async def search_sc(self, query) -> LoadResult:
         """
         Gets track results from SoundCloud from Lavalink.
 
@@ -207,7 +224,7 @@ class RESTClient:
         -------
         list of Track
         """
-        return await self.get_tracks("scsearch:{}".format(query))
+        return await self.load_tracks("scsearch:{}".format(query))
 
     async def close(self):
         if self._session is not None:

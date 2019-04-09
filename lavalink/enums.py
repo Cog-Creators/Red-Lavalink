@@ -8,6 +8,8 @@ __all__ = [
     "LavalinkOutgoingOp",
     "NodeState",
     "PlayerState",
+    "LoadType",
+    "ExceptionSeverity",
 ]
 
 
@@ -100,3 +102,31 @@ class PlayerState(enum.Enum):
     NODE_BUSY = 2
     RECONNECTING = 3
     DISCONNECTING = 4
+
+
+class LoadType(enum.Enum):
+    """
+    The result type of a loadtracks request
+
+    Attributes
+    ----------
+    TRACK_LOADED
+    TRACK_LOADED
+    PLAYLIST_LOADED
+    SEARCH_RESULT
+    NO_MATCHES
+    LOAD_FAILED
+    """
+
+    TRACK_LOADED = "TRACK_LOADED"
+    PLAYLIST_LOADED = "PLAYLIST_LOADED"
+    SEARCH_RESULT = "SEARCH_RESULT"
+    NO_MATCHES = "NO_MATCHES"
+    LOAD_FAILED = "LOAD_FAILED"
+    V2_COMPAT = "V2_COMPAT"
+
+
+class ExceptionSeverity(enum.Enum):
+    COMMON = "COMMON"
+    SUSPICIOUS = "SUSPICIOUS"
+    FATAL = "FATAL"

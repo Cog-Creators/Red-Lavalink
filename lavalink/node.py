@@ -141,7 +141,8 @@ class Node:
 
     @property
     def lavalink_major_version(self):
-        assert self._ws, "not connected"
+        if self.state != NodeState.READY:
+            raise RuntimeError("Node not ready!")
         return self._ws.response_headers.get("Lavalink-Major-Version")
 
     async def _multi_try_connect(self, uri):
