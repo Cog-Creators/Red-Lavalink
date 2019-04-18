@@ -436,8 +436,6 @@ class PlayerManager:
         except ValueError:
             return
 
-        log.debug("Received Discord WS voice response: %s", data)
-
         guild_id = data["d"]["guild_id"]
         if guild_id not in self.voice_states:
             self.voice_states[guild_id] = {}

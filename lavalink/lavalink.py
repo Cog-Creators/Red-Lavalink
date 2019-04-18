@@ -173,11 +173,12 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
         node_ = node.get_node(guild_id, ignore_ready_status=True)
         player = node_.player_manager.get_player(guild_id)
     except (IndexError, KeyError):
-        log.exception(
-            "Got an event for a guild that we have no player for."
-            " This may be because of a forced voice channel"
-            " disconnect. If this message repeats forever, report it."
-        )
+        if data != enums.LavalinkEvents.TRACK_END:
+            log.exception(
+                "Got an event for a guild that we have no player for."
+                " This may be because of a forced voice channel"
+                " disconnect. If this message repeats forever, report it."
+            )
         return
 
     extra = None
