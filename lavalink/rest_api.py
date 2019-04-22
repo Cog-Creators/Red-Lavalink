@@ -154,7 +154,8 @@ class RESTClient:
                     "exception": {
                         "message": "Load tracks interrupted by player disconnect.",
                         "severity": ExceptionSeverity.COMMON,
-                    }
+                    },
+                    "tracks": [],
                 }
             log.debug(f"Received server disconnected error when player state = {self.state}")
             raise
