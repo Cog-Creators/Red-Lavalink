@@ -11,4 +11,4 @@ from .enums import NodeState, PlayerState, TrackEndReason, LavalinkEvents
 from .rest_api import Track
 from . import utils
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
