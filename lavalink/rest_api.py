@@ -143,13 +143,20 @@ class RESTClient:
         if self.state != PlayerState.READY:
             raise RuntimeError("Cannot execute REST request when node not ready.")
 
-    async def _get(self, url, default):
+    async def _get(self, url):
         try:
             async with self._session.get(url, headers=self._headers) as resp:
                 data = await resp.json(content_type=None)
         except ServerDisconnectedError:
             if self.state == PlayerState.DISCONNECTING:
-                return default
+                return {
+                    "loadType": LoadType.LOAD_FAILED,
+                    "exception": {
+                        "message": "Load tracks interrupted by player disconnect.",
+                        "severity": ExceptionSeverity.COMMON,
+                    },
+                    "tracks": [],
+                }
             log.debug(f"Received server disconnected error when player state = {self.state}")
             raise
         return data
@@ -169,7 +176,7 @@ class RESTClient:
         self.__check_node_ready()
         url = self._uri + quote(str(query))
 
-        data = await self._get(url, default={})
+        data = await self._get(url)
 
         if isinstance(data, dict):
             return LoadResult(data)
