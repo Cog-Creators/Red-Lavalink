@@ -142,7 +142,7 @@ class LoadResult:
     _fallback = {
         "loadType": LoadType.LOAD_FAILED,
         "exception": {
-            "message": "Lavalink api returned an unsupported response.",
+            "message": "Lavalink API returned an unsupported response, Please report it.",
             "severity": ExceptionSeverity.SUSPICIOUS,
         },
         "playlistInfo": {},
@@ -156,6 +156,11 @@ class LoadResult:
             if k not in data:
                 if k == "exception" and data.get("loadType") != LoadType.LOAD_FAILED:
                     continue
+                else:
+                    v["message"] = v["message"] + "\n{query}\n{response)".format(
+                        query="Query: " + data["encodedquery"] if data.get("encodedquery") else "",
+                        response=str(self._raw)
+                    )
                 data.update({k: v})
 
         self.load_type = LoadType(data["loadType"])
