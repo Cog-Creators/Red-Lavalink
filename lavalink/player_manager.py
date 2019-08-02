@@ -237,6 +237,8 @@ class Player(RESTClient):
         """
         track.requester = requester
         self.queue.append(track)
+        if self.shuffle:
+            shuffle(self.queue)  # Keeps queue order consistent unless adding new tracks
 
     async def play(self):
         """
@@ -255,8 +257,6 @@ class Player(RESTClient):
             self._is_playing = True
 
             track = self.queue.pop(0)
-            if self.shuffle:
-                shuffle(self.queue)
 
             self.current = track
             log.debug("Assigned current.")
