@@ -234,8 +234,12 @@ class Player(RESTClient):
         """
         track.requester = requester
         self.queue.append(track)
-        if self.shuffle:
-            shuffle(self.queue)  # Keeps queue order consistent unless adding new tracks
+        if self.shuffle and self.queue:  # Keeps queue order consistent unless adding new tracks
+            first = self.queue.pop(0)
+            # Shuffles whole queue
+            shuffle(self.queue)
+            # Keep next track in queue consistent while adding new tracks
+            self.queue.insert(0, first)
 
     async def play(self):
         """
