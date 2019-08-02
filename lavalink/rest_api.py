@@ -93,12 +93,25 @@ class LoadResult:
     tracks : Tuple[Track, ...]
         The tracks that were loaded, if any
     """
+    _fallback = {
+                    "loadType": LoadType.LOAD_FAILED,
+                    "exception": {
+                        "message": "Lavalink api returned an unsupported response.",
+                        "severity": ExceptionSeverity.SUSPICIOUS,
+                    },
+                    "playlistInfo": {},
+                    "tracks": [],
+                }
 
     def __init__(self, data):
         self._raw = data
+        for k, v in self._fallback.items():
+            if k not in data:
+                data.update({k, v})
+
         self.load_type = LoadType(data["loadType"])
 
-        is_playlist = self._raw.get("isPlaylist")
+        is_playlist = self._raw.get("isPlaylist") or self.load_type == LoadType.PLAYLIST_LOADED
         if is_playlist is True:
             self.is_playlist = True
             self.playlist_info = PlaylistInfo(**data["playlistInfo"])
