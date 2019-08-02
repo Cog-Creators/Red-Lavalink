@@ -214,7 +214,6 @@ class LoadResult:
         else:
             self.is_playlist = None
             self.playlist_info = None
-        print(self._raw.get("query"))
         _tracks = parse_timestamps(self._raw) if self._raw.get("query") else data["tracks"]
         self.tracks = tuple(Track(t) for t in _tracks)
 
