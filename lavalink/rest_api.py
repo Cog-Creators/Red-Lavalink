@@ -1,3 +1,4 @@
+import re
 from typing import Tuple
 
 from aiohttp import ClientSession
@@ -7,7 +8,7 @@ from collections import namedtuple
 from . import log
 from .enums import *
 
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from typing import Union
 
@@ -15,6 +16,49 @@ __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
+
+
+def parse_timestamps(url, data):
+
+    if data["loadType"] == LoadType.PLAYLIST_LOADED:
+        return data["tracks"]
+
+    new_tracks = []
+    for track in data["tracks"]:
+        start_time = 0
+        try:
+            query_url = urlparse(url)
+            if all([query_url.scheme, query_url.netloc, query_url.path]):
+                url_domain = ".".join(query_url.netloc.split(".")[-2:])
+                if not query_url.netloc:
+                    url_domain = ".".join(query_url.path.split("/")[0].split(".")[-2:])
+                if (
+                    url_domain in ["youtube.com", "youtu.be"]
+                    and "&t=" in track
+                    and not all(k in track for k in ["playlist?", "&list="])
+                ):
+                    match = re.search(r"&t=(\d+)s?", track)
+                    if match:
+                        start_time = int(match.group(1))
+                elif url_domain == "soundcloud.com" and "#t=" in track:
+                    if "/sets/" not in track or ("/sets/" in track and "?in=" in track):
+                        match = re.search(r"#t=(\d+):(\d+)s?", track)
+                        if match:
+                            start_time = (int(match.group(1)) * 60) + int(match.group(2))
+                elif url_domain == "twitch.tv" and "?t=" in track:
+                    match = re.search(r"\?t=(\d+)h(\d+)m(\d+)s", track)
+                    if match:
+                        start_time = (
+                            (int(match.group(1)) * 60 * 60)
+                            + (int(match.group(2)) * 60)
+                            + int(match.group(3))
+                        )
+        except Exception:
+            pass
+
+        track["info"]["timestamp"] = start_time * 1000
+        new_tracks.append(track)
+    return new_tracks
 
 
 class Track:
@@ -55,6 +99,7 @@ class Track:
         self.position = self._info.get("position")
         self.title = self._info.get("title")
         self.uri = self._info.get("uri")
+        self.start_timestamp = self._info.get("timestamp", 0)
 
     @property
     def thumbnail(self):
@@ -93,19 +138,21 @@ class LoadResult:
     tracks : Tuple[Track, ...]
         The tracks that were loaded, if any
     """
+
     _fallback = {
-                    "loadType": LoadType.LOAD_FAILED,
-                    "exception": {
-                        "message": "Lavalink api returned an unsupported response.",
-                        "severity": ExceptionSeverity.SUSPICIOUS,
-                    },
-                    "playlistInfo": {},
-                    "tracks": [],
-                }
+        "loadType": LoadType.LOAD_FAILED,
+        "exception": {
+            "message": "Lavalink api returned an unsupported response.",
+            "severity": ExceptionSeverity.SUSPICIOUS,
+        },
+        "playlistInfo": {},
+        "tracks": [],
+    }
 
     def __init__(self, data):
         self._raw = data
-        for k, v in self._fallback.items(): # TODO: Check do we have to support Python 2? from the setup files doesn't look like we do
+        # TODO: Check do we have to support Python 2? from the setup files doesn't look like we do
+        for (k, v) in self._fallback.items():
             if k not in data:
                 if k == "exception" and data.get("loadType") != LoadType.LOAD_FAILED:
                     continue
@@ -123,8 +170,8 @@ class LoadResult:
         else:
             self.is_playlist = None
             self.playlist_info = None
-
-        self.tracks = tuple(Track(t) for t in data["tracks"])
+        _tracks = parse_timestamps(self._raw) if self._raw.get("query") else data["tracks"]
+        self.tracks = tuple(Track(t) for t in _tracks)
 
     @property
     def has_error(self):
@@ -206,16 +253,21 @@ class RESTClient:
         LoadResult
         """
         self.__check_node_ready()
-        url = self._uri + quote(str(query))
+        _raw_url = str(query)
+        url = self._uri + quote(_raw_url)
 
         data = await self._get(url)
 
         if isinstance(data, dict):
+            data["query"] = _raw_url
+            data["encodedquery"] = url
             return LoadResult(data)
         elif isinstance(data, list):
             modified_data = {
                 "loadType": LoadType.V2_COMPAT,
-                "tracks": data
+                "tracks": data,
+                "query": _raw_url,
+                "encodedquery": url,
             }
             return LoadResult(modified_data)
 
