@@ -13,7 +13,7 @@ __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
-_re_youtube_timestamp = re.compile(r"&t=(\d+)s?")
+_re_youtube_timestamp = re.compile(r"[&?]t=(\d+)s?")
 _re_soundcloud_timestamp = re.compile(r"#t=(\d+):(\d+)s?")
 _re_twitch_timestamp = re.compile(r"\?t=(\d+)h(\d+)m(\d+)s")
 
@@ -24,43 +24,76 @@ def parse_timestamps(data):
         return data["tracks"]
 
     new_tracks = []
+    query = data["query"]
+    try:
+        query_url = urlparse(query)
+    except:
+        query_url = None
+    if not query_url:
+        return data["tracks"]
+
     for track in data["tracks"]:
         start_time = 0
         try:
-            query_url = urlparse(data["query"])
-            if all([query_url.scheme, query_url.netloc, query_url.path]):
+            if all([query_url.scheme, query_url.netloc, query_url.path]) or any(x in query for x in ["ytsearch:", "scsearch:"]):
                 url_domain = ".".join(query_url.netloc.split(".")[-2:])
                 if not query_url.netloc:
                     url_domain = ".".join(query_url.path.split("/")[0].split(".")[-2:])
                 if (
-                    url_domain in ["youtube.com", "youtu.be"]
-                    and "&t=" in track
-                    and not all(k in track for k in ["playlist?", "&list="])
+                        (url_domain in ["youtube.com", "youtu.be"] or "ytsearch:" in query)
+                    and any(x in query for x in ["&t=", "?t="])
+                    and not all(k in query for k in ["playlist?", "&list="])
                 ):
-                    match = re.search(_re_youtube_timestamp, track)
+                    match = re.search(_re_youtube_timestamp, query)
                     if match:
                         start_time = int(match.group(1))
-                elif url_domain == "soundcloud.com" and "#t=" in track:
-                    if "/sets/" not in track or ("/sets/" in track and "?in=" in track):
-                        match = re.search(_re_soundcloud_timestamp, track)
+                elif (url_domain == "soundcloud.com" or "scsearch:" in query)and "#t=" in query:
+                    if "/sets/" not in query or ("/sets/" in query and "?in=" in query):
+                        match = re.search(_re_soundcloud_timestamp, query)
                         if match:
                             start_time = (int(match.group(1)) * 60) + int(match.group(2))
-                elif url_domain == "twitch.tv" and "?t=" in track:
-                    match = re.search(_re_twitch_timestamp, track)
+                elif url_domain == "twitch.tv" and "?t=" in query:
+                    match = re.search(_re_twitch_timestamp, query)
                     if match:
                         start_time = (
                             (int(match.group(1)) * 60 * 60)
                             + (int(match.group(2)) * 60)
                             + int(match.group(3))
                         )
-        except Exception as e:
-            print(e)
+        except Exception:
             pass
-        print("start_time", start_time)
         track["info"]["timestamp"] = start_time * 1000
         new_tracks.append(track)
     return new_tracks
 
+
+def reformat_query(query):
+    try:
+        query_url = urlparse(query)
+        if all([query_url.scheme, query_url.netloc, query_url.path]) or any(x in query for x in ["ytsearch:", "scsearch:"]):
+            url_domain = ".".join(query_url.netloc.split(".")[-2:])
+            if not query_url.netloc:
+                url_domain = ".".join(query_url.path.split("/")[0].split(".")[-2:])
+            if (
+                    (url_domain in ["youtube.com", "youtu.be"] or "ytsearch:" in query)
+                    and any(x in query for x in ["&t=", "?t="])
+                    and not all(k in query for k in ["playlist?", "&list="])
+            ):
+                match = re.search(_re_youtube_timestamp, query)
+                if match:
+                    query = query.split("&t=")[0].split("?t=")[0]
+            elif (url_domain == "soundcloud.com" or "scsearch:" in query) and "#t=" in query:
+                if "/sets/" not in query or ("/sets/" in query and "?in=" in query):
+                    match = re.search(_re_soundcloud_timestamp, query)
+                    if match:
+                        query = query.split("#t=")[0]
+            elif url_domain == "twitch.tv" and "?t=" in query:
+                match = re.search(_re_twitch_timestamp, query)
+                if match:
+                    query = query.split("?t=")[0]
+    except Exception:
+        pass
+    return query
 
 class Track:
     """
@@ -167,7 +200,7 @@ class LoadResult:
                         query="Query: " + data["encodedquery"] if data.get("encodedquery") else "",
                         response=str(self._raw),
                     )
-                data.update({k: v})
+                self._raw.update({k: v})
 
         self.load_type = LoadType(data["loadType"])
 
@@ -181,6 +214,7 @@ class LoadResult:
         else:
             self.is_playlist = None
             self.playlist_info = None
+        print(self._raw.get("query"))
         _tracks = parse_timestamps(self._raw) if self._raw.get("query") else data["tracks"]
         self.tracks = tuple(Track(t) for t in _tracks)
 
@@ -265,10 +299,10 @@ class RESTClient:
         """
         self.__check_node_ready()
         _raw_url = str(query)
-        url = self._uri + quote(_raw_url)
+        parsed_url = reformat_query(_raw_url)
+        url = self._uri + quote(parsed_url)
 
         data = await self._get(url)
-
         if isinstance(data, dict):
             data["query"] = _raw_url
             data["encodedquery"] = url
