@@ -262,6 +262,8 @@ class Player(RESTClient):
             self.current = track
             log.debug("Assigned current.")
             await self.node.play(self.channel.guild.id, track)
+            if track.start_timestamp > 0:
+                await self.seek(track.start_timestamp)
 
     async def stop(self):
         """
