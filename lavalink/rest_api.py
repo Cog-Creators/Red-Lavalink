@@ -105,7 +105,7 @@ class LoadResult:
 
     def __init__(self, data):
         self._raw = data
-        for k, v in self._fallback.items():
+        for k, v in self._fallback.items(): # TODO: Check do we have to support Python 2? from the setup files doesn't look like we do
             if k not in data:
                 if k == "exception" and data.get("loadType") != LoadType.LOAD_FAILED:
                     continue

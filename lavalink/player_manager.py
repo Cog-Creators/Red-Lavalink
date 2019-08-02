@@ -1,6 +1,6 @@
 import asyncio
 
-from random import randrange
+from random import shuffle
 from typing import Optional
 
 import discord
@@ -253,10 +253,10 @@ class Player(RESTClient):
             await self.stop()
         else:
             self._is_playing = True
+
+            track = self.queue.pop(0)
             if self.shuffle:
-                track = self.queue.pop(randrange(len(self.queue)))
-            else:
-                track = self.queue.pop(0)
+                shuffle(self.queue)
 
             self.current = track
             log.debug("Assigned current.")
