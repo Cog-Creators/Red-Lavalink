@@ -62,6 +62,23 @@ class Track:
         if "youtube" in self.uri and "identifier" in self._info:
             return "https://img.youtube.com/vi/{}/mqdefault.jpg".format(self._info["identifier"])
 
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Track):
+            return self.number == other.number
+        return NotImplemented
+
+    def __ne__(self, other):
+        """Overrides the default implementation"""
+        x = self.__eq__(other)
+        if x is not NotImplemented:
+            return not x
+        return NotImplemented
+
+    def __hash__(self):
+        """Overrides the default implementation"""
+        return hash(tuple(sorted(self.__dict__.items())))
+
 
 class LoadResult:
     """
