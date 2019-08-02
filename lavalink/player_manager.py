@@ -1,15 +1,12 @@
 import asyncio
-
 from random import shuffle
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import discord
 
 from . import log
 from .enums import *
-from .rest_api import Track, RESTClient
-
-from typing import TYPE_CHECKING
+from .rest_api import RESTClient, Track
 
 if TYPE_CHECKING:
     from . import node

@@ -1,13 +1,10 @@
 import asyncio
-from typing import List, Tuple
-
-from . import log
-from . import node
-from . import enums
-from . import player_manager
+from typing import Tuple
 
 import discord
 from discord.ext.commands import Bot
+
+from . import enums, log, node, player_manager
 
 __all__ = [
     "initialize",

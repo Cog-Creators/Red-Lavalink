@@ -1,16 +1,13 @@
 import re
-from typing import Tuple
+from collections import namedtuple
+from typing import Tuple, Union
+from urllib.parse import quote, urlparse
 
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ServerDisconnectedError
-from collections import namedtuple
 
 from . import log
 from .enums import *
-
-from urllib.parse import quote, urlparse
-
-from typing import Union
 
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
@@ -85,6 +82,8 @@ class Track:
         Title of this track.
     uri : str
         The playback url of this track.
+    start_timestamp: int
+        The track start time in milliseconds as provided by the query.
     """
 
     def __init__(self, data):
@@ -159,7 +158,7 @@ class LoadResult:
                 else:
                     v["message"] = v["message"] + "\n{query}\n{response)".format(
                         query="Query: " + data["encodedquery"] if data.get("encodedquery") else "",
-                        response=str(self._raw)
+                        response=str(self._raw),
                     )
                 data.update({k: v})
 
