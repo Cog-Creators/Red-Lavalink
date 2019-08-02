@@ -15,7 +15,7 @@ __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
 _re_youtube_timestamp = re.compile(r"&t=(\d+)s?")
 _re_soundcloud_timestamp = re.compile(r"#t=(\d+):(\d+)s?")
-_re_twitch_timestamp = re.compile((r"\?t=(\d+)h(\d+)m(\d+)s")
+_re_twitch_timestamp = re.compile(r"\?t=(\d+)h(\d+)m(\d+)s")
 
 
 def parse_timestamps(url, data):
