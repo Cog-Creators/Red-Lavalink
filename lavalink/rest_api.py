@@ -18,7 +18,7 @@ _re_soundcloud_timestamp = re.compile(r"#t=(\d+):(\d+)s?")
 _re_twitch_timestamp = re.compile(r"\?t=(\d+)h(\d+)m(\d+)s")
 
 
-def parse_timestamps(url, data):
+def parse_timestamps(data):
 
     if data["loadType"] == LoadType.PLAYLIST_LOADED:
         return data["tracks"]
@@ -27,7 +27,7 @@ def parse_timestamps(url, data):
     for track in data["tracks"]:
         start_time = 0
         try:
-            query_url = urlparse(url)
+            query_url = urlparse(data["query"])
             if all([query_url.scheme, query_url.netloc, query_url.path]):
                 url_domain = ".".join(query_url.netloc.split(".")[-2:])
                 if not query_url.netloc:
