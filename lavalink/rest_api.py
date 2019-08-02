@@ -153,7 +153,10 @@ class LoadResult:
         # TODO: Check do we have to support Python 2? from the setup files doesn't look like we do
         for (k, v) in self._fallback.items():
             if k not in data:
-                if k == "exception" and data.get("loadType") != LoadType.LOAD_FAILED:
+                if (
+                    k == "exception"
+                    and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
+                ):
                     continue
                 else:
                     v["message"] = v["message"] + "\n{query}\n{response)".format(
