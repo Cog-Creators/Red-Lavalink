@@ -13,6 +13,9 @@ __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 
 PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
+_re_youtube_timestamp = re.compile(r"&t=(\d+)s?")
+_re_soundcloud_timestamp = re.compile(r"#t=(\d+):(\d+)s?")
+_re_twitch_timestamp = re.compile((r"\?t=(\d+)h(\d+)m(\d+)s")
 
 
 def parse_timestamps(url, data):
@@ -34,16 +37,16 @@ def parse_timestamps(url, data):
                     and "&t=" in track
                     and not all(k in track for k in ["playlist?", "&list="])
                 ):
-                    match = re.search(r"&t=(\d+)s?", track)
+                    match = re.search(_re_youtube_timestamp, track)
                     if match:
                         start_time = int(match.group(1))
                 elif url_domain == "soundcloud.com" and "#t=" in track:
                     if "/sets/" not in track or ("/sets/" in track and "?in=" in track):
-                        match = re.search(r"#t=(\d+):(\d+)s?", track)
+                        match = re.search(_re_soundcloud_timestamp, track)
                         if match:
                             start_time = (int(match.group(1)) * 60) + int(match.group(2))
                 elif url_domain == "twitch.tv" and "?t=" in track:
-                    match = re.search(r"\?t=(\d+)h(\d+)m(\d+)s", track)
+                    match = re.search(_re_twitch_timestamp, track)
                     if match:
                         start_time = (
                             (int(match.group(1)) * 60 * 60)
