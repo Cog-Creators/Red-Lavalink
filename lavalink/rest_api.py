@@ -53,9 +53,10 @@ def parse_timestamps(data):
                             + (int(match.group(2)) * 60)
                             + int(match.group(3))
                         )
-        except Exception:
+        except Exception as e:
+            print(e)
             pass
-
+        print("start_time", start_time)
         track["info"]["timestamp"] = start_time * 1000
         new_tracks.append(track)
     return new_tracks
