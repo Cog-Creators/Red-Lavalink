@@ -35,19 +35,21 @@ def parse_timestamps(data):
     for track in data["tracks"]:
         start_time = 0
         try:
-            if all([query_url.scheme, query_url.netloc, query_url.path]) or any(x in query for x in ["ytsearch:", "scsearch:"]):
+            if all([query_url.scheme, query_url.netloc, query_url.path]) or any(
+                x in query for x in ["ytsearch:", "scsearch:"]
+            ):
                 url_domain = ".".join(query_url.netloc.split(".")[-2:])
                 if not query_url.netloc:
                     url_domain = ".".join(query_url.path.split("/")[0].split(".")[-2:])
                 if (
-                        (url_domain in ["youtube.com", "youtu.be"] or "ytsearch:" in query)
+                    (url_domain in ["youtube.com", "youtu.be"] or "ytsearch:" in query)
                     and any(x in query for x in ["&t=", "?t="])
                     and not all(k in query for k in ["playlist?", "&list="])
                 ):
                     match = re.search(_re_youtube_timestamp, query)
                     if match:
                         start_time = int(match.group(1))
-                elif (url_domain == "soundcloud.com" or "scsearch:" in query)and "#t=" in query:
+                elif (url_domain == "soundcloud.com" or "scsearch:" in query) and "#t=" in query:
                     if "/sets/" not in query or ("/sets/" in query and "?in=" in query):
                         match = re.search(_re_soundcloud_timestamp, query)
                         if match:
@@ -70,14 +72,16 @@ def parse_timestamps(data):
 def reformat_query(query):
     try:
         query_url = urlparse(query)
-        if all([query_url.scheme, query_url.netloc, query_url.path]) or any(x in query for x in ["ytsearch:", "scsearch:"]):
+        if all([query_url.scheme, query_url.netloc, query_url.path]) or any(
+            x in query for x in ["ytsearch:", "scsearch:"]
+        ):
             url_domain = ".".join(query_url.netloc.split(".")[-2:])
             if not query_url.netloc:
                 url_domain = ".".join(query_url.path.split("/")[0].split(".")[-2:])
             if (
-                    (url_domain in ["youtube.com", "youtu.be"] or "ytsearch:" in query)
-                    and any(x in query for x in ["&t=", "?t="])
-                    and not all(k in query for k in ["playlist?", "&list="])
+                (url_domain in ["youtube.com", "youtu.be"] or "ytsearch:" in query)
+                and any(x in query for x in ["&t=", "?t="])
+                and not all(k in query for k in ["playlist?", "&list="])
             ):
                 match = re.search(_re_youtube_timestamp, query)
                 if match:
@@ -94,6 +98,7 @@ def reformat_query(query):
     except Exception:
         pass
     return query
+
 
 class Track:
     """

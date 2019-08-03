@@ -239,7 +239,7 @@ class Player(RESTClient):
         sticky = max(0, sticky_songs)  # Songs to  bypass shuffle
         if self.shuffle and self.queue:  # Keeps queue order consistent unless adding new tracks
             if sticky > 0:
-                to_keep = [self.queue[sticky-1]]
+                to_keep = [self.queue[sticky - 1]]
                 to_shuffle = self.queue[sticky:]
             else:
                 to_shuffle = self.queue
