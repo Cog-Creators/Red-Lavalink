@@ -192,7 +192,6 @@ class LoadResult:
 
     def __init__(self, data):
         self._raw = data
-        # TODO: Check do we have to support Python 2? from the setup files doesn't look like we do
         for (k, v) in self._fallback.items():
             if k not in data:
                 if (
