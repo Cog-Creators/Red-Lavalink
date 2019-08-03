@@ -200,7 +200,7 @@ class LoadResult:
                     and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
                 ):
                     continue
-                else:
+                elif k == "exception":
                     v["message"] = v["message"] + "\n{query}\n{response)".format(
                         query="Query: " + data["encodedquery"] if data.get("encodedquery") else "",
                         response=str(self._raw),
