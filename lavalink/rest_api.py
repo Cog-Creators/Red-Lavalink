@@ -206,19 +206,19 @@ class LoadResult:
                     )
                 self._raw.update({k: v})
 
-        self.load_type = LoadType(data["loadType"])
+        self.load_type = LoadType(self._raw["loadType"])
 
         is_playlist = self._raw.get("isPlaylist") or self.load_type == LoadType.PLAYLIST_LOADED
         if is_playlist is True:
             self.is_playlist = True
-            self.playlist_info = PlaylistInfo(**data["playlistInfo"])
+            self.playlist_info = PlaylistInfo(**self._raw["playlistInfo"])
         elif is_playlist is False:
             self.is_playlist = False
             self.playlist_info = None
         else:
             self.is_playlist = None
             self.playlist_info = None
-        _tracks = parse_timestamps(self._raw) if self._raw.get("query") else data["tracks"]
+        _tracks = parse_timestamps(self._raw) if self._raw.get("query") else self._raw["tracks"]
         self.tracks = tuple(Track(t) for t in _tracks)
 
     @property
