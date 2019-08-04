@@ -46,7 +46,7 @@ class Player(RESTClient):
         self.current = None  # type: Track
         self._paused = False
         self.repeat = False
-        self.shuffle = False
+        self.shuffle = False  # Shuffle is done client side now This is a breaking change
 
         self._volume = 100
 
