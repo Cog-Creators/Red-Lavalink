@@ -236,8 +236,12 @@ class Player(RESTClient):
         self.queue.append(track)
 
     def maybe_shuffle(self, sticky_songs: int = 1):
-        sticky = max(0, sticky_songs)  # Songs to  bypass shuffle
         if self.shuffle and self.queue:  # Keeps queue order consistent unless adding new tracks
+            self.force_shuffle(sticky_songs)
+
+    def force_shuffle(self, sticky_songs: int = 1):
+        sticky = max(0, sticky_songs)  # Songs to  bypass shuffle
+        if self.queue:  # Keeps queue order consistent unless adding new tracks
             if sticky > 0:
                 to_keep = [self.queue[sticky - 1]]
                 to_shuffle = self.queue[sticky:]
