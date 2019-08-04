@@ -151,7 +151,7 @@ class Track:
     def __eq__(self, other):
         """Overrides the default implementation"""
         if isinstance(other, Track):
-            return self.number == other.number
+            return self.track_identifier == other.track_identifier
         return NotImplemented
 
     def __ne__(self, other):
@@ -163,7 +163,21 @@ class Track:
 
     def __hash__(self):
         """Overrides the default implementation"""
-        return hash(tuple(sorted(self.__dict__.items())))
+        return hash(
+            tuple(
+                sorted(
+                    [
+                        self.track_identifier,
+                        self.title,
+                        self.author,
+                        self.length,
+                        self.uri,
+                        self.seekable,
+                        self.is_stream,
+                    ]
+                )
+            )
+        )
 
 
 class LoadResult:
