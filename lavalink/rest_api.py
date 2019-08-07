@@ -170,10 +170,7 @@ class Track:
                         self.track_identifier,
                         self.title,
                         self.author,
-                        self.length,
                         self.uri,
-                        self.seekable,
-                        self.is_stream,
                     ]
                 )
             )
