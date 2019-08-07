@@ -141,6 +141,7 @@ class Track:
         self.title = self._info.get("title")
         self.uri = self._info.get("uri")
         self.start_timestamp = self._info.get("timestamp", 0)
+        self.extras = data.get("extras", {})
 
     @property
     def thumbnail(self):
