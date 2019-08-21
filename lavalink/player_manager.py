@@ -47,6 +47,7 @@ class Player(RESTClient):
         self._paused = False
         self.repeat = False
         self.shuffle = False  # Shuffle is done client side now This is a breaking change
+        self.shuffle_bumped = True
 
         self._volume = 100
 
@@ -240,19 +241,25 @@ class Player(RESTClient):
             self.force_shuffle(sticky_songs)
 
     def force_shuffle(self, sticky_songs: int = 1):
+        if not self.queue:
+            return
         sticky = max(0, sticky_songs)  # Songs to  bypass shuffle
-        if self.queue:  # Keeps queue order consistent unless adding new tracks
-            if sticky > 0:
-                to_keep = self.queue[:sticky]
-                to_shuffle = self.queue[sticky:]
-            else:
-                to_shuffle = self.queue
-                to_keep = []
+        # Keeps queue order consistent unless adding new tracks
+        if sticky > 0:
+            to_keep = self.queue[:sticky]
+            to_shuffle = self.queue[sticky:]
+        else:
+            to_shuffle = self.queue
+            to_keep = []
+        if not self.shuffle_bumped:
+            to_keep_bumped = [t for t in to_shuffle if t.extras.get("bumped", None)]
+            to_shuffle = [t for t in to_shuffle if not t.extras.get("bumped", None)]
+            to_keep.extend(to_keep_bumped)
             # Shuffles whole queue
-            shuffle(to_shuffle)
-            to_keep.extend(to_shuffle)
-            # Keep next track in queue consistent while adding new tracks
-            self.queue = to_keep
+        shuffle(to_shuffle)
+        to_keep.extend(to_shuffle)
+        # Keep next track in queue consistent while adding new tracks
+        self.queue = to_keep
 
     async def play(self):
         """

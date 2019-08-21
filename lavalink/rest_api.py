@@ -164,18 +164,7 @@ class Track:
 
     def __hash__(self):
         """Overrides the default implementation"""
-        return hash(
-            tuple(
-                sorted(
-                    [
-                        self.track_identifier,
-                        self.title,
-                        self.author,
-                        self.uri,
-                    ]
-                )
-            )
-        )
+        return hash(tuple(sorted([self.track_identifier, self.title, self.author, self.uri])))
 
 
 class LoadResult:
