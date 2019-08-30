@@ -1,15 +1,12 @@
 import asyncio
-
-from random import randrange
-from typing import Optional
+from random import shuffle
+from typing import Optional, TYPE_CHECKING
 
 import discord
 
 from . import log
 from .enums import *
-from .rest_api import Track, RESTClient
-
-from typing import TYPE_CHECKING
+from .rest_api import RESTClient, Track
 
 if TYPE_CHECKING:
     from . import node
@@ -49,7 +46,8 @@ class Player(RESTClient):
         self.current = None  # type: Track
         self._paused = False
         self.repeat = False
-        self.shuffle = False
+        self.shuffle = False  # Shuffle is done client side now This is a breaking change
+        self.shuffle_bumped = True
 
         self._volume = 100
 
@@ -238,6 +236,31 @@ class Player(RESTClient):
         track.requester = requester
         self.queue.append(track)
 
+    def maybe_shuffle(self, sticky_songs: int = 1):
+        if self.shuffle and self.queue:  # Keeps queue order consistent unless adding new tracks
+            self.force_shuffle(sticky_songs)
+
+    def force_shuffle(self, sticky_songs: int = 1):
+        if not self.queue:
+            return
+        sticky = max(0, sticky_songs)  # Songs to  bypass shuffle
+        # Keeps queue order consistent unless adding new tracks
+        if sticky > 0:
+            to_keep = self.queue[:sticky]
+            to_shuffle = self.queue[sticky:]
+        else:
+            to_shuffle = self.queue
+            to_keep = []
+        if not self.shuffle_bumped:
+            to_keep_bumped = [t for t in to_shuffle if t.extras.get("bumped", None)]
+            to_shuffle = [t for t in to_shuffle if not t.extras.get("bumped", None)]
+            to_keep.extend(to_keep_bumped)
+            # Shuffles whole queue
+        shuffle(to_shuffle)
+        to_keep.extend(to_shuffle)
+        # Keep next track in queue consistent while adding new tracks
+        self.queue = to_keep
+
     async def play(self):
         """
         Starts playback from lavalink.
@@ -253,14 +276,14 @@ class Player(RESTClient):
             await self.stop()
         else:
             self._is_playing = True
-            if self.shuffle:
-                track = self.queue.pop(randrange(len(self.queue)))
-            else:
-                track = self.queue.pop(0)
+
+            track = self.queue.pop(0)
 
             self.current = track
             log.debug("Assigned current.")
             await self.node.play(self.channel.guild.id, track)
+            if track.start_timestamp > 0:
+                await self.seek(track.start_timestamp)
 
     async def stop(self):
         """

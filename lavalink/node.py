@@ -9,9 +9,8 @@ from discord.backoff import ExponentialBackoff
 
 from . import log, socket_log
 from .enums import *
-from .rest_api import Track
 from .player_manager import PlayerManager
-
+from .rest_api import Track
 
 __all__ = ["Stats", "Node", "get_node", "join_voice"]
 

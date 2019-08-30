@@ -54,9 +54,7 @@ async def test_autoconnect(
     state = voice_state_update()
     await node.player_manager.on_socket_response(server)
 
-    assert voice_channel.guild.id not in set(
-        node.player_manager.guild_ids
-    )
+    assert voice_channel.guild.id not in set(node.player_manager.guild_ids)
 
     await node.player_manager.on_socket_response(state)
 
