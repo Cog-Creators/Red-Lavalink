@@ -30,7 +30,7 @@ class Stats:
         self.uptime = uptime
 
 
-# Node stats related class bellow and how it is called is originally from:
+# Node stats related class below and how it is called is originally from:
 # https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/stats.py#L41
 # https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/websocket.py#L132
 class NodeStats:
