@@ -1,1 +1,1 @@
-git+https://github.com/Rapptz/discord.py@rewrite
+discord.py==1.2.5

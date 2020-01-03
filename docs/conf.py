@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "Red-Lavalink"
-copyright = "2018, tekulvw Cog-Creators"
+copyright = "2018-2020, tekulvw Cog-Creators"
 author = "tekulvw Cog-Creators"
 
 # The short X.Y version
