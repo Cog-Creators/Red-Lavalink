@@ -6,9 +6,10 @@ notifications:
 python:
 - 3.6.8
 - 3.7.2
+- 3.8.1
 install:
 - pip install -U setuptools
-- pip install discord.py==1.2.3
+- pip install discord.py==1.2.5
 - pip install -e .[tests]
 script:
 - python -m pytest
@@ -17,7 +18,7 @@ jobs:
   include:
   - stage: PyPi Deployment
     if: tag IS present
-    python: 3.7.2
+    python: 3.8.1
     deploy:
     - provider: pypi
       user: Red-Lavalink
