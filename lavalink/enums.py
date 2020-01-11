@@ -124,6 +124,7 @@ class LoadType(enum.Enum):
     NO_MATCHES = "NO_MATCHES"
     LOAD_FAILED = "LOAD_FAILED"
     V2_COMPAT = "V2_COMPAT"
+    V2_COMPACT = "V2_COMPACT"
 
 
 class ExceptionSeverity(enum.Enum):
