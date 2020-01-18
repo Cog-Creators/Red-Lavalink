@@ -14,12 +14,14 @@ __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 _PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
 
+
 # This exists to preprocess rather than pull in dataclasses for __post_init__
-def PlaylistInfo(name, selectedTrack):
+def PlaylistInfo(name=None, selectedTrack=None):
     return _PlaylistInfo(
         name if name is not None else "Unknown",
         selectedTrack if selectedTrack is not None else -1,
     )
+
 
 _re_youtube_timestamp = re.compile(r"[&?]t=(\d+)s?")
 _re_soundcloud_timestamp = re.compile(r"#t=(\d+):(\d+)s?")
