@@ -1,5 +1,5 @@
 import re
-from dataclasses import dataclass
+from collections import namedtuple
 from typing import Tuple, Union
 from urllib.parse import quote, urlparse
 
@@ -12,16 +12,14 @@ from .enums import *
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
 
-@dataclass
-class PlaylistInfo:
-    _data: dict
-    name: str = None
-    selectedTrack: int = None
+_PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
 
-    def __post_init__(self):
-        self.name = self._data.get("name", "Unknown")
-        self.selectedTrack = self._data.get("selectedTrack", -1)
-
+# This exists to preprocess rather than pull in dataclasses for __post_init__
+def PlaylistInfo(name, selectedTrack):
+    return _PlaylistInfo(
+        name if name is not None else "Unknown",
+        selectedTrack if selectedTrack is not None else -1,
+    )
 
 _re_youtube_timestamp = re.compile(r"[&?]t=(\d+)s?")
 _re_soundcloud_timestamp = re.compile(r"#t=(\d+):(\d+)s?")
@@ -204,7 +202,7 @@ class LoadResult:
     def __init__(self, data):
         self._raw = data
         for (k, v) in self._fallback.items():
-            if k not in self._raw:
+            if k not in data:
                 if (
                     k == "exception"
                     and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
@@ -222,7 +220,7 @@ class LoadResult:
         is_playlist = self._raw.get("isPlaylist") or self.load_type == LoadType.PLAYLIST_LOADED
         if is_playlist is True:
             self.is_playlist = True
-            self.playlist_info = PlaylistInfo(self._raw["playlistInfo"])
+            self.playlist_info = PlaylistInfo(**self._raw["playlistInfo"])
         elif is_playlist is False:
             self.is_playlist = False
             self.playlist_info = None
