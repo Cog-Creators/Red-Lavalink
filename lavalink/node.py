@@ -109,7 +109,9 @@ class Node:
         combo_uri = "ws://{}:{}".format(self.host, self.rest)
         uri = "ws://{}:{}".format(self.host, self.port)
 
-        log.debug(f"Lavalink WS connecting to {combo_uri} or {uri} with headers {self.headers}")
+        log.debug(
+            "Lavalink WS connecting to %s or %s with headers %s", combo_uri, uri, self.headers
+        )
 
         tasks = tuple({self._multi_try_connect(u) for u in (combo_uri, uri)})
 
@@ -152,7 +154,7 @@ class Node:
                 return ws
             except OSError:
                 delay = backoff.delay()
-                log.debug(f"Failed connect attempt {attempt}, retrying in {delay}")
+                log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
             except websockets.InvalidStatusCode:
@@ -172,13 +174,13 @@ class Node:
             try:
                 op = LavalinkIncomingOp(raw_op)
             except ValueError:
-                socket_log.debug(f"Received unknown op: {data}")
+                socket_log.debug("Received unknown op: %s", data)
             else:
-                socket_log.debug(f"Received known op: {data}")
+                socket_log.debug("Received known op: %s", data)
                 self.loop.create_task(self._handle_op(op, data))
 
         self.ready.clear()
-        log.debug(f"Listener exited: ws {self._ws.open} SHUTDOWN {self._is_shutdown}.")
+        log.debug("Listener exited: ws %s SHUTDOWN %s.", self._ws.open, self._is_shutdown)
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
@@ -186,7 +188,7 @@ class Node:
             try:
                 event = LavalinkEvents(data.get("type"))
             except ValueError:
-                log.debug(f"Unknown event type: {data}")
+                log.debug("Unknown event type: %s", data)
             else:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
@@ -276,7 +278,7 @@ class Node:
         if self._ws is None or not self._ws.open:
             self._queue.append(data)
         else:
-            log.debug(f"Sending data to Lavalink: {data}")
+            log.debug("Sending data to Lavalink: %s", data)
             await self._ws.send(json.dumps(data))
 
     async def send_lavalink_voice_update(self, guild_id, session_id, event):
@@ -391,7 +393,7 @@ async def on_socket_response(data):
     except ValueError:
         return
 
-    log.debug(f"Received Discord WS voice response: {data}")
+    log.debug("Received Discord WS voice response: %s", data)
 
     guild_id = data["d"]["guild_id"]
 
