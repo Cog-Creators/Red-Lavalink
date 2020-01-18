@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "Red-Lavalink"
-copyright = "2018, tekulvw Cog-Creators"
+copyright = "2018-2020, tekulvw Cog-Creators"
 author = "tekulvw Cog-Creators"
 
 # The short X.Y version
@@ -172,6 +172,6 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.5", None),
+    "python": ("https://docs.python.org/3.8", None),
     "dpy": ("https://discordpy.readthedocs.io/en/rewrite/", None),
 }
