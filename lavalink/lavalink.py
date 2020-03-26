@@ -138,7 +138,7 @@ def register_event_listener(coro):
     be the threshold milliseconds that the track has been stuck for.
 
     If the second argument is :py:attr:`LavalinkEvents.TRACK_START`, the extra will be
-    a :py:class:`Track` object.
+    a track identifier string.
 
     If the second argument is any other value, the third argument will not exist.
 
