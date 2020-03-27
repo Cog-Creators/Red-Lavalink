@@ -338,11 +338,6 @@ class Node:
                 "track": track.track_identifier,
             }
         )
-        self.event_handler(
-            LavalinkIncomingOp.EVENT,
-            LavalinkEvents.TRACK_START,
-            {"guildId": str(guild_id), "track": track},
-        )
 
     async def pause(self, guild_id, paused):
         await self.send(
