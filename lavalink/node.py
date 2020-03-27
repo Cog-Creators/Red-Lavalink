@@ -12,10 +12,9 @@ from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
 
-__all__ = ["Stats", "Node", "get_node", "join_voice"]
+__all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_voice"]
 
 _nodes = []  # type: List[Node]
-
 
 PlayerState = namedtuple("PlayerState", "position time")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
@@ -29,6 +28,33 @@ class Stats:
         self.active_players = active_players
         self.cpu_info = CPUInfo(**cpu)
         self.uptime = uptime
+
+
+# Node stats related class below and how it is called is originally from:
+# https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/stats.py#L41
+# https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/websocket.py#L132
+class NodeStats:
+    def __init__(self, data: dict):
+        self.uptime = data["uptime"]
+
+        self.players = data["players"]
+        self.playing_players = data["playingPlayers"]
+
+        memory = data["memory"]
+        self.memory_free = memory["free"]
+        self.memory_used = memory["used"]
+        self.memory_allocated = memory["allocated"]
+        self.memory_reservable = memory["reservable"]
+
+        cpu = data["cpu"]
+        self.cpu_cores = cpu["cores"]
+        self.system_load = cpu["systemLoad"]
+        self.lavalink_load = cpu["lavalinkLoad"]
+
+        frame_stats = data.get("frameStats", {})
+        self.frames_sent = frame_stats.get("sent", -1)
+        self.frames_nulled = frame_stats.get("nulled", -1)
+        self.frames_deficit = frame_stats.get("deficit", -1)
 
 
 class Node:
@@ -84,6 +110,8 @@ class Node:
         self._state_handlers = []
 
         self.player_manager = PlayerManager(self)
+
+        self.stats = None
 
         if self not in _nodes:
             _nodes.append(self)
@@ -202,6 +230,7 @@ class Node:
                 cpu=data.get("cpu"),
                 uptime=data.get("uptime"),
             )
+            self.stats = NodeStats(data)
             self.event_handler(op, stats, data)
 
     async def _reconnect(self):
@@ -365,6 +394,10 @@ def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
         raise IndexError("No nodes found.")
 
     return least_used
+
+
+def get_nodes_stats():
+    return [node.stats for node in _nodes]
 
 
 async def join_voice(guild_id: int, channel_id: int):
