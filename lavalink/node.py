@@ -4,7 +4,7 @@ import json
 from collections import namedtuple
 from typing import Awaitable, List, Optional, cast
 
-import websockets
+import aiohttp
 from discord.backoff import ExponentialBackoff
 
 from . import log, socket_log
@@ -97,6 +97,7 @@ class Node:
         self.port = port
         self.rest = rest
         self.password = password
+        self.session = aiohttp.ClientSession()
         self.headers = self._get_connect_headers(self.password, user_id, num_shards)
 
         self.ready = asyncio.Event()
@@ -142,10 +143,9 @@ class Node:
         )
 
         tasks = tuple({self._multi_try_connect(u) for u in (combo_uri, uri)})
-
         for task in asyncio.as_completed(tasks, timeout=timeout):
             with contextlib.suppress(Exception):
-                if await cast(Awaitable[Optional[websockets.WebSocketClientProtocol]], task):
+                if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
                     break
         else:
             raise asyncio.TimeoutError
@@ -164,7 +164,7 @@ class Node:
 
     @staticmethod
     def _get_connect_headers(password, user_id, num_shards):
-        return {"Authorization": password, "User-Id": user_id, "Num-Shards": num_shards}
+        return {"Authorization": password, "User-Id": str(user_id), "Num-Shards": str(num_shards)}
 
     @property
     def lavalink_major_version(self):
@@ -176,26 +176,28 @@ class Node:
         backoff = ExponentialBackoff()
         attempt = 1
 
-        while self._is_shutdown is False and (self._ws is None or not self._ws.open):
+        while self._is_shutdown is False and (self._ws is None or self._ws.closed):
             try:
-                ws = self._ws = await websockets.connect(uri, extra_headers=self.headers)
+                ws = self._ws = await self.session.ws_connect(url=uri, headers=self.headers)
                 return ws
             except OSError:
                 delay = backoff.delay()
                 log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
-            except websockets.InvalidStatusCode:
+            except Exception as error:
+                log.debug(error)
                 return None
 
     async def listener(self):
         """
         Listener task for receiving ops from Lavalink.
         """
-        while self._ws.open and self._is_shutdown is False:
+        while not self._ws.closed and self._is_shutdown is False:
             try:
-                data = json.loads(await self._ws.recv())
-            except websockets.ConnectionClosed:
+                data = await self._ws.receive_json()
+            except Exception as error:
+                log.debug("listener error: ", exc_info=error)
                 break
 
             raw_op = data.get("op")
@@ -208,7 +210,7 @@ class Node:
                 self.loop.create_task(self._handle_op(op, data))
 
         self.ready.clear()
-        log.debug("Listener exited: ws %s SHUTDOWN %s.", self._ws.open, self._is_shutdown)
+        log.debug("Listener exited: ws %s SHUTDOWN %s.", self._ws.closed, self._is_shutdown)
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
@@ -292,7 +294,7 @@ class Node:
 
         await self.player_manager.disconnect()
 
-        if self._ws is not None and self._ws.open:
+        if self._ws is not None and not self._ws.closed:
             await self._ws.close()
 
         if self._listener_task is not None and not self.loop.is_closed():
@@ -304,11 +306,11 @@ class Node:
         log.debug("Shutdown Lavalink WS.")
 
     async def send(self, data):
-        if self._ws is None or not self._ws.open:
+        if self._ws is None or self._ws.closed:
             self._queue.append(data)
         else:
             log.debug("Sending data to Lavalink: %s", data)
-            await self._ws.send(json.dumps(data))
+            await self._ws.send_json(data)
 
     async def send_lavalink_voice_update(self, guild_id, session_id, event):
         await self.send(
