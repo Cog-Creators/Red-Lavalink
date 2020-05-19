@@ -293,7 +293,15 @@ class Node:
         await self.player_manager.disconnect()
 
         if self._ws is not None and self._ws.open:
-            await self._ws.close()
+            try:
+                await self._ws.close()
+            except websockets.ConnectionClosed as exc:
+                # as long as it's closed, who cares if it was abnormal closure
+                log.info("Websocket connection was already closed: %s", str(exc))
+            except websockets.WebsocketException as exc:
+                log.error(
+                    "Error occurred while trying to close websocket connection.", exc_info=exc
+                )
 
         if self._listener_task is not None and not self.loop.is_closed():
             self._listener_task.cancel()
