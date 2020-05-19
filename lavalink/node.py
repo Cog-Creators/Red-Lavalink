@@ -410,7 +410,7 @@ async def join_voice(guild_id: int, channel_id: int):
 
 
 async def disconnect():
-    for node in _nodes:
+    for node in _nodes.copy():
         await node.disconnect()
 
 
