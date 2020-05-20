@@ -297,7 +297,7 @@ class Node:
                 await self._ws.close()
             except websockets.ConnectionClosed as exc:
                 # as long as it's closed, who cares if it was abnormal closure
-                log.info("Websocket connection was already closed: %s", str(exc))
+                log.debug("Websocket connection was already closed: %s", str(exc))
             except websockets.WebsocketException as exc:
                 log.error(
                     "Error occurred while trying to close websocket connection.", exc_info=exc
