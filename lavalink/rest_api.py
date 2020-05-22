@@ -206,8 +206,8 @@ class LoadResult:
         for (k, v) in self._fallback.items():
             if k not in data:
                 if (
-                        k == "exception"
-                        and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
+                    k == "exception"
+                    and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
                 ):
                     continue
                 elif k == "exception":
