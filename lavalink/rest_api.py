@@ -206,14 +206,18 @@ class LoadResult:
         for (k, v) in self._fallback.items():
             if k not in data:
                 if (
-                    k == "exception"
-                    and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
+                        k == "exception"
+                        and data.get("loadType", LoadType.LOAD_FAILED) != LoadType.LOAD_FAILED
                 ):
                     continue
                 elif k == "exception":
-                    v["message"] = v["message"] + "\n{query}\n{response}".format(
-                        query="Query: " + data["encodedquery"] if data.get("encodedquery") else "",
-                        response=str(self._raw),
+                    v["message"] = (
+                        f"Timestamp: {self._raw.get('timestamp', 'Unknown')}\n"
+                        f"Status Code: {self._raw.get('status', 'Unknown')}\n"
+                        f"Error: {self._raw.get('error', 'Unknown')}\n"
+                        f"query: {self._raw.get('query', 'Unknown')}\n"
+                        f"loadType: {self._raw.get('loadType', 'Unknown')}\n"
+                        f"message: {self._raw.get('message', 'Unknown')}"
                     )
                 self._raw.update({k: v})
 
