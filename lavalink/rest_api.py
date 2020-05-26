@@ -214,9 +214,9 @@ class LoadResult:
                         f"Timestamp: {self._raw.get('timestamp', 'Unknown')}\n"
                         f"Status Code: {self._raw.get('status', 'Unknown')}\n"
                         f"Error: {self._raw.get('error', 'Unknown')}\n"
-                        f"query: {self._raw.get('query', 'Unknown')}\n"
-                        f"loadType: {self._raw.get('loadType', 'Unknown')}\n"
-                        f"message: {self._raw.get('message', v['message'])}"
+                        f"Query: {self._raw.get('query', 'Unknown')}\n"
+                        f"Load Type: {self._raw['loadType']}\n"
+                        f"Message: {self._raw.get('message', v['message'])}"
                     )
                 self._raw.update({k: v})
 
