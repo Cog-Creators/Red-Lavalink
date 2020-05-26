@@ -216,7 +216,7 @@ class LoadResult:
                         f"Error: {self._raw.get('error', 'Unknown')}\n"
                         f"query: {self._raw.get('query', 'Unknown')}\n"
                         f"loadType: {self._raw.get('loadType', 'Unknown')}\n"
-                        f"message: {self._raw.get('message', 'Unknown')}"
+                        f"message: {self._raw.get('message', v['message'])}"
                     )
                 self._raw.update({k: v})
 
