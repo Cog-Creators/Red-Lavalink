@@ -191,19 +191,18 @@ class LoadResult:
         The tracks that were loaded, if any
     """
 
-    _fallback = {
-        "loadType": LoadType.LOAD_FAILED,
-        "exception": {
-            "message": "Lavalink API returned an unsupported response, Please report it.",
-            "severity": ExceptionSeverity.SUSPICIOUS,
-        },
-        "playlistInfo": {},
-        "tracks": [],
-    }
-
     def __init__(self, data):
         self._raw = data
-        for (k, v) in self._fallback.items():
+        _fallback = {
+            "loadType": LoadType.LOAD_FAILED,
+            "exception": {
+                "message": "Lavalink API returned an unsupported response, Please report it.",
+                "severity": ExceptionSeverity.SUSPICIOUS,
+            },
+            "playlistInfo": {},
+            "tracks": [],
+        }
+        for (k, v) in _fallback.items():
             if k not in data:
                 if (
                     k == "exception"
