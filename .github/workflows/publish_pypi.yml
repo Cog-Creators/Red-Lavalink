@@ -15,8 +15,8 @@ jobs:
           python-version: '3.8'
       - name: Install dependencies
         run: |
-          python -m pip install -U setuptools pip
-          python -m pip install -U wheel twine
+          python -m pip install -U pip
+          python -m pip install -U setuptools wheel twine
       - name: Build and publish
         env: 
           TWINE_USERNAME: __token__
