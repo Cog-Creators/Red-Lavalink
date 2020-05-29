@@ -191,19 +191,18 @@ class LoadResult:
         The tracks that were loaded, if any
     """
 
-    _fallback = {
-        "loadType": LoadType.LOAD_FAILED,
-        "exception": {
-            "message": "Lavalink API returned an unsupported response, Please report it.",
-            "severity": ExceptionSeverity.SUSPICIOUS,
-        },
-        "playlistInfo": {},
-        "tracks": [],
-    }
-
     def __init__(self, data):
         self._raw = data
-        for (k, v) in self._fallback.items():
+        _fallback = {
+            "loadType": LoadType.LOAD_FAILED,
+            "exception": {
+                "message": "Lavalink API returned an unsupported response, Please report it.",
+                "severity": ExceptionSeverity.SUSPICIOUS,
+            },
+            "playlistInfo": {},
+            "tracks": [],
+        }
+        for (k, v) in _fallback.items():
             if k not in data:
                 if (
                     k == "exception"
@@ -211,9 +210,13 @@ class LoadResult:
                 ):
                     continue
                 elif k == "exception":
-                    v["message"] = v["message"] + "\n{query}\n{response}".format(
-                        query="Query: " + data["encodedquery"] if data.get("encodedquery") else "",
-                        response=str(self._raw),
+                    v["message"] = (
+                        f"Timestamp: {self._raw.get('timestamp', 'Unknown')}\n"
+                        f"Status Code: {self._raw.get('status', 'Unknown')}\n"
+                        f"Error: {self._raw.get('error', 'Unknown')}\n"
+                        f"Query: {self._raw.get('query', 'Unknown')}\n"
+                        f"Load Type: {self._raw['loadType']}\n"
+                        f"Message: {self._raw.get('message', v['message'])}"
                     )
                 self._raw.update({k: v})
 
