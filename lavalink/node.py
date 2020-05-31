@@ -97,13 +97,13 @@ class Node:
         self.port = port
         self.rest = rest
         self.password = password
-        self.session = aiohttp.ClientSession()
         self.headers = self._get_connect_headers(self.password, user_id, num_shards)
 
         self.ready = asyncio.Event()
 
         self._ws = None
         self._listener_task = None
+        self.session = aiohttp.ClientSession()
 
         self._queue = []
 
@@ -185,24 +185,23 @@ class Node:
                 log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
-            except Exception as error:
-                log.debug(error)
-                return None
 
     async def listener(self):
         """
         Listener task for receiving ops from Lavalink.
         """
         while not self._ws.closed and self._is_shutdown is False:
-            try:
-                data = await self._ws.receive_json()
-            except Exception as error:
-                log.debug("listener error: ", exc_info=error)
+            data = await self._ws.receive_json()
+            if data.type in (
+                aiohttp.WSMsgType.CLOSED,
+                aiohttp.WSMsgType.CLOSING,
+                aiohttp.WSMsgType.CLOSE,
+            ):
+                log.debug("Received %s\nop listener closing ...", data)
                 break
 
-            raw_op = data.get("op")
             try:
-                op = LavalinkIncomingOp(raw_op)
+                op = LavalinkIncomingOp(data.get("op"))
             except ValueError:
                 socket_log.debug("Received unknown op: %s", data)
             else:
@@ -210,7 +209,7 @@ class Node:
                 self.loop.create_task(self._handle_op(op, data))
 
         self.ready.clear()
-        log.debug("Listener exited: ws %s SHUTDOWN %s.", self._ws.closed, self._is_shutdown)
+        log.debug("Listener exited: ws %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown)
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
