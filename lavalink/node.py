@@ -184,6 +184,8 @@ class Node:
                 log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
+            except aiohttp.WSServerHandshakeError:
+                return None
             else:
                 self._ws = ws
                 return self._ws
@@ -203,6 +205,12 @@ class Node:
                     aiohttp.WSMsgType.CLOSE,
                 ):
                     log.debug("Listener closing: %s", msg.extra)
+                else:
+                    log.debug(
+                        "WebSocket connection received unexpected message: %s:%s",
+                        msg.type,
+                        msg.data,
+                    )
 
                 break
 
