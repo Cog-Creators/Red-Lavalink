@@ -178,28 +178,35 @@ class Node:
 
         while self._is_shutdown is False and (self._ws is None or self._ws.closed):
             try:
-                ws = self._ws = await self.session.ws_connect(url=uri, headers=self.headers)
-                return ws
+                ws = await self.session.ws_connect(url=uri, headers=self.headers)
             except OSError:
                 delay = backoff.delay()
                 log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
+            else:
+                self._ws = ws
+                return self._ws
 
     async def listener(self):
         """
         Listener task for receiving ops from Lavalink.
         """
-        while not self._ws.closed and self._is_shutdown is False:
-            data = await self._ws.receive_json()
-            if data.type in (
-                aiohttp.WSMsgType.CLOSED,
-                aiohttp.WSMsgType.CLOSING,
-                aiohttp.WSMsgType.CLOSE,
-            ):
-                log.debug("Received %s\nop listener closing ...", data)
+        while self._is_shutdown is False and not self._ws.closed:
+            msg = await self._ws.receive()
+            if msg.type != aiohttp.WSMsgType.TEXT:
+                if msg.type is aiohttp.WSMsgType.ERROR:
+                    log.debug("Ignoring exception in listener task", exc_info=msg.data)
+                elif msg.type in (
+                    aiohttp.WSMsgType.CLOSED,
+                    aiohttp.WSMsgType.CLOSING,
+                    aiohttp.WSMsgType.CLOSE,
+                ):
+                    log.debug("Listener closing: %s", msg.extra)
+
                 break
 
+            data = json.loads(msg.data)
             try:
                 op = LavalinkIncomingOp(data.get("op"))
             except ValueError:
@@ -298,6 +305,8 @@ class Node:
 
         if self._listener_task is not None and not self.loop.is_closed():
             self._listener_task.cancel()
+
+        await self.session.close()
 
         self._state_handlers = []
 
