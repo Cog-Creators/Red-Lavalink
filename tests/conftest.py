@@ -20,10 +20,17 @@ class ProxyWebSocket:
         self.recv = MagicMock(wraps=self._recv)
         self.send = MagicMock(wraps=self._send)
 
+        self._closed = False
+
     async def _send(self, data):
         pass
 
     async def _recv(self):
+        await self.EMIT.wait()
+        self.EMIT.clear()
+        return self.emit_data
+
+    async def receive(self):
         await self.EMIT.wait()
         self.EMIT.clear()
         return self.emit_data
@@ -34,6 +41,11 @@ class ProxyWebSocket:
 
     async def close(self):
         self.open = False
+        self._closed = True
+
+    @property
+    def closed(self):
+        return self._closed
 
 
 @pytest.fixture
@@ -59,7 +71,13 @@ async def bot(event_loop, user, voice_channel):
     async def voice_state(guild_id=None, channel_id=None):
         pass
 
+    class Client:
+        @property
+        def closed(self):
+            return False
+
     voice_websocket = MagicMock(spec=DiscordWebSocket)
+    voice_websocket.socket = MagicMock(wraps=Client)
     voice_websocket.voice_state = MagicMock(wraps=voice_state)
 
     conn = MagicMock()
@@ -83,7 +101,7 @@ def patch_node(monkeypatch):
     async def send(self, data):
         self._MOCK_send(data)
 
-    websockets_patch = patch("websockets.connect", new=MagicMock(wraps=connect))
+    websockets_patch = patch("aiohttp.ClientSession.ws_connect", new=MagicMock(wraps=connect))
     monkeypatch.setattr(lavalink.node.Node, "send", send)
     monkeypatch.setattr(lavalink.node.Node, "_MOCK_send", MagicMock(), raising=False)
     websockets_patch.start()
