@@ -215,8 +215,9 @@ class Node:
         )
 
         for task in asyncio.as_completed([self._multi_try_connect(uri)], timeout=timeout):
-            if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
-                break
+            with contextlib.suppress(Exception):
+                if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
+                    break
         else:
             raise asyncio.TimeoutError
 
