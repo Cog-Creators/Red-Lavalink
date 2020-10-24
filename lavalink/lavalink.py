@@ -203,7 +203,11 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
     elif data == enums.LavalinkEvents.TRACK_START:
         extra = raw_data.get("track")
     elif data == enums.LavalinkEvents.WebSocketClosedEvent:
-        extra = {"code": data["code"], "reason": data["reason"], "byRemote": data["byRemote"]}
+        extra = {
+            "code": raw_data.get("code"),
+            "reason": raw_data.get("reason"),
+            "byRemote": raw_data.get("byRemote"),
+        }
     return player, data, extra
 
 
