@@ -318,7 +318,6 @@ def unregister_stats_listener(coro):
 def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
     listeners = []
     args = []
-    log.warning(f"DISPATCH: {data} -> {raw_data}")
     if op == enums.LavalinkIncomingOp.EVENT:
         listeners = _event_listeners
         args = _get_event_args(data, raw_data)
