@@ -1,4 +1,5 @@
 from collections import namedtuple
+from types import SimpleNamespace
 
 import pytest
 import asyncio
@@ -19,6 +20,8 @@ class ProxyWebSocket:
 
         self.recv = MagicMock(wraps=self._recv)
         self.send = MagicMock(wraps=self._send)
+        self._response = SimpleNamespace()
+        self._response.headers = {}
 
         self._closed = False
 

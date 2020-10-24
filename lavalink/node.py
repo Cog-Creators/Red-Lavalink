@@ -214,11 +214,9 @@ class Node:
             "Lavalink WS connecting to %s or %s with headers %s", combo_uri, uri, self.headers
         )
 
-        tasks = (self._multi_try_connect(uri),)
-        for task in asyncio.as_completed(tasks, timeout=timeout):
-            with contextlib.suppress(Exception):
-                if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
-                    break
+        for task in asyncio.as_completed([self._multi_try_connect(uri)], timeout=timeout):
+            if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
+                break
         else:
             raise asyncio.TimeoutError
 
