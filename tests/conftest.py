@@ -121,6 +121,8 @@ async def node(bot):
         rest=2333,
         user_id=bot.user.id,
         num_shards=bot.shard_count,
+        resume_key=None,
+        resume_timeout=60,
     )
 
     # node_.send = MagicMock(wraps=send)
