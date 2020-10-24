@@ -1,5 +1,5 @@
 import asyncio
-from typing import Tuple
+from typing import Optional, Tuple
 
 import discord
 from discord.ext.commands import Bot
@@ -28,7 +28,16 @@ _stats_listeners = []
 _loop = None
 
 
-async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
+async def initialize(
+    bot: Bot,
+    host,
+    password,
+    rest_port,
+    ws_port,
+    timeout=30,
+    resume_key: Optional[str] = None,
+    resume_timeout: int = 60,
+):
     """
     Initializes the websocket connection to the lavalink player.
 
@@ -51,6 +60,10 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
         The websocket port on the Lavalink Node.
     timeout : int
         Amount of time to allow retries to occur, ``None`` is considered forever.
+    resume_key : Optional[str]
+        A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
+    resume_timeout : inr
+        How long the node should wait for a connection while disconnected before clearing all players.
     """
     global _loop
     _loop = bot.loop
@@ -70,6 +83,8 @@ async def initialize(bot: Bot, host, password, rest_port, ws_port, timeout=30):
         rest=rest_port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
+        resume_key=resume_key,
+        resume_timeout=resume_timeout,
     )
 
     await lavalink_node.connect(timeout=timeout)
@@ -187,7 +202,8 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
         extra = raw_data.get("thresholdMs")
     elif data == enums.LavalinkEvents.TRACK_START:
         extra = raw_data.get("track")
-
+    elif data == enums.LavalinkEvents.WebSocketClosedEvent:
+        extra = {"code": data["code"], "reason": data["reason"], "byRemote": data["byRemote"]}
     return player, data, extra
 
 
@@ -302,7 +318,7 @@ def unregister_stats_listener(coro):
 def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
     listeners = []
     args = []
-
+    log.warning(f"DISPATCH: {data} -> {raw_data}")
     if op == enums.LavalinkIncomingOp.EVENT:
         listeners = _event_listeners
         args = _get_event_args(data, raw_data)

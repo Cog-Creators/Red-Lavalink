@@ -1,10 +1,13 @@
 import asyncio
 import contextlib
 import json
+import secrets
+import string
 from collections import namedtuple
 from typing import Awaitable, List, Optional, cast
 
 import aiohttp
+import typing
 from discord.backoff import ExponentialBackoff
 
 from . import log, socket_log
@@ -19,6 +22,29 @@ _nodes = []  # type: List[Node]
 PlayerState = namedtuple("PlayerState", "position time")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
+
+
+# Originally Added in: https://github.com/PythonistaGuild/Wavelink/pull/66
+class _Key:
+    def __init__(self, Len: int = 32):
+        self.Len: int = Len
+        self.persistent: str = ""
+        self.__repr__()
+
+    def __repr__(self):
+        """Generate a new key, return it and make it persistent"""
+        alphabet = string.ascii_letters + string.digits + "#$%&()*+,-./:;<=>?@[]^_~!"
+        key = "".join(secrets.choice(alphabet) for i in range(self.Len))
+        self.persistent = key
+        return key
+
+    def __str__(self):
+        """Return the persistent key."""
+        # Ensure output is not a non-string
+        # Since input could be Any object.
+        if not self.persistent:
+            return self.__repr__()
+        return str(self.persistent)
 
 
 class Stats:
@@ -62,7 +88,18 @@ class Node:
     _is_shutdown = False  # type: bool
 
     def __init__(
-        self, _loop, event_handler, voice_ws_func, host, password, port, rest, user_id, num_shards
+        self,
+        _loop: asyncio.BaseEventLoop,
+        event_handler: typing.Callable,
+        voice_ws_func: typing.Callable,
+        host: str,
+        password: str,
+        port: int,
+        rest: int,
+        user_id: int,
+        num_shards: int,
+        resume_key: Optional[str],
+        resume_timeout: int,
     ):
         """
         Represents a Lavalink node.
@@ -87,8 +124,10 @@ class Node:
             User ID of the bot.
         num_shards : int
             Number of shards to which the bot is currently connected.
-        ready : asyncio.Event
-            Set when the connection is up and running, unset when not.
+        resume_key : Optional[str]
+            A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
+        resume_timeout : inr
+            How long the node should wait for a connection while disconnected before clearing all players.
         """
         self.loop = _loop
         self.event_handler = event_handler
@@ -97,7 +136,13 @@ class Node:
         self.port = port
         self.rest = rest
         self.password = password
-        self.headers = self._get_connect_headers(self.password, user_id, num_shards)
+        self._resume_key = resume_key
+        if self._resume_key is None:
+            self._resume_key = self._gen_key()
+        self._resume_timeout = resume_timeout
+        self._resuming_configured = False
+        self.num_shards = num_shards
+        self.user_id = user_id
 
         self.ready = asyncio.Event()
 
@@ -105,10 +150,10 @@ class Node:
         self._listener_task = None
         self.session = aiohttp.ClientSession()
 
-        self._queue = []
+        self._queue: List = []
 
         self.state = NodeState.CONNECTING
-        self._state_handlers = []
+        self._state_handlers: List = []
 
         self.player_manager = PlayerManager(self)
 
@@ -116,6 +161,33 @@ class Node:
 
         if self not in _nodes:
             _nodes.append(self)
+
+        self._closers = (
+            aiohttp.WSMsgType.CLOSE,
+            aiohttp.WSMsgType.CLOSING,
+            aiohttp.WSMsgType.CLOSED,
+        )
+
+    @property
+    def headers(self) -> dict:
+        base = {
+            "Authorization": self.password,
+            "Num-Shards": str(self.num_shards),
+            "User-Id": str(self.user_id),
+        }
+        if self._resuming_configured:
+            base.update({"Resume-Key": str(self._resume_key)})
+        return base
+
+    def _gen_key(self):
+        if self._resume_key is None:
+            return _Key()
+        else:
+            # if this is a class then it will generate a persistent key
+            # We should not't check the instance since
+            # we would still make 1 extra call to check, which is useless.
+            self._resume_key.__repr__()
+            return self._resume_key
 
     async def connect(self, timeout=None):
         """
@@ -142,7 +214,7 @@ class Node:
             "Lavalink WS connecting to %s or %s with headers %s", combo_uri, uri, self.headers
         )
 
-        tasks = tuple({self._multi_try_connect(u) for u in (combo_uri, uri)})
+        tasks = (self._multi_try_connect(uri),)
         for task in asyncio.as_completed(tasks, timeout=timeout):
             with contextlib.suppress(Exception):
                 if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
@@ -152,19 +224,40 @@ class Node:
 
         log.debug("Creating Lavalink WS listener.")
         self._listener_task = self.loop.create_task(self.listener())
-
-        for data in self._queue:
-            await self.send(data)
-
+        if not self._resuming_configured:
+            self.loop.create_task(self._configure_resume())
+        if self._queue:
+            for data in self._queue:
+                await self.send(data)
+            self._queue.clear()
         self.ready.set()
         self.update_state(NodeState.READY)
+
+    async def _configure_resume(self):
+        if self._resuming_configured:
+            return
+        if self._resume_key and self._resume_timeout and self._resume_timeout > 0:
+            await self.send(
+                dict(
+                    op="configureResuming",
+                    key=str(self._resume_key),
+                    timeout=self._resume_timeout,
+                )
+            )
+            self._resuming_configured = True
 
     async def wait_until_ready(self, timeout: Optional[float] = None):
         await asyncio.wait_for(self.ready.wait(), timeout=timeout)
 
-    @staticmethod
-    def _get_connect_headers(password, user_id, num_shards):
-        return {"Authorization": password, "User-Id": str(user_id), "Num-Shards": str(num_shards)}
+    def _get_connect_headers(self, password, user_id, num_shards):
+        headers = {
+            "Authorization": password,
+            "User-Id": str(user_id),
+            "Num-Shards": str(num_shards),
+        }
+        if self._resuming_configured and self._resume_key:
+            headers["Resume-Key"] = self._resume_key
+        return headers
 
     @property
     def lavalink_major_version(self):
@@ -178,15 +271,18 @@ class Node:
 
         while self._is_shutdown is False and (self._ws is None or self._ws.closed):
             try:
-                ws = await self.session.ws_connect(url=uri, headers=self.headers)
+                ws = await self.session.ws_connect(url=uri, headers=self.headers, heartbeat=60)
             except OSError:
                 delay = backoff.delay()
-                log.debug("Failed connect attempt %s, retrying in %s", attempt, delay)
+                log.info("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
             except aiohttp.WSServerHandshakeError:
                 return None
             else:
+                self.session_resumed = ws._response.headers.get("Session-Resumed", False)
+                if self.session_resumed:
+                    log.debug(f"WEBSOCKET Resumed Session with key: {self._resume_key}")
                 self._ws = ws
                 return self._ws
 
@@ -199,12 +295,9 @@ class Node:
             if msg.type != aiohttp.WSMsgType.TEXT:
                 if msg.type is aiohttp.WSMsgType.ERROR:
                     log.debug("Ignoring exception in listener task", exc_info=msg.data)
-                elif msg.type in (
-                    aiohttp.WSMsgType.CLOSED,
-                    aiohttp.WSMsgType.CLOSING,
-                    aiohttp.WSMsgType.CLOSE,
-                ):
+                elif msg.type in self._closers:
                     log.debug("Listener closing: %s", msg.extra)
+                    await self._reconnect()
                 else:
                     log.debug(
                         "WebSocket connection received unexpected message: %s:%s",
@@ -248,6 +341,8 @@ class Node:
             )
             self.stats = NodeStats(data)
             self.event_handler(op, stats, data)
+        else:
+            log.debug("Unknown op type: {}".format(data))
 
     async def _reconnect(self):
         self.ready.clear()
@@ -307,6 +402,9 @@ class Node:
         self.update_state(NodeState.DISCONNECTING)
 
         await self.player_manager.disconnect()
+        if self._resuming_configured:
+            await self.send(dict(op="configureResuming", key=None))
+        self._resuming_configured = False
 
         if self._ws is not None and not self._ws.closed:
             await self._ws.close()
