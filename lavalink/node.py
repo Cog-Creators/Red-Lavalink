@@ -207,11 +207,10 @@ class Node:
         """
         self._is_shutdown = False
 
-        combo_uri = "ws://{}:{}".format(self.host, self.rest)
         uri = "ws://{}:{}".format(self.host, self.port)
 
         log.debug(
-            "Lavalink WS connecting to %s or %s with headers %s", combo_uri, uri, self.headers
+            "Lavalink WS connecting to %s with headers %s", uri, self.headers
         )
 
         for task in asyncio.as_completed([self._multi_try_connect(uri)], timeout=timeout):
