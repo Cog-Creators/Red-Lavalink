@@ -35,7 +35,7 @@ class LavalinkEvents(enum.Enum):
     TRACK_START = "TrackStartEvent"
     """The track playback started."""
 
-    WebSocketClosedEvent = "WebSocketClosedEvent"
+    WEBSOCKET_CLOSED = "WebSocketClosedEvent"
     """Websocket has been closed."""
 
     # Custom events

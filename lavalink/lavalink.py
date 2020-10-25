@@ -186,10 +186,10 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
         player = node_.player_manager.get_player(guild_id)
     except (IndexError, KeyError):
         if data != enums.LavalinkEvents.TRACK_END:
-            log.exception(
+            log.debug(
                 "Got an event for a guild that we have no player for."
                 " This may be because of a forced voice channel"
-                " disconnect. If this message repeats forever, report it."
+                " disconnect."
             )
         return
 
@@ -202,7 +202,7 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
         extra = raw_data.get("thresholdMs")
     elif data == enums.LavalinkEvents.TRACK_START:
         extra = raw_data.get("track")
-    elif data == enums.LavalinkEvents.WebSocketClosedEvent:
+    elif data == enums.LavalinkEvents.WEBSOCKET_CLOSED:
         extra = {
             "code": raw_data.get("code"),
             "reason": raw_data.get("reason"),
