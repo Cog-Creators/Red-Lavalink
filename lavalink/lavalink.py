@@ -248,7 +248,7 @@ def register_update_listener(coro):
         _update_listeners.append(coro)
 
 
-async def _handle_update(player, data: enums.PlayerState):
+async def _handle_update(player, data: enums.PlayerState, raw_data: dict):
     await player.handle_player_update(data)
 
 
@@ -258,14 +258,13 @@ def _get_update_args(data: enums.PlayerState, raw_data: dict):
     try:
         player = get_player(guild_id)
     except KeyError:
-        log.exception(
+        log.debug(
             "Got a player update for a guild that we have no player for."
             " This may be because of a forced voice channel disconnect."
-            " If this message repeats forever, report it."
         )
         return
 
-    return player, data
+    return player, data, raw_data
 
 
 def unregister_update_listener(coro):

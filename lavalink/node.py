@@ -245,7 +245,7 @@ class Node:
             "User-Id": str(self.user_id),
             "Num-Shards": str(self.num_shards),
         }
-        if self._resuming_configured and self._resume_key:
+        if self._resume_key:
             headers["Resume-Key"] = self._resume_key
         return headers
 
