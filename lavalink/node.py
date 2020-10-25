@@ -271,8 +271,8 @@ class Node:
                 return None
             else:
                 self.session_resumed = ws._response.headers.get("Session-Resumed", False)
-                if self.session_resumed:
-                    log.debug(f"WEBSOCKET Resumed Session with key: {self._resume_key}")
+                if self._ws is not None and self.session_resumed:
+                    log.info(f"WEBSOCKET Resumed Session with key: {self._resume_key}")
                 self._ws = ws
                 return self._ws
 
