@@ -97,8 +97,8 @@ class Node:
         rest: int,
         user_id: int,
         num_shards: int,
-        resume_key: Optional[str],
-        resume_timeout: int,
+        resume_key: Optional[str] = None,
+        resume_timeout: int = 60,
     ):
         """
         Represents a Lavalink node.
@@ -309,7 +309,9 @@ class Node:
                     msg.type,
                     msg.data,
                 )
-        log.debug("[NODE] | Listener exited: ws %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown)
+        log.debug(
+            "[NODE] | Listener exited: ws %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown
+        )
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
