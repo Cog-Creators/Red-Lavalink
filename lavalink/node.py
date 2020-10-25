@@ -246,7 +246,7 @@ class Node:
             "Num-Shards": str(self.num_shards),
         }
         if self._resume_key:
-            headers["Resume-Key"] = self._resume_key
+            headers["Resume-Key"] = str(self._resume_key)
         return headers
 
     @property
