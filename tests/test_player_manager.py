@@ -69,7 +69,7 @@ async def test_autoconnect(
         },
     }
 
-    node._MOCK_send.assert_called_once_with(send_call)
+    node._MOCK_send.assert_called_with(send_call)
 
     assert len(lavalink.all_players()) == 1
     assert lavalink.get_player(voice_channel.guild.id).channel == voice_channel

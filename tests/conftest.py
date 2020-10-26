@@ -1,4 +1,5 @@
 from collections import namedtuple
+from types import SimpleNamespace
 
 import pytest
 import asyncio
@@ -19,6 +20,8 @@ class ProxyWebSocket:
 
         self.recv = MagicMock(wraps=self._recv)
         self.send = MagicMock(wraps=self._send)
+        self._response = SimpleNamespace()
+        self._response.headers = {}
 
         self._closed = False
 
@@ -121,6 +124,8 @@ async def node(bot):
         rest=2333,
         user_id=bot.user.id,
         num_shards=bot.shard_count,
+        resume_key="Test",
+        resume_timeout=60,
     )
 
     # node_.send = MagicMock(wraps=send)
