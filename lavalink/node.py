@@ -323,7 +323,8 @@ class Node:
             else:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
-            state = PlayerState(**data.get("state"))
+            state = data.get("state", {})
+            state = PlayerState(position=state.get("position", 0), time=state.get("time", 0))
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
