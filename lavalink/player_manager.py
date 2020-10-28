@@ -109,13 +109,13 @@ class Player(RESTClient):
             else:
                 raise
 
-    async def connect(self):
+    async def connect(self, deafen: bool = False):
         """
         Connects to the voice channel associated with this Player.
         """
-        await self.node.join_voice_channel(self.channel.guild.id, self.channel.id)
+        await self.node.join_voice_channel(self.channel.guild.id, self.channel.id, deafen=deafen)
 
-    async def move_to(self, channel: discord.VoiceChannel):
+    async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False):
         """
         Moves this player to a voice channel.
 
@@ -127,7 +127,7 @@ class Player(RESTClient):
             raise TypeError("Cannot move to a different guild.")
 
         self.channel = channel
-        await self.connect()
+        await self.connect(deafen=deafen)
 
     async def disconnect(self, requested=True):
         """
@@ -281,9 +281,13 @@ class Player(RESTClient):
 
             self.current = track
             log.debug("Assigned current.")
-            await self.node.play(self.channel.guild.id, track)
-            if track.start_timestamp > 0:
-                await self.seek(track.start_timestamp)
+            await self.node.play(self.channel.guild.id, track, start=track.start_timestamp, replace=True)
+
+    async def resume(self, track: Track, replace: bool = True, start: int = 0):
+        self._paused = False
+        self._is_playing = True
+        log.debug("Resuming current.")
+        await self.node.play(self.channel.guild.id, track, start=start, replace=replace)
 
     async def stop(self):
         """
@@ -359,7 +363,7 @@ class PlayerManager:
     def guild_ids(self):
         return self._player_dict.keys()
 
-    async def create_player(self, channel: discord.VoiceChannel) -> Player:
+    async def create_player(self, channel: discord.VoiceChannel, deafen: bool = False) -> Player:
         """
         Connects to a discord voice channel.
 
@@ -377,10 +381,10 @@ class PlayerManager:
         """
         if self._already_in_guild(channel):
             p = self.get_player(channel.guild.id)
-            await p.move_to(channel)
+            await p.move_to(channel, deafen=deafen)
         else:
             p = Player(self, channel)
-            await p.connect()
+            await p.connect(deafen=deafen)
             self._player_dict[channel.guild.id] = p
             await self.refresh_player_state(p)
         return p

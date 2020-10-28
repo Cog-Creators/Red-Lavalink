@@ -379,12 +379,12 @@ class Node:
     def unregister_state_handler(self, func):
         self._state_handlers.remove(func)
 
-    async def join_voice_channel(self, guild_id, channel_id):
+    async def join_voice_channel(self, guild_id, channel_id, deafen: bool = False):
         """
         Alternative way to join a voice channel if node is known.
         """
         voice_ws = self.get_voice_ws(guild_id)
-        await voice_ws.voice_state(guild_id, channel_id)
+        await voice_ws.voice_state(guild_id, channel_id, self_deaf=deafen)
 
     async def disconnect(self):
         """
@@ -440,12 +440,15 @@ class Node:
             LavalinkIncomingOp.EVENT, LavalinkEvents.QUEUE_END, {"guildId": str(guild_id)}
         )
 
-    async def play(self, guild_id: int, track: Track):
+    async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
         await self.send(
             {
                 "op": LavalinkOutgoingOp.PLAY.value,
                 "guildId": str(guild_id),
                 "track": track.track_identifier,
+                'noReplace': not replace,
+                'startTime': str(start)
+
             }
         )
 
@@ -505,7 +508,7 @@ def get_nodes_stats():
     return [node.stats for node in _nodes]
 
 
-async def join_voice(guild_id: int, channel_id: int):
+async def join_voice(guild_id: int, channel_id: int, deafen: bool = False):
     """
     Joins a voice channel by ID's.
 
@@ -516,7 +519,8 @@ async def join_voice(guild_id: int, channel_id: int):
     """
     node = get_node(guild_id)
     voice_ws = node.get_voice_ws(guild_id)
-    await voice_ws.voice_state(guild_id, channel_id)
+    await voice_ws.voice_state(guild_id, channel_id, self_deaf=deafen)
+
 
 
 async def disconnect():
