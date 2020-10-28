@@ -94,7 +94,6 @@ class Node:
         host: str,
         password: str,
         port: int,
-        rest: int,
         user_id: int,
         num_shards: int,
         resume_key: Optional[str] = None,
@@ -133,7 +132,6 @@ class Node:
         self.get_voice_ws = voice_ws_func
         self.host = host
         self.port = port
-        self.rest = rest
         self.password = password
         self._resume_key = resume_key
         if self._resume_key is None:
@@ -284,6 +282,7 @@ class Node:
             msg = await self._ws.receive()
             if msg.type in self._closers:
                 if self._resuming_configured:
+                    log.debug("[NODE] | NODE Resuming: %s", msg.extra)
                     self.loop.create_task(self._reconnect())
                     return
                 else:

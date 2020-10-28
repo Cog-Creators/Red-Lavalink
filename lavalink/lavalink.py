@@ -32,7 +32,6 @@ async def initialize(
     bot: Bot,
     host,
     password,
-    rest_port,
     ws_port,
     timeout=30,
     resume_key: Optional[str] = None,
@@ -54,8 +53,6 @@ async def initialize(
         The hostname or IP address of the Lavalink node.
     password : str
         The password of the Lavalink node.
-    rest_port : int
-        The port of the REST API on the Lavalink node.
     ws_port : int
         The websocket port on the Lavalink Node.
     timeout : int
@@ -80,7 +77,6 @@ async def initialize(
         host,
         password,
         port=ws_port,
-        rest=rest_port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
         resume_key=resume_key,

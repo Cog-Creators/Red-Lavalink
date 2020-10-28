@@ -121,7 +121,6 @@ async def node(bot):
         host="localhost",
         password="password",
         port=2333,
-        rest=2333,
         user_id=bot.user.id,
         num_shards=bot.shard_count,
         resume_key="Test",
