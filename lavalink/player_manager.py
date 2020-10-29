@@ -231,6 +231,9 @@ class Player(RESTClient):
             self._is_playing = True
         self.position = state.position
 
+        if self.node.state == NodeState.READY and self.channel.guild.me not in self.channel.members:
+            await self.disconnect(requested=False)
+
     # Play commands
     def add(self, requester: discord.User, track: Track):
         """

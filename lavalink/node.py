@@ -433,9 +433,12 @@ class Node:
     async def destroy_guild(self, guild_id: int):
         await self.send({"op": LavalinkOutgoingOp.DESTROY.value, "guildId": str(guild_id)})
 
+    async def no_event_stop(self, guild_id: int):
+        await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
+
     # Player commands
     async def stop(self, guild_id: int):
-        await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
+        await self.no_event_stop(guild_id=guild_id)
         self.event_handler(
             LavalinkIncomingOp.EVENT, LavalinkEvents.QUEUE_END, {"guildId": str(guild_id)}
         )
