@@ -48,7 +48,8 @@ class Player(RESTClient):
         self.repeat = False
         self.shuffle = False  # Shuffle is done client side now This is a breaking change
         self.shuffle_bumped = True
-
+        self._is_autoplaying = False
+        self._auto_play_sent = False
         self._volume = 100
 
         self._is_playing = False
@@ -60,6 +61,13 @@ class Player(RESTClient):
             f'<Player: guild="{self.channel.guild.name}" channel="{self.channel.name}",'
             f" playing={self.is_playing} paused={self.paused} volume={self.volume}>"
         )
+
+    @property
+    def is_auto_playing(self) -> bool:
+        """
+        Current status of playback
+        """
+        return self._is_playing and not self._paused and self._is_autoplaying
 
     @property
     def is_playing(self) -> bool:
@@ -133,6 +141,8 @@ class Player(RESTClient):
         """
         Disconnects this player from it's voice channel.
         """
+        self._is_autoplaying = False
+        self._auto_play_sent = False
         if self.state == PlayerState.DISCONNECTING:
             return
 
@@ -287,7 +297,7 @@ class Player(RESTClient):
         self._paused = False
         self._is_playing = True
         log.debug("Resuming current.")
-        await self.node.play(self.channel.guild.id, track, start=start, replace=replace)
+        await self.node.no_stop_play(self.channel.guild.id, track, start=start, replace=replace)
 
     async def stop(self):
         """
@@ -302,6 +312,8 @@ class Player(RESTClient):
         self.current = None
         self.position = 0
         self._paused = False
+        self._is_autoplaying = False
+        self._auto_play_sent = False
 
     async def skip(self):
         """

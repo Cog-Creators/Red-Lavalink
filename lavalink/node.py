@@ -440,7 +440,7 @@ class Node:
             LavalinkIncomingOp.EVENT, LavalinkEvents.QUEUE_END, {"guildId": str(guild_id)}
         )
 
-    async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
+    async def no_stop_play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
         await self.send(
             {
                 "op": LavalinkOutgoingOp.PLAY.value,
@@ -451,6 +451,10 @@ class Node:
 
             }
         )
+
+    async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
+        await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
+        await self.no_stop_play(guild_id=guild_id, track=track, replace=replace, start=start)
 
     async def pause(self, guild_id, paused):
         await self.send(
