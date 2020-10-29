@@ -291,7 +291,9 @@ class Player(RESTClient):
 
             self.current = track
             log.debug("Assigned current.")
-            await self.node.play(self.channel.guild.id, track, start=track.start_timestamp, replace=True)
+            await self.node.play(
+                self.channel.guild.id, track, start=track.start_timestamp, replace=True
+            )
 
     async def resume(self, track: Track, replace: bool = True, start: int = 0):
         self._paused = False

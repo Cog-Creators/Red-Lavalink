@@ -440,15 +440,16 @@ class Node:
             LavalinkIncomingOp.EVENT, LavalinkEvents.QUEUE_END, {"guildId": str(guild_id)}
         )
 
-    async def no_stop_play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
+    async def no_stop_play(
+        self, guild_id: int, track: Track, replace: bool = True, start: int = 0
+    ):
         await self.send(
             {
                 "op": LavalinkOutgoingOp.PLAY.value,
                 "guildId": str(guild_id),
                 "track": track.track_identifier,
-                'noReplace': not replace,
-                'startTime': str(start)
-
+                "noReplace": not replace,
+                "startTime": str(start),
             }
         )
 
@@ -524,7 +525,6 @@ async def join_voice(guild_id: int, channel_id: int, deafen: bool = False):
     node = get_node(guild_id)
     voice_ws = node.get_voice_ws(guild_id)
     await voice_ws.voice_state(guild_id, channel_id, self_deaf=deafen)
-
 
 
 async def disconnect():
