@@ -231,10 +231,9 @@ class Player(RESTClient):
         if (
             self.channel
             and self._is_playing
-            and self.node.state == NodeState.READY
             and self.channel.guild.me.id not in {i.id for i in self.channel.members if i.bot}
         ):
-            await self.disconnect(requested=False)
+            self._is_playing = False
             return
         if state.position > self.position:
             self._is_playing = True
@@ -308,7 +307,7 @@ class Player(RESTClient):
         self._paused = False
         self._is_playing = True
         log.debug("Resuming current.")
-        await self.node.no_stop_play(self.channel.guild.id, track, start=start, replace=replace)
+        await self.node.play(self.channel.guild.id, track, start=start, replace=replace)
 
     async def stop(self):
         """
