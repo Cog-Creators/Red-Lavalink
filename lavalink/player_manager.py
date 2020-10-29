@@ -227,12 +227,18 @@ class Player(RESTClient):
         ----------
         state : websocket.PlayerState
         """
+
+        if (
+            self.channel
+            and self._is_playing
+            and self.node.state == NodeState.READY
+            and self.channel.guild.me.id not in {i.id for i in self.channel.members if i.bot}
+        ):
+            await self.disconnect(requested=False)
+            return
         if state.position > self.position:
             self._is_playing = True
         self.position = state.position
-
-        if self.node.state == NodeState.READY and self.channel.guild.me not in self.channel.members:
-            await self.disconnect(requested=False)
 
     # Play commands
     def add(self, requester: discord.User, track: Track):
