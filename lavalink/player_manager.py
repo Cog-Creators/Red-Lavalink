@@ -3,6 +3,7 @@ from random import shuffle
 from typing import Optional, TYPE_CHECKING
 
 import discord
+from discord.backoff import ExponentialBackoff
 
 from . import log
 from .enums import *
@@ -55,6 +56,7 @@ class Player(RESTClient):
         self._is_playing = False
         self._metadata = {}
         self.manager = manager
+        self._con_delay = None
 
     def __repr__(self):
         return (
@@ -195,6 +197,9 @@ class Player(RESTClient):
         old_state = self.state
         self.state = state
 
+        if self._con_delay:
+            self._con_delay = None
+
         if state == PlayerState.READY:
             self.reset_session()
 
@@ -218,6 +223,11 @@ class Player(RESTClient):
                 await self.play()
             else:
                 self._is_playing = False
+        elif event == LavalinkEvents.WEBSOCKET_CLOSED:
+            code = extra.get("code")
+            if code in (4015, 4014, 4009, 4006):
+                if not self._con_delay:
+                    self._con_delay = ExponentialBackoff(base=1)
 
     async def handle_player_update(self, state: "node.PlayerState"):
         """
