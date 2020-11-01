@@ -526,8 +526,7 @@ async def join_voice(guild_id: int, channel_id: int, deafen: bool = False):
     channel_id : int
     """
     node = get_node(guild_id)
-    voice_ws = node.get_voice_ws(guild_id)
-    await voice_ws.voice_state(guild_id, channel_id, self_deaf=deafen)
+    await node.join_voice_channel(guild_id, channel_id, deafen)
 
 
 async def disconnect():

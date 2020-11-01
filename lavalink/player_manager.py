@@ -117,13 +117,14 @@ class Player(RESTClient):
             else:
                 raise
 
-    async def connect(self, deafen: bool = False):
+    async def connect(self, timeout: int = 60, reconnect: bool = True, deafen: bool = False):
         """
         Connects to the voice channel associated with this Player.
         """
-        await self.node.join_voice_channel(self.channel.guild.id, self.channel.id, deafen=deafen)
+        await self.channel.connect(timeout=timeout, reconnect=reconnect)
+        await self.channel.guild.change_voice_state(channel=self.channel, self_mute=False, self_deaf=deafen)
 
-    async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False):
+    async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False, timeout:int = 60, reconnect:bool = True):
         """
         Moves this player to a voice channel.
 
@@ -135,7 +136,7 @@ class Player(RESTClient):
             raise TypeError("Cannot move to a different guild.")
 
         self.channel = channel
-        await self.connect(deafen=deafen)
+        await self.connect(deafen=deafen, timeout=timeout, reconnect=reconnect)
 
     async def disconnect(self, requested=True):
         """
@@ -157,7 +158,7 @@ class Player(RESTClient):
         voice_ws = self.node.get_voice_ws(guild_id)
 
         if not voice_ws.socket.closed:
-            await voice_ws.voice_state(guild_id, None)
+            await self.channel.guild.change_voice_state(channel=None)
 
         await self.node.destroy_guild(guild_id)
         await self.close()
@@ -385,7 +386,7 @@ class PlayerManager:
     def guild_ids(self):
         return self._player_dict.keys()
 
-    async def create_player(self, channel: discord.VoiceChannel, deafen: bool = False) -> Player:
+    async def create_player(self, channel: discord.VoiceChannel, deafen: bool = False, timeout:int=60,reconnect:bool=True) -> Player:
         """
         Connects to a discord voice channel.
 
@@ -403,10 +404,10 @@ class PlayerManager:
         """
         if self._already_in_guild(channel):
             p = self.get_player(channel.guild.id)
-            await p.move_to(channel, deafen=deafen)
+            await p.move_to(channel, deafen=deafen, timeout=timeout, reconnect=reconnect)
         else:
             p = Player(self, channel)
-            await p.connect(deafen=deafen)
+            await p.connect(deafen=deafen, timeout=timeout, reconnect=reconnect)
             self._player_dict[channel.guild.id] = p
             await self.refresh_player_state(p)
         return p
@@ -455,7 +456,8 @@ class PlayerManager:
             pass
         else:
             del self._player_dict[guild_id]
-            await p.disconnect(requested=False)
+            # await p.disconnect(requested=False)
+            # The above line fucks up with Discord Reconnect.
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")

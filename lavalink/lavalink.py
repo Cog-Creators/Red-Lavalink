@@ -91,7 +91,7 @@ async def initialize(
     return lavalink_node
 
 
-async def connect(channel: discord.VoiceChannel, deafen: bool = False):
+async def connect(channel: discord.VoiceChannel, deafen: bool = False, timeout:int=60,reconnect:bool=True):
     """
     Connects to a discord voice channel.
 
@@ -113,8 +113,12 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
         If there are no available lavalink nodes ready to connect to discord.
     """
     node_ = node.get_node(channel.guild.id)
-    p = await node_.player_manager.create_player(channel, deafen=deafen)
-    return p
+    try:
+        p = await node_.player_manager.create_player(channel, deafen=deafen, timeout=timeout, reconnect=reconnect)
+        return p
+    except discord.ClientException:
+        p = node_.player_manager.get_player(channel.guild.id)
+        return p
 
 
 def get_player(guild_id: int) -> player_manager.Player:
