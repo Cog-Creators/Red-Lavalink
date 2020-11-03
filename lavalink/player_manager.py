@@ -97,7 +97,7 @@ class Player(RESTClient):
         """
         Whether the underlying node is ready for requests.
         """
-        return self.node.ready.is_set()
+        return self.node.ready
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -108,7 +108,7 @@ class Player(RESTClient):
         If no_raise is set, returns false when a timeout occurs instead of propogating TimeoutError.
         A timeout of None means to wait indefinitely.
         """
-        if self.node.ready.is_set():
+        if self.node.ready:
             return True
 
         try:
@@ -482,7 +482,7 @@ class PlayerManager:
             await p.update_state(state)
 
     async def refresh_player_state(self, player: Player):
-        if self.node.state == NodeState.READY:
+        if self.node.ready:
             await player.update_state(PlayerState.READY)
         elif self.node.state == NodeState.DISCONNECTING:
             await player.update_state(PlayerState.DISCONNECTING)

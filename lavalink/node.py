@@ -141,7 +141,7 @@ class Node:
         self.num_shards = num_shards
         self.user_id = user_id
 
-        self.ready = asyncio.Event()
+        self._ready_event = asyncio.Event()
 
         self._ws = None
         self._listener_task = None
@@ -212,13 +212,12 @@ class Node:
         if self._listener_task is not None:
             self._listener_task.cancel()
         self._listener_task = self.loop.create_task(self.listener())
-        if not self._resuming_configured:
-            self.loop.create_task(self._configure_resume())
+        self.loop.create_task(self._configure_resume())
         if self._queue:
             for data in self._queue:
                 await self.send(data)
             self._queue.clear()
-        self.ready.set()
+        self._ready_event.set()
         self.update_state(NodeState.READY)
 
     async def _configure_resume(self):
@@ -235,7 +234,7 @@ class Node:
             self._resuming_configured = True
 
     async def wait_until_ready(self, timeout: Optional[float] = None):
-        await asyncio.wait_for(self.ready.wait(), timeout=timeout)
+        await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
 
     def _get_connect_headers(self) -> dict:
         headers = {
@@ -249,13 +248,22 @@ class Node:
 
     @property
     def lavalink_major_version(self):
-        if self.state != NodeState.READY:
+        if not self.ready:
             raise RuntimeError("Node not ready!")
         return self._ws.response_headers.get("Lavalink-Major-Version")
+
+    @property
+    def ready(self) -> bool:
+        """
+        Whether the underlying node is ready for requests.
+        """
+        return self.state == NodeState.READY
 
     async def _multi_try_connect(self, uri):
         backoff = ExponentialBackoff()
         attempt = 1
+        if self._ws is not None:
+            await self._ws.close(code=4006, message=b'Reconnecting')
 
         while self._is_shutdown is False and (self._ws is None or self._ws.closed):
             try:
@@ -284,6 +292,7 @@ class Node:
             if msg.type in self._closers:
                 if self._resuming_configured:
                     ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
+                    self.update_state(NodeState.RECONNECTING)
                     self.loop.create_task(self._reconnect())
                     return
                 else:
@@ -309,6 +318,7 @@ class Node:
                     msg.data,
                 )
         ws_ll_log.warning("[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown)
+        self.update_state(NodeState.RECONNECTING)
         self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
@@ -337,24 +347,41 @@ class Node:
             ws_ll_log.info("Unknown op type: {}".format(data))
 
     async def _reconnect(self):
-        self.ready.clear()
+        self._ready_event.clear()
 
         if self._is_shutdown is True:
             ws_ll_log.info("[NODE] | Shutting down Lavalink WS.")
             return
-
         if self.state != NodeState.CONNECTING:
             self.update_state(NodeState.RECONNECTING)
+        if self.state != NodeState.RECONNECTING:
+            return
+        backoff = ExponentialBackoff(base=1)
+        attempt = 1
+        while self.state == NodeState.RECONNECTING:
+            attempt += 1
+            delay = backoff.delay()
+            try:
+                await self.connect(timeout=15)
+            except asyncio.TimeoutError:
+                ws_ll_log.info(
+                    "[NODE] | Failed to reconnect, please reinitialize lavalink when ready."
+                )
+                ws_ll_log.info("[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s", attempt, delay)
 
-        ws_ll_log.info("[NODE] | Attempting Lavalink WS reconnect.")
-        try:
-            await self.connect()
-        except asyncio.TimeoutError:
-            ws_ll_log.info(
-                "[NODE] | Failed to reconnect, please reinitialize lavalink when ready."
-            )
-        else:
-            ws_ll_log.info("[NODE] | Reconnect successful.")
+            else:
+                ws_ll_log.info("[NODE] | Reconnect successful.")
+                self.dispatch_reconnect()
+
+    def dispatch_reconnect(self):
+        for guild_id in self.player_manager.guild_ids:
+            self.event_handler(LavalinkIncomingOp.EVENT, LavalinkEvents.WEBSOCKET_CLOSED, {
+                "guildId": guild_id,
+                "code": 4006,
+                "reason": "Lavalink WS reconnected",
+                "byRemote": True,
+
+            })
 
     def update_state(self, next_state: NodeState):
         if next_state == self.state:
@@ -391,7 +418,7 @@ class Node:
         Shuts down and disconnects the websocket.
         """
         self._is_shutdown = True
-        self.ready.clear()
+        self._ready_event.clear()
 
         self.update_state(NodeState.DISCONNECTING)
 
@@ -497,7 +524,7 @@ def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
     for node in _nodes:
         guild_ids = node.player_manager.guild_ids
 
-        if ignore_ready_status is False and not node.ready.is_set():
+        if ignore_ready_status is False and not node.ready:
             continue
         elif len(guild_ids) < guild_count:
             guild_count = len(guild_ids)
