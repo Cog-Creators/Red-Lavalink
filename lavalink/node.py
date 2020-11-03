@@ -290,7 +290,6 @@ class Node:
                     ws_ll_log.info("[NODE] | Listener closing: %s", msg.extra)
                     break
             elif msg.type == aiohttp.WSMsgType.TEXT:
-                ws_ll_log.debug(f"[NODE] | Received Payload:: <{msg.data}>")
                 data = msg.json()
                 try:
                     op = LavalinkIncomingOp(data.get("op"))
