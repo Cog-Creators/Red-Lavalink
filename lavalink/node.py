@@ -273,6 +273,8 @@ class Node:
                 ws_ll_log.error("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
                 attempt += 1
+                if attempt > 5:
+                    raise asyncio.TimeoutError
             except aiohttp.WSServerHandshakeError:
                 ws_ll_log.error("Failed connect WSServerHandshakeError")
                 return None
@@ -291,9 +293,10 @@ class Node:
             msg = await self._ws.receive()
             if msg.type in self._closers:
                 if self._resuming_configured:
-                    ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
-                    self.update_state(NodeState.RECONNECTING)
-                    self.loop.create_task(self._reconnect())
+                    if self.state != NodeState.RECONNECTING:
+                        ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
+                        self.update_state(NodeState.RECONNECTING)
+                        self.loop.create_task(self._reconnect())
                     return
                 else:
                     ws_ll_log.info("[NODE] | Listener closing: %s", msg.extra)
@@ -317,9 +320,10 @@ class Node:
                     msg.type,
                     msg.data,
                 )
-        ws_ll_log.warning("[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown)
-        self.update_state(NodeState.RECONNECTING)
-        self.loop.create_task(self._reconnect())
+        if self.state != NodeState.RECONNECTING:
+            ws_ll_log.warning("[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown)
+            self.update_state(NodeState.RECONNECTING)
+            self.loop.create_task(self._reconnect())
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
@@ -360,12 +364,12 @@ class Node:
         attempt = 1
         while self.state == NodeState.RECONNECTING:
             attempt += 1
-            delay = backoff.delay()
             try:
-                await self.connect(timeout=15)
+                await self.connect()
             except asyncio.TimeoutError:
+                delay = backoff.delay()
                 ws_ll_log.info(
-                    "[NODE] | Failed to reconnect, please reinitialize lavalink when ready."
+                    "[NODE] | Failed to reconnect to the Lavalink server."
                 )
                 ws_ll_log.info("[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s", attempt, delay)
 
