@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 from random import shuffle
 from typing import Optional, TYPE_CHECKING
 
@@ -57,6 +58,7 @@ class Player(RESTClient):
         self._metadata = {}
         self.manager = manager
         self._con_delay = None
+        self._last_resume = None
 
     def __repr__(self):
         return (
@@ -123,6 +125,7 @@ class Player(RESTClient):
         """
         Connects to the voice channel associated with this Player.
         """
+        self._last_resume = datetime.datetime.now(tz=datetime.timezone.utc)
         await self.channel.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
         )

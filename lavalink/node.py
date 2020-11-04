@@ -232,6 +232,7 @@ class Node:
                 )
             )
             self._resuming_configured = True
+            ws_ll_log.debug("Server Resuming has been configured.")
 
     async def wait_until_ready(self, timeout: Optional[float] = None):
         await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
@@ -263,7 +264,7 @@ class Node:
         backoff = ExponentialBackoff()
         attempt = 1
         if self._ws is not None:
-            await self._ws.close(code=4006, message=b'Reconnecting')
+            await self._ws.close(code=4006, message=b"Reconnecting")
 
         while self._is_shutdown is False and (self._ws is None or self._ws.closed):
             try:
@@ -321,7 +322,9 @@ class Node:
                     msg.data,
                 )
         if self.state != NodeState.RECONNECTING:
-            ws_ll_log.warning("[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown)
+            ws_ll_log.warning(
+                "[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown
+            )
             self.update_state(NodeState.RECONNECTING)
             self.loop.create_task(self._reconnect())
 
@@ -368,10 +371,12 @@ class Node:
                 await self.connect()
             except asyncio.TimeoutError:
                 delay = backoff.delay()
+                ws_ll_log.info("[NODE] | Failed to reconnect to the Lavalink server.")
                 ws_ll_log.info(
-                    "[NODE] | Failed to reconnect to the Lavalink server."
+                    "[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s",
+                    attempt,
+                    delay,
                 )
-                ws_ll_log.info("[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s", attempt, delay)
 
             else:
                 ws_ll_log.info("[NODE] | Reconnect successful.")
@@ -379,13 +384,16 @@ class Node:
 
     def dispatch_reconnect(self):
         for guild_id in self.player_manager.guild_ids:
-            self.event_handler(LavalinkIncomingOp.EVENT, LavalinkEvents.WEBSOCKET_CLOSED, {
-                "guildId": guild_id,
-                "code": 42069,
-                "reason": "Lavalink WS reconnected",
-                "byRemote": True,
-
-            })
+            self.event_handler(
+                LavalinkIncomingOp.EVENT,
+                LavalinkEvents.WEBSOCKET_CLOSED,
+                {
+                    "guildId": guild_id,
+                    "code": 42069,
+                    "reason": "Lavalink WS reconnected",
+                    "byRemote": True,
+                },
+            )
 
     def update_state(self, next_state: NodeState):
         if next_state == self.state:
