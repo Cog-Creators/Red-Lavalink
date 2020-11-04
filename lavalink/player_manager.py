@@ -121,11 +121,13 @@ class Player(RESTClient):
             else:
                 raise
 
-    async def connect(self, deafen: bool = False):
+    async def connect(self, deafen: bool = False, channel: Optional[discord.VoiceChannel] = None):
         """
         Connects to the voice channel associated with this Player.
         """
         self._last_resume = datetime.datetime.now(tz=datetime.timezone.utc)
+        if channel:
+            self.channel = channel
         await self.channel.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
         )

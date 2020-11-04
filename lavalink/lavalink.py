@@ -84,6 +84,7 @@ async def initialize(
     )
 
     await lavalink_node.connect(timeout=timeout)
+    lavalink_node._retries = 0
 
     bot.add_listener(node.on_socket_response)
     bot.add_listener(_on_guild_remove, name="on_guild_remove")

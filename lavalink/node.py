@@ -151,6 +151,7 @@ class Node:
 
         self.state = NodeState.CONNECTING
         self._state_handlers: List = []
+        self._retries = 0
 
         self.player_manager = PlayerManager(self)
 
@@ -267,6 +268,7 @@ class Node:
             await self._ws.close(code=4006, message=b"Reconnecting")
 
         while self._is_shutdown is False and (self._ws is None or self._ws.closed):
+            self._retries += 1
             try:
                 ws = await self.session.ws_connect(url=uri, headers=self.headers, heartbeat=60)
             except OSError:
@@ -381,6 +383,7 @@ class Node:
             else:
                 ws_ll_log.info("[NODE] | Reconnect successful.")
                 self.dispatch_reconnect()
+                self._retries = 0
 
     def dispatch_reconnect(self):
         for guild_id in self.player_manager.guild_ids:
@@ -392,6 +395,7 @@ class Node:
                     "code": 42069,
                     "reason": "Lavalink WS reconnected",
                     "byRemote": True,
+                    "retries": self._retries,
                 },
             )
 
