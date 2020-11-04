@@ -381,7 +381,7 @@ class Node:
         for guild_id in self.player_manager.guild_ids:
             self.event_handler(LavalinkIncomingOp.EVENT, LavalinkEvents.WEBSOCKET_CLOSED, {
                 "guildId": guild_id,
-                "code": 4006,
+                "code": 42069,
                 "reason": "Lavalink WS reconnected",
                 "byRemote": True,
 
