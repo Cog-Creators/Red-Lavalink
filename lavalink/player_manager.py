@@ -156,13 +156,24 @@ class Player(RESTClient):
             return
 
         await self.update_state(PlayerState.DISCONNECTING)
+        guild_id = self.channel.guild.id
         if not requested:
             log.debug(
                 f"Forcing player disconnect for guild {self.channel.guild.id}"
                 f" due to player manager request."
             )
+            self.node.event_handler(
+                LavalinkIncomingOp.EVENT,
+                LavalinkEvents.FORCED_DISCONNECT,
+                {
+                    "guildId": guild_id,
+                    "code": 42069,
+                    "reason": "Forced Disconnect - Do not Reconnect",
+                    "byRemote": True,
+                    "retries": -1,
+                },
+            )
 
-        guild_id = self.channel.guild.id
         voice_ws = self.node.get_voice_ws(guild_id)
 
         if not voice_ws.socket.closed:
