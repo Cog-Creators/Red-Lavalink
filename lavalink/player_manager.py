@@ -242,7 +242,7 @@ class Player(RESTClient):
                 self._is_playing = False
         elif event == LavalinkEvents.WEBSOCKET_CLOSED:
             code = extra.get("code")
-            if code in (4015, 4014, 4009, 4006, 1006):
+            if code in (4015, 4014, 4009, 4006, 4000, 1006):
                 if not self._con_delay:
                     self._con_delay = ExponentialBackoff(base=1)
 

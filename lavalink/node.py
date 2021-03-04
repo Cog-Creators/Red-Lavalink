@@ -500,7 +500,7 @@ class Node:
         )
 
     async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
-        await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
+        # await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
         await self.no_stop_play(guild_id=guild_id, track=track, replace=replace, start=start)
 
     async def pause(self, guild_id, paused):
