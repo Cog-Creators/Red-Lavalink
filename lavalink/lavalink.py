@@ -337,12 +337,14 @@ def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
         _loop.create_task(coro(*args))
 
 
-async def close():
+async def close(bot):
     """
     Closes the lavalink connection completely.
     """
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
+    bot.remove_listener(node.on_socket_response)
+    bot.remove_listener(_on_guild_remove, name="on_guild_remove")
     await node.disconnect()
 
 
