@@ -238,6 +238,8 @@ class Player(RESTClient):
         event : node.LavalinkEvents
         extra
         """
+        log.debug(f"Received player event for player: {self.channel.id} - {event} - {extra}.")
+
         if event == LavalinkEvents.TRACK_END:
             if extra == TrackEndReason.FINISHED:
                 await self.play()
@@ -258,15 +260,16 @@ class Player(RESTClient):
         state : websocket.PlayerState
         """
 
-        if (
-            self.channel
-            and self._is_playing
-            and self.channel.guild.me.id not in {i.id for i in self.channel.members if i.bot}
-        ):
-            self._is_playing = False
-            return
+        # if (
+        #     self.channel
+        #     and self._is_playing
+        #     and self.channel.guild.me.id not in {i.id for i in self.channel.members if i.bot}
+        # ):
+        #     self._is_playing = False
+        #     return
         if state.position > self.position:
             self._is_playing = True
+        log.debug(f"Updated player position for player: {self.channel.id} - {state.position//1000}s.")
         self.position = state.position
 
     # Play commands
@@ -328,16 +331,16 @@ class Player(RESTClient):
             track = self.queue.pop(0)
 
             self.current = track
-            log.debug("Assigned current.")
+            log.debug(f"Assigned current for player: {self.channel.id}.")
             await self.node.play(
                 self.channel.guild.id, track, start=track.start_timestamp, replace=True
             )
 
-    async def resume(self, track: Track, replace: bool = True, start: int = 0):
+    async def resume(self, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
         self._paused = False
         self._is_playing = True
-        log.debug("Resuming current.")
-        await self.node.play(self.channel.guild.id, track, start=start, replace=replace)
+        log.debug(f"Resuming current track for player: {self.channel.id}.")
+        await self.node.play(self.channel.guild.id, track, start=start, replace=replace, pause=pause)
 
     async def stop(self):
         """
@@ -548,8 +551,8 @@ class PlayerManager:
             self.voice_states[guild_id]["session_id"] = session_id
         else:
             return
-
-        if len(self.voice_states[guild_id]) == 3:
+        data = self.voice_states[guild_id]
+        if all(k in data for k in ["session_id", "guild_id", "event"]):
             await self.node.send_lavalink_voice_update(**self.voice_states[guild_id])
 
     async def disconnect(self):

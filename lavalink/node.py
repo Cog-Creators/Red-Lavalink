@@ -487,7 +487,7 @@ class Node:
         )
 
     async def no_stop_play(
-        self, guild_id: int, track: Track, replace: bool = True, start: int = 0
+        self, guild_id: int, track: Track, replace: bool = True, start: int = 0, pause: bool = False
     ):
         await self.send(
             {
@@ -496,12 +496,13 @@ class Node:
                 "track": track.track_identifier,
                 "noReplace": not replace,
                 "startTime": str(start),
+                "pause": pause,
             }
         )
 
-    async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0):
+    async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
         # await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
-        await self.no_stop_play(guild_id=guild_id, track=track, replace=replace, start=start)
+        await self.no_stop_play(guild_id=guild_id, track=track, replace=replace, start=start, pause=pause)
 
     async def pause(self, guild_id, paused):
         await self.send(
