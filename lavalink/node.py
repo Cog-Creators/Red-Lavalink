@@ -271,7 +271,7 @@ class Node:
             self._retries += 1
             try:
                 ws = await self.session.ws_connect(url=uri, headers=self.headers, heartbeat=60)
-            except OSError:
+            except (OSError, aiohttp.ClientConnectionError):
                 delay = backoff.delay()
                 ws_ll_log.error("Failed connect attempt %s, retrying in %s", attempt, delay)
                 await asyncio.sleep(delay)
