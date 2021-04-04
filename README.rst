@@ -80,4 +80,4 @@ Shuffling
 
 When shutting down, be sure to do the following::
 
-    await lavalink.close()
+    await lavalink.close(bot)

@@ -143,4 +143,4 @@ async def node(bot):
 async def initialize_lavalink(bot):
     await lavalink.initialize(bot, "localhost", "password", 2333, 2333)
     yield
-    await lavalink.close()
+    await lavalink.close(bot)
