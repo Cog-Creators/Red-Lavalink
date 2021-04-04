@@ -204,6 +204,7 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
             "code": raw_data.get("code"),
             "reason": raw_data.get("reason"),
             "byRemote": raw_data.get("byRemote"),
+            "channelID": player.channel.id if player.channel else None
         }
     return player, data, extra
 

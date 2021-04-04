@@ -42,7 +42,7 @@ class Player(RESTClient):
     def __init__(self, manager: "PlayerManager", channel: discord.VoiceChannel):
         super().__init__(manager.node)
         self.channel = channel
-
+        self._last_channel_id = channel.id
         self.queue = []
         self.position = 0
         self.current = None  # type: Track
@@ -127,6 +127,8 @@ class Player(RESTClient):
         """
         self._last_resume = datetime.datetime.now(tz=datetime.timezone.utc)
         if channel:
+            if self.channel:
+                self._last_channel_id = self.channel.id
             self.channel = channel
         await self.channel.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
@@ -142,7 +144,8 @@ class Player(RESTClient):
         """
         if channel.guild != self.channel.guild:
             raise TypeError("Cannot move to a different guild.")
-
+        if self.channel:
+            self._last_channel_id = self.channel.id
         self.channel = channel
         await self.connect(deafen=deafen)
 
@@ -537,6 +540,8 @@ class PlayerManager:
                 # After initial connection, get session ID
                 p, channel = self._ensure_player(int(channel_id))
                 if channel != p.channel:
+                    if p.channel:
+                        p._last_channel_id = p.channel.id
                     p.channel = channel
 
             session_id = data["d"]["session_id"]
