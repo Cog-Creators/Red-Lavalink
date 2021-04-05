@@ -149,6 +149,8 @@ class Player(RESTClient):
             self._last_channel_id = self.channel.id
         self.channel = channel
         await self.connect(deafen=deafen)
+        if self.current:
+            await self.resume(track=self.current, replace=True, start=self.position, pause=self._paused)
 
     async def disconnect(self, requested=True):
         """
