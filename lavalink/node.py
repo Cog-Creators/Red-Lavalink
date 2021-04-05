@@ -8,6 +8,7 @@ from typing import Awaitable, List, Optional, cast
 import aiohttp
 import typing
 from discord.backoff import ExponentialBackoff
+from discord.ext.commands import Bot
 
 from . import ws_discord_log, ws_ll_log
 from .enums import *
@@ -98,6 +99,7 @@ class Node:
         num_shards: int,
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
+        bot: Bot = None
     ):
         """
         Represents a Lavalink node.
@@ -126,8 +128,11 @@ class Node:
             A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
         resume_timeout : int
             How long the node should wait for a connection while disconnected before clearing all players.
+        bot: AutoShardedBot
+            The Bot object thats connect to discord.
         """
         self.loop = _loop
+        self.bot = bot
         self.event_handler = event_handler
         self.get_voice_ws = voice_ws_func
         self.host = host

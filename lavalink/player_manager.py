@@ -41,6 +41,7 @@ class Player(RESTClient):
 
     def __init__(self, manager: "PlayerManager", channel: discord.VoiceChannel):
         super().__init__(manager.node)
+        self.bot = manager.bot
         self.channel = channel
         self._last_channel_id = channel.id
         self.queue = []
@@ -340,7 +341,9 @@ class Player(RESTClient):
         self._paused = pause
         self._is_playing = not pause
         log.debug(f"Resuming current track for player: {self.channel.id}.")
-        await self.node.play(self.channel.guild.id, track, start=start, replace=replace, pause=pause)
+        await self.node.play(self.channel.guild.id, track, start=start, replace=replace, pause=True)
+        await self.pause(True)
+        await self.pause(pause, timed=1)
 
     async def stop(self):
         """
@@ -364,7 +367,7 @@ class Player(RESTClient):
         """
         await self.play()
 
-    async def pause(self, pause: bool = True):
+    async def pause(self, pause: bool = True, timed: Optional[int] = None):
         """
         Pauses the current song.
 
@@ -372,7 +375,12 @@ class Player(RESTClient):
         ----------
         pause : bool
             Set to ``False`` to resume.
+        timed : Optional[int]
+            If an int is given the op will be called after it.
         """
+        if timed is not None:
+            await asyncio.sleep(timed)
+
         self._paused = pause
         await self.node.pause(self.channel.guild.id, pause)
 
@@ -406,7 +414,7 @@ class PlayerManager:
     def __init__(self, node_: "node.Node"):
         self._player_dict = {}
         self.voice_states = {}
-
+        self.bot = node_.bot
         self.node = node_
         self.node.register_state_handler(self.node_state_handler)
 
