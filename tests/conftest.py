@@ -121,7 +121,6 @@ async def node(bot):
         host="localhost",
         password="password",
         port=2333,
-        rest=2333,
         user_id=bot.user.id,
         num_shards=bot.shard_count,
         resume_key="Test",
@@ -144,4 +143,4 @@ async def node(bot):
 async def initialize_lavalink(bot):
     await lavalink.initialize(bot, "localhost", "password", 2333, 2333)
     yield
-    await lavalink.close()
+    await lavalink.close(bot)

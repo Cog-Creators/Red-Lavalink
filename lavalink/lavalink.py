@@ -32,7 +32,6 @@ async def initialize(
     bot: Bot,
     host,
     password,
-    rest_port,
     ws_port,
     timeout=30,
     resume_key: Optional[str] = None,
@@ -54,8 +53,6 @@ async def initialize(
         The hostname or IP address of the Lavalink node.
     password : str
         The password of the Lavalink node.
-    rest_port : int
-        The port of the REST API on the Lavalink node.
     ws_port : int
         The websocket port on the Lavalink Node.
     timeout : int
@@ -80,14 +77,15 @@ async def initialize(
         host,
         password,
         port=ws_port,
-        rest=rest_port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
         resume_key=resume_key,
         resume_timeout=resume_timeout,
+        bot=bot
     )
 
     await lavalink_node.connect(timeout=timeout)
+    lavalink_node._retries = 0
 
     bot.add_listener(node.on_socket_response)
     bot.add_listener(_on_guild_remove, name="on_guild_remove")
@@ -95,7 +93,7 @@ async def initialize(
     return lavalink_node
 
 
-async def connect(channel: discord.VoiceChannel):
+async def connect(channel: discord.VoiceChannel, deafen: bool = False):
     """
     Connects to a discord voice channel.
 
@@ -117,7 +115,7 @@ async def connect(channel: discord.VoiceChannel):
         If there are no available lavalink nodes ready to connect to discord.
     """
     node_ = node.get_node(channel.guild.id)
-    p = await node_.player_manager.create_player(channel)
+    p = await node_.player_manager.create_player(channel, deafen=deafen)
     return p
 
 
@@ -207,6 +205,7 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
             "code": raw_data.get("code"),
             "reason": raw_data.get("reason"),
             "byRemote": raw_data.get("byRemote"),
+            "channelID": player.channel.id if player.channel else None
         }
     return player, data, extra
 
@@ -339,12 +338,14 @@ def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
         _loop.create_task(coro(*args))
 
 
-async def close():
+async def close(bot):
     """
     Closes the lavalink connection completely.
     """
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
+    bot.remove_listener(node.on_socket_response)
+    bot.remove_listener(_on_guild_remove, name="on_guild_remove")
     await node.disconnect()
 
 

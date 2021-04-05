@@ -38,8 +38,7 @@ Usage
     @bot.event
     async def on_ready():
         lavalink.initialize(
-            bot, host='localhost', password='password',
-            rest_port=2332, ws_port=2333
+            bot, host='localhost', password='password',  ws_port=2333
         )
 
 
@@ -81,4 +80,4 @@ Shuffling
 
 When shutting down, be sure to do the following::
 
-    await lavalink.close()
+    await lavalink.close(bot)
