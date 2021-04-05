@@ -338,9 +338,9 @@ class Player(RESTClient):
             )
 
     async def resume(self, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
-        self._paused = pause
-        self._is_playing = not pause
         log.debug(f"Resuming current track for player: {self.channel.id}.")
+        self._is_playing = False
+        self._paused = True
         await self.node.play(self.channel.guild.id, track, start=start, replace=replace, pause=True)
         await self.pause(True)
         await self.pause(pause, timed=1)
