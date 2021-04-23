@@ -65,8 +65,8 @@ class Player(RESTClient):
 
     def __repr__(self):
         return (
-            '<Player: '
-            f'state={self.state.name}, '
+            "<Player: "
+            f"state={self.state.name}, "
             f'guild="{self.guild.name}" ({self.guild.id}), '
             f'channel="{self.channel.name}" ({self.channel.id}), '
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
@@ -158,7 +158,9 @@ class Player(RESTClient):
         self.channel = channel
         await self.connect(deafen=deafen)
         if self.current:
-            await self.resume(track=self.current, replace=True, start=self.position, pause=self._paused)
+            await self.resume(
+                track=self.current, replace=True, start=self.position, pause=self._paused
+            )
 
     async def disconnect(self, requested=True):
         """
@@ -172,9 +174,7 @@ class Player(RESTClient):
         await self.update_state(PlayerState.DISCONNECTING)
         guild_id = self.guild.id
         if not requested:
-            log.debug(
-                f"Forcing player disconnect for {self} due to player manager request."
-            )
+            log.debug(f"Forcing player disconnect for {self} due to player manager request.")
             self.node.event_handler(
                 LavalinkIncomingOp.EVENT,
                 LavalinkEvents.FORCED_DISCONNECT,
@@ -220,9 +220,7 @@ class Player(RESTClient):
         if state == self.state:
             return
 
-        ws_rll_log.debug(
-            f"Player {self} changing state: {self.state.name} -> {state.name}"
-        )
+        ws_rll_log.debug(f"Player {self} changing state: {self.state.name} -> {state.name}")
 
         old_state = self.state
         self.state = state
@@ -342,11 +340,11 @@ class Player(RESTClient):
 
             self.current = track
             log.debug(f"Assigned current track for player: {self}.")
-            await self.node.play(
-                self.guild.id, track, start=track.start_timestamp, replace=True
-            )
+            await self.node.play(self.guild.id, track, start=track.start_timestamp, replace=True)
 
-    async def resume(self, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
+    async def resume(
+        self, track: Track, replace: bool = True, start: int = 0, pause: bool = False
+    ):
         log.debug(f"Resuming current track for player: {self}.")
         self._is_playing = False
         self._paused = True

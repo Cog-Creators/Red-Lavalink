@@ -81,7 +81,7 @@ async def initialize(
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
         resume_key=resume_key,
         resume_timeout=resume_timeout,
-        bot=bot
+        bot=bot,
     )
 
     await lavalink_node.connect(timeout=timeout)
@@ -205,7 +205,7 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
             "code": raw_data.get("code"),
             "reason": raw_data.get("reason"),
             "byRemote": raw_data.get("byRemote"),
-            "channelID": player.channel.id if player.channel else None
+            "channelID": player.channel.id if player.channel else None,
         }
     return player, data, extra
 
