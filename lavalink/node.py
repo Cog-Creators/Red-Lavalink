@@ -99,7 +99,7 @@ class Node:
         num_shards: int,
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
-        bot: Bot = None
+        bot: Bot = None,
     ):
         """
         Represents a Lavalink node.
@@ -492,7 +492,12 @@ class Node:
         )
 
     async def no_stop_play(
-        self, guild_id: int, track: Track, replace: bool = True, start: int = 0, pause: bool = False
+        self,
+        guild_id: int,
+        track: Track,
+        replace: bool = True,
+        start: int = 0,
+        pause: bool = False,
     ):
         await self.send(
             {
@@ -505,9 +510,18 @@ class Node:
             }
         )
 
-    async def play(self, guild_id: int, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
+    async def play(
+        self,
+        guild_id: int,
+        track: Track,
+        replace: bool = True,
+        start: int = 0,
+        pause: bool = False,
+    ):
         # await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
-        await self.no_stop_play(guild_id=guild_id, track=track, replace=replace, start=start, pause=pause)
+        await self.no_stop_play(
+            guild_id=guild_id, track=track, replace=replace, start=start, pause=pause
+        )
 
     async def pause(self, guild_id, paused):
         await self.send(
