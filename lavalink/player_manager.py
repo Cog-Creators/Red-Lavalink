@@ -70,7 +70,7 @@ class Player(RESTClient):
             f'guild="{self.guild.name}" ({self.guild.id}), '
             f'channel="{self.channel.name}" ({self.channel.id}), '
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
-            f"queue_size={len(queue)}, current={self.current}, "
+            f"queue_size={len(self.queue)}, current={self.current}, "
             f"position={self.position}, "
             f"length={self.current.length if self.current else 0}, node={self.node}>"
         )

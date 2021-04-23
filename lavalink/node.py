@@ -184,13 +184,12 @@ class Node:
 
     def __repr__(self):
         return (
-            "<Note: "
+            "<Node: "
             f"state={self.state.name}, "
             f"host={self.host}, "
             f"port={self.port}, "
-            f"password={'*' * len(password)}, resume_key={self._resume_key}, "
-            f"shards={self.num_shards}, user={self.user_id}, "
-            f"current={self.current}, position={self.position}, stats={self.stats}>"
+            f"password={'*' * len(self.password)}, resume_key={self._resume_key}, "
+            f"shards={self.num_shards}, user={self.user_id}, stats={self.stats}>"
         )
 
     @property

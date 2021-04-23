@@ -1,4 +1,4 @@
-from .log import set_logging_level
+from .log import set_logging_level, log, socket_log, ws_discord_log, ws_ll_log, ws_rll_log
 
 set_logging_level(20)
 
@@ -11,6 +11,11 @@ from . import utils
 
 __all__ = [
     "set_logging_level",
+    "log",
+    "socket_log",
+    "ws_discord_log",
+    "ws_ll_log",
+    "ws_rll_log",
     "utils",
     "Track",
     "NodeState",
