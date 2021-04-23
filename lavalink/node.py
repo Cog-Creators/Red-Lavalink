@@ -82,6 +82,17 @@ class NodeStats:
         self.frames_nulled = frame_stats.get("nulled", -1)
         self.frames_deficit = frame_stats.get("deficit", -1)
 
+    def __repr__(self):
+        return (
+            '<NoteStats: '
+            f'uptime={self.uptime}, '
+            f'players={self.players}, '
+            f'playing_players={self.playing_players}, '
+            f"memory_free={self.memory_free}, memory_used={self.memory_used}, "
+            f"cpu_cores={self.cpu_cores}, system_load={self.system_load}, "
+            f"lavalink_load={self.lavalink_load}>"
+        )
+
 
 class Node:
 
@@ -169,6 +180,17 @@ class Node:
             aiohttp.WSMsgType.CLOSE,
             aiohttp.WSMsgType.CLOSING,
             aiohttp.WSMsgType.CLOSED,
+        )
+
+    def __repr__(self):
+        return (
+            '<Note: '
+            f'state={self.state.name}, '
+            f'host={self.host}, '
+            f'port={self.port}, '
+            f"password={'*' * len(password)}, resume_key={self._resume_key}, "
+            f"shards={self.num_shards}, user={self.user_id}, "
+            f"current={self.current}, position={self.position}, stats={self.stats}>"
         )
 
     @property
@@ -330,7 +352,7 @@ class Node:
                 )
         if self.state != NodeState.RECONNECTING:
             ws_ll_log.warning(
-                "[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown
+                "[NODE] | %s - WS %s SHUTDOWN %s.", self, not self._ws.closed, self._is_shutdown
             )
             self.update_state(NodeState.RECONNECTING)
             self.loop.create_task(self._reconnect())

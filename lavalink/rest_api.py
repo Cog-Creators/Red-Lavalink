@@ -176,6 +176,16 @@ class Track:
         """Overrides the default implementation"""
         return hash(tuple(sorted([self.track_identifier, self.title, self.author, self.uri])))
 
+    def __repr__(self):
+        return (
+            '<Track: '
+            f'track_identifier={self.track_identifier}, '
+            f'author={self.author}, '
+            f'length={self.length}, '
+            f"is_stream={self.is_stream}, uri={self.uri}, title={self.title}>"
+        )
+
+
 
 class LoadResult:
     """

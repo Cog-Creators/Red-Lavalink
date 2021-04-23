@@ -43,6 +43,7 @@ class Player(RESTClient):
         super().__init__(manager.node)
         self.bot = manager.bot
         self.channel = channel
+        self.guild = channel.guild
         self._last_channel_id = channel.id
         self.queue = []
         self.position = 0
@@ -54,6 +55,7 @@ class Player(RESTClient):
         self._is_autoplaying = False
         self._auto_play_sent = False
         self._volume = 100
+        self.state = PlayerState.CREATED
 
         self._is_playing = False
         self._metadata = {}
@@ -63,8 +65,14 @@ class Player(RESTClient):
 
     def __repr__(self):
         return (
-            f'<Player: guild="{self.channel.guild.name}" channel="{self.channel.name}",'
-            f" playing={self.is_playing} paused={self.paused} volume={self.volume}>"
+            '<Player: '
+            f'state={self.state.name}, '
+            f'guild="{self.guild.name}" ({self.guild.id}), '
+            f'channel="{self.channel.name}" ({self.channel.id}), '
+            f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
+            f"queue_size={len(queue)}, current={self.current}, "
+            f"position={self.position}, "
+            f"length={self.current.length if self.current else 0}, node={self.node}>"
         )
 
     @property
@@ -131,7 +139,7 @@ class Player(RESTClient):
             if self.channel:
                 self._last_channel_id = self.channel.id
             self.channel = channel
-        await self.channel.guild.change_voice_state(
+        await self.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
         )
 
@@ -143,8 +151,8 @@ class Player(RESTClient):
         ----------
         channel : discord.VoiceChannel
         """
-        if channel.guild != self.channel.guild:
-            raise TypeError("Cannot move to a different guild.")
+        if channel.guild != self.guild:
+            raise TypeError(f"Cannot move {self} to a different guild.")
         if self.channel:
             self._last_channel_id = self.channel.id
         self.channel = channel
@@ -162,11 +170,10 @@ class Player(RESTClient):
             return
 
         await self.update_state(PlayerState.DISCONNECTING)
-        guild_id = self.channel.guild.id
+        guild_id = self.guild.id
         if not requested:
             log.debug(
-                f"Forcing player disconnect for guild {self.channel.guild.id}"
-                f" due to player manager request."
+                f"Forcing player disconnect for {self} due to player manager request."
             )
             self.node.event_handler(
                 LavalinkIncomingOp.EVENT,
@@ -183,7 +190,7 @@ class Player(RESTClient):
         voice_ws = self.node.get_voice_ws(guild_id)
 
         if not voice_ws.socket.closed:
-            await self.channel.guild.change_voice_state(channel=None)
+            await self.guild.change_voice_state(channel=None)
 
         await self.node.destroy_guild(guild_id)
         await self.close()
@@ -214,7 +221,7 @@ class Player(RESTClient):
             return
 
         ws_rll_log.debug(
-            f"Player for guild {self.channel.guild.id} changing state: {self.state.name} -> {state.name}"
+            f"Player {self} changing state: {self.state.name} -> {state.name}"
         )
 
         old_state = self.state
@@ -241,7 +248,7 @@ class Player(RESTClient):
         event : node.LavalinkEvents
         extra
         """
-        log.debug(f"Received player event for player: {self.channel.id} - {event} - {extra}.")
+        log.debug(f"Received player event for player: {self} - {event} - {extra}.")
 
         if event == LavalinkEvents.TRACK_END:
             if extra == TrackEndReason.FINISHED:
@@ -272,7 +279,7 @@ class Player(RESTClient):
         #     return
         if state.position > self.position:
             self._is_playing = True
-        log.debug(f"Updated player position for player: {self.channel.id} - {state.position//1000}s.")
+        log.debug(f"Updated player position for player: {self} - {state.position//1000}s.")
         self.position = state.position
 
     # Play commands
@@ -334,16 +341,16 @@ class Player(RESTClient):
             track = self.queue.pop(0)
 
             self.current = track
-            log.debug(f"Assigned current for player: {self.channel.id}.")
+            log.debug(f"Assigned current track for player: {self}.")
             await self.node.play(
-                self.channel.guild.id, track, start=track.start_timestamp, replace=True
+                self.guild.id, track, start=track.start_timestamp, replace=True
             )
 
     async def resume(self, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
-        log.debug(f"Resuming current track for player: {self.channel.id}.")
+        log.debug(f"Resuming current track for player: {self}.")
         self._is_playing = False
         self._paused = True
-        await self.node.play(self.channel.guild.id, track, start=start, replace=replace, pause=True)
+        await self.node.play(self.guild.id, track, start=start, replace=replace, pause=True)
         await self.pause(True)
         await self.pause(pause, timed=1)
 
@@ -355,7 +362,7 @@ class Player(RESTClient):
 
             This method will clear the queue.
         """
-        await self.node.stop(self.channel.guild.id)
+        await self.node.stop(self.guild.id)
         self.queue = []
         self.current = None
         self.position = 0
@@ -384,7 +391,7 @@ class Player(RESTClient):
             await asyncio.sleep(timed)
 
         self._paused = pause
-        await self.node.pause(self.channel.guild.id, pause)
+        await self.node.pause(self.guild.id, pause)
 
     async def set_volume(self, volume: int):
         """
@@ -396,7 +403,7 @@ class Player(RESTClient):
             Between 0 and 150
         """
         self._volume = max(min(volume, 150), 0)
-        await self.node.volume(self.channel.guild.id, self.volume)
+        await self.node.volume(self.guild.id, self.volume)
 
     async def seek(self, position: int):
         """
@@ -409,7 +416,7 @@ class Player(RESTClient):
         """
         if self.current.seekable:
             position = max(min(position, self.current.length), 0)
-            await self.node.seek(self.channel.guild.id, position)
+            await self.node.seek(self.guild.id, position)
 
 
 class PlayerManager:
@@ -545,7 +552,11 @@ class PlayerManager:
 
             if channel_id is None:
                 # We disconnected
-                ws_rll_log.info("Received voice disconnect from discord, removing player.")
+                p = self._player_dict.get(guild_id)
+                msg = "Received voice disconnect from discord, removing player."
+                if p:
+                    msg += f" {p}"
+                ws_rll_log.info(msg)
                 self.voice_states[guild_id] = {}
                 await self._remove_player(int(guild_id))
 
@@ -571,12 +582,12 @@ class PlayerManager:
         """
         for p in tuple(self.players):
             await p.disconnect(requested=False)
-        log.debug("Disconnected players.")
+        log.debug("Disconnected all players.")
 
     def remove_player(self, player: Player):
         if player.state != PlayerState.DISCONNECTING:
             log.error(
-                "Attempting to remove a player from player list with state:"
+                f"Attempting to remove a player ({player}) from player list with state:"
                 f" {player.state.name}"
             )
             return
