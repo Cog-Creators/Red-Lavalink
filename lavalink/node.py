@@ -563,10 +563,46 @@ class Node:
             {"op": LavalinkOutgoingOp.PAUSE.value, "guildId": str(guild_id), "pause": paused}
         )
 
+    async def filters(
+        self,
+        *,
+        guild_id: int,
+        volume: Volume = None,
+        equalizer: Equalizer = None,
+        karaoke: Karaoke = None,
+        timescale: Timescale = None,
+        tremolo: Tremolo = None,
+        vibrato: Vibrato = None,
+        rotation: Rotation = None,
+        distortion: Distortion = None,
+    ):
+        op = {
+            "op": LavalinkOutgoingOp.FILTERS.value,
+            "guildId": str(guild_id),
+        }
+        if volume:
+            op["volume"] = volume.get()
+        if equalizer:
+            op["equalizer"] = equalizer.get()
+        if karaoke:
+            op["karaoke"] = karaoke.get()
+        if timescale:
+            op["timescale"] = timescale.get()
+        if tremolo:
+            op["tremolo"] = tremolo.get()
+        if vibrato:
+            op["vibrato"] = vibrato.get()
+        if rotation:
+            op["rotation"] = rotation.get()
+        if distortion:
+            op["distortion"] = distortion.get()
+
+        await self.send(op)
+
     async def volume(self, guild_id: int, volume: Volume):
         await self.send(
             {
-                "op": LavalinkOutgoingOp.VOLUME.value,
+                "op": LavalinkOutgoingOp.FILTERS.value,
                 "guildId": str(guild_id),
                 "volume": volume.get(),
             }

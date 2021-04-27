@@ -260,6 +260,46 @@ class Player(RESTClient):
         await self.node.distortion(guild_id=self.channel.guild.id, distortion=distortion)
         self._distortion = distortion
 
+    async def set_filters(
+        self,
+        *,
+        volume: Volume = None,
+        equalizer: Equalizer = None,
+        karaoke: Karaoke = None,
+        timescale: Timescale = None,
+        tremolo: Tremolo = None,
+        vibrato: Vibrato = None,
+        rotation: Rotation = None,
+        distortion: Distortion = None,
+    ):
+        await self.node.filter(
+            guild_id=self.channel.guild.id,
+            volume=volume,
+            equalizer=equalizer,
+            karaoke=karaoke,
+            timescale=timescale,
+            tremolo=tremolo,
+            vibrato=vibrato,
+            rotation=rotation,
+            distortion=distortion,
+        )
+        if volume:
+            self._volume = volume
+        if equalizer:
+            self._equalizer = equalizer
+        if karaoke:
+            self._karaoke = karaoke
+        if timescale:
+            self._timescale = timescale
+        if tremolo:
+            self._tremolo = tremolo
+        if vibrato:
+            self._vibrato = vibrato
+        if rotation:
+            self._rotation = rotation
+        if distortion:
+            self._distortion = distortion
+
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
     ) -> bool:
