@@ -4,7 +4,7 @@ import collections
 from typing import Dict, List, Union
 
 
-class OperationMixin:
+class FilterMixin:
     def __eq__(self, other):
         """Overrides the default implementation"""
         if isinstance(other, self.__class__):
@@ -15,8 +15,12 @@ class OperationMixin:
         """Overrides the default implementation"""
         return hash(tuple(sorted(self.__dict__.items())))
 
+    @property
+    def changed(self) -> bool:
+        return self != self.__class__.default()
 
-class Volume(OperationMixin):
+
+class Volume(FilterMixin):
     def __init__(self, value: float):
         self.value = value
 
@@ -53,7 +57,7 @@ class Volume(OperationMixin):
 # Implementation taken from https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/eqs.py
 # TODO: MERGE: Add reference to MIT License from Wavelink
 # Theres literally 0 reason to reimplement this specially since we will be moving over to Wavelink in the near future.
-class Equalizer(OperationMixin):
+class Equalizer(FilterMixin):
     """Class representing a usable equalizer.
     Parameters
     ------------
@@ -222,7 +226,7 @@ class Equalizer(OperationMixin):
         self._raw = eq._raw
 
 
-class Karaoke(OperationMixin):
+class Karaoke(FilterMixin):
     def __init__(self, level: float, mono_level: float, filter_band: float, filter_width: float):
         self.level = level
         self.mono_level = mono_level
@@ -280,7 +284,7 @@ class Karaoke(OperationMixin):
         self.filter_width = 100.0
 
 
-class Timescale(OperationMixin):
+class Timescale(FilterMixin):
     def __init__(self, speed: float, pitch: float, rate: float):
         self.speed = speed
         self.pitch = pitch
@@ -327,7 +331,7 @@ class Timescale(OperationMixin):
         self.rate = 1.0
 
 
-class Tremolo(OperationMixin):
+class Tremolo(FilterMixin):
     def __init__(self, frequency: float, depth: float):
         self.frequency = frequency
         self.depth = depth
@@ -367,7 +371,7 @@ class Tremolo(OperationMixin):
         self.depth = 0.5  # TODO: Testing:  According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
 
 
-class Vibrato(OperationMixin):
+class Vibrato(FilterMixin):
     def __init__(self, frequency: float, depth: float):
         self.frequency = frequency
         self.depth = depth
@@ -407,7 +411,7 @@ class Vibrato(OperationMixin):
         self.depth = 0.5  # TODO: Testing: Check: According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
 
 
-class Rotation(OperationMixin):
+class Rotation(FilterMixin):
     def __init__(self, hertz: float):
         self.hertz = hertz
 
@@ -432,7 +436,7 @@ class Rotation(OperationMixin):
         self.hertz = 0.0
 
 
-class Distortion(OperationMixin):
+class Distortion(FilterMixin):
     def __init__(
         self,
         sin_offset: float,
