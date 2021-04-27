@@ -20,7 +20,7 @@ __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_vo
 
 _nodes: List[Node] = []
 
-PlayerState = namedtuple("PlayerState", "position time")
+PlayerState = namedtuple("PlayerState", "position time connected")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
@@ -367,7 +367,8 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PlayerState(position=state.get("position", 0), time=state.get("time", 0))
+            ws_ll_log.critical(str(state))  # TODO: Remove me
+            state = PlayerState(position=state.get("position", 0), time=state.get("time", 0), connected=state.get("connected", False))
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
