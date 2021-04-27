@@ -150,7 +150,9 @@ class Player(RESTClient):
         self.channel = channel
         await self.connect(deafen=deafen)
         if self.current:
-            await self.resume(track=self.current, replace=True, start=self.position, pause=self._paused)
+            await self.resume(
+                track=self.current, replace=True, start=self.position, pause=self._paused
+            )
 
     async def disconnect(self, requested=True):
         """
@@ -272,7 +274,9 @@ class Player(RESTClient):
         #     return
         if state.position > self.position:
             self._is_playing = True
-        log.debug(f"Updated player position for player: {self.channel.id} - {state.position//1000}s.")
+        log.debug(
+            f"Updated player position for player: {self.channel.id} - {state.position//1000}s."
+        )
         self.position = state.position
 
     # Play commands
@@ -339,11 +343,15 @@ class Player(RESTClient):
                 self.channel.guild.id, track, start=track.start_timestamp, replace=True
             )
 
-    async def resume(self, track: Track, replace: bool = True, start: int = 0, pause: bool = False):
+    async def resume(
+        self, track: Track, replace: bool = True, start: int = 0, pause: bool = False
+    ):
         log.debug(f"Resuming current track for player: {self.channel.id}.")
         self._is_playing = False
         self._paused = True
-        await self.node.play(self.channel.guild.id, track, start=start, replace=replace, pause=True)
+        await self.node.play(
+            self.channel.guild.id, track, start=start, replace=replace, pause=True
+        )
         await self.pause(True)
         await self.pause(pause, timed=1)
 
