@@ -378,7 +378,7 @@ class Vibrato(OperationMixin):
 
     @frequency.setter
     def frequency(self, v: float):
-        if 0 < v <= 14:
+        if not (0.0 < v <= 14.0):
             raise ValueError(f"Frequency must be must be greater than 0, not {v}")
         self._frequency = float(v)
 
