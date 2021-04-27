@@ -91,7 +91,7 @@ class LavalinkOutgoingOp(enum.Enum):
     PAUSE = "pause"
     SEEK = "seek"
     VOLUME = "filters"
-    EQ = "filters"
+    EQUALIZER = "filters"
     KARAOKE = "filters"
     TIMESCALE = "filters"
     TREMOLO = "filters"

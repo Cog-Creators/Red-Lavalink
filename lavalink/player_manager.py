@@ -8,6 +8,7 @@ from discord.backoff import ExponentialBackoff
 
 from . import log, ws_rll_log
 from .enums import *
+from .filters import Distortion, Equalizer, Karaoke, Rotation, Timescale, Tremolo, Vibrato, Volume
 from .rest_api import RESTClient, Track
 
 if TYPE_CHECKING:
@@ -54,10 +55,19 @@ class Player(RESTClient):
         self.shuffle_bumped = True
         self._is_autoplaying = False
         self._auto_play_sent = False
-        self._volume = 1.0
         self.state = PlayerState.CREATED
         self.connected_at = None
         self._connected = False
+
+        # Filters
+        self._volume: Volume = Volume.default()
+        self._equalizer: Equalizer = Equalizer.default()
+        self._karaoke: Karaoke = Karaoke.default()
+        self._timescale: Timescale = Timescale.default()
+        self._tremolo: Tremolo = Tremolo.default()
+        self._vibrato: Vibrato = Vibrato.default()
+        self._rotation: Rotation = Rotation.default()
+        self._distortion: Distortion = Distortion.default()
 
         self._is_playing = False
         self._metadata = {}
@@ -76,6 +86,48 @@ class Player(RESTClient):
             f"position={self.position}, "
             f"length={self.current.length if self.current else 0}, node={self.node!r}>"
         )
+
+    @property
+    def volume(self) -> Volume:
+        """
+        The current volume.
+        """
+        return self._volume
+
+    @property
+    def equalizer(self):
+        """The currently applied Equalizer filter."""
+        return self._equalizer
+
+    @property
+    def karaoke(self):
+        """The currently applied Karaoke filter."""
+        return self._karaoke
+
+    @property
+    def timescale(self):
+        """The currently applied Timescale filter."""
+        return self._timescale
+
+    @property
+    def tremolo(self):
+        """The currently applied Tremolo filter."""
+        return self._tremolo
+
+    @property
+    def vibrato(self):
+        """The currently applied Vibrato filter."""
+        return self._vibrato
+
+    @property
+    def rotation(self):
+        """The currently applied Rotation filter."""
+        return self._rotation
+
+    @property
+    def distortion(self):
+        """The currently applied Distortion filter."""
+        return self._distortion
 
     @property
     def is_auto_playing(self) -> bool:
@@ -99,13 +151,6 @@ class Player(RESTClient):
         return self._paused
 
     @property
-    def volume(self) -> float:
-        """
-        The current volume.
-        """
-        return self._volume
-
-    @property
     def ready(self) -> bool:
         """
         Whether the underlying node is ready for requests.
@@ -118,6 +163,102 @@ class Player(RESTClient):
         Whether the player is ready to be used.
         """
         return self._connected
+
+    async def set_volume(self, volume: Volume):
+        """
+        Sets the volume of Lavalink.
+
+        Parameters
+        ----------
+        volume : Volume
+            Volume to set
+        """
+        await self.node.volume(guild_id=self.channel.guild.id, volume=self.volume)
+        self._volume = volume
+
+    async def set_equalizer(self, equalizer: Equalizer) -> None:
+        """
+        Sets the Equalizer of Lavalink.
+
+        Parameters
+        ----------
+        equalizer : Equalizer
+            Equalizer to set
+        """
+        await self.node.equalizer(guild_id=self.channel.guild.id, equalizer=equalizer)
+        self._equalizer = equalizer
+
+    async def set_karaoke(self, karaoke: Karaoke) -> None:
+        """
+        Sets the Karaoke of Lavalink.
+
+        Parameters
+        ----------
+        karaoke : Karaoke
+            Karaoke to set
+        """
+        await self.node.karaoke(guild_id=self.channel.guild.id, karaoke=karaoke)
+        self._karaoke = karaoke
+
+    async def set_timescale(self, timescale: Timescale) -> None:
+        """
+        Sets the Timescale of Lavalink.
+
+        Parameters
+        ----------
+        timescale : Timescale
+            Timescale to set
+        """
+        await self.node.timescale(guild_id=self.channel.guild.id, timescale=timescale)
+        self._timescale = timescale
+
+    async def set_tremolo(self, tremolo: Tremolo) -> None:
+        """
+        Sets the Tremolo of Lavalink.
+
+        Parameters
+        ----------
+        tremolo : Tremolo
+            Tremolo to set
+        """
+        await self.node.tremolo(guild_id=self.channel.guild.id, tremolo=tremolo)
+        self._tremolo = tremolo
+
+    async def set_vibrato(self, vibrato: Vibrato) -> None:
+        """
+        Sets the Vibrato of Lavalink.
+
+        Parameters
+        ----------
+        vibrato : Vibrato
+            Vibrato to set
+        """
+        await self.node.vibrato(guild_id=self.channel.guild.id, vibrato=vibrato)
+        self._vibrato = vibrato
+
+    async def set_rotation(self, rotation: Rotation) -> None:
+        """
+        Sets the Rotation of Lavalink.
+
+        Parameters
+        ----------
+        rotation : Rotation
+            Rotation to set
+        """
+        await self.node.rotation(guild_id=self.channel.guild.id, rotation=rotation)
+        self._rotation = rotation
+
+    async def set_distortion(self, distortion: Distortion) -> None:
+        """
+        Sets the Distortion of Lavalink.
+
+        Parameters
+        ----------
+        distortion : Distortion
+            Distortion to set
+        """
+        await self.node.distortion(guild_id=self.channel.guild.id, distortion=distortion)
+        self._distortion = distortion
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -394,18 +535,6 @@ class Player(RESTClient):
 
         self._paused = pause
         await self.node.pause(self.guild.id, pause)
-
-    async def set_volume(self, volume: float):
-        """
-        Sets the volume of Lavalink.
-
-        Parameters
-        ----------
-        volume : float
-            Greater and 0
-        """
-        self._volume = max(volume, 0.0)
-        await self.node.volume(self.guild.id, self.volume)
 
     async def seek(self, position: int):
         """
