@@ -417,8 +417,6 @@ class Rotation(OperationMixin):
 
     @hertz.setter
     def hertz(self, v: float):
-        if not (0.0 < v <= 1.0):
-            raise ValueError(f"Depth must be must be 0.0 < x ≤ 1.0, not {v}")
         self._hertz = float(v)
 
     @classmethod

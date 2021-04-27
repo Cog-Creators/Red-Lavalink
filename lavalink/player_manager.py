@@ -95,37 +95,37 @@ class Player(RESTClient):
         return self._volume
 
     @property
-    def equalizer(self):
+    def equalizer(self) -> Equalizer:
         """The currently applied Equalizer filter."""
         return self._equalizer
 
     @property
-    def karaoke(self):
+    def karaoke(self) -> Karaoke:
         """The currently applied Karaoke filter."""
         return self._karaoke
 
     @property
-    def timescale(self):
+    def timescale(self) -> Timescale:
         """The currently applied Timescale filter."""
         return self._timescale
 
     @property
-    def tremolo(self):
+    def tremolo(self) -> Tremolo:
         """The currently applied Tremolo filter."""
         return self._tremolo
 
     @property
-    def vibrato(self):
+    def vibrato(self) -> Vibrato:
         """The currently applied Vibrato filter."""
         return self._vibrato
 
     @property
-    def rotation(self):
+    def rotation(self) -> Rotation:
         """The currently applied Rotation filter."""
         return self._rotation
 
     @property
-    def distortion(self):
+    def distortion(self) -> Distortion:
         """The currently applied Distortion filter."""
         return self._distortion
 
