@@ -48,6 +48,7 @@ class Player(RESTClient):
         self._last_channel_id = channel.id
         self.queue = []
         self.position = 0
+        self.connected = False
         self.current = None  # type: Track
         self._paused = False
         self.repeat = False
@@ -461,9 +462,19 @@ class Player(RESTClient):
         state : websocket.PlayerState
         """
         if state.position > self.position:
-            self._is_playing = True
+            if state.connected:
+                self._is_playing = True
+            else:
+                self._is_playing = False
+                log.debug(
+                    f"Player position changed but player isn't connected. (Ignoring position update), %r", self
+                )
+                self.position = state.position
+
+                return
         log.debug("Updated player position for player: %r - %ds.", self, state.position // 1000)
         self.position = state.position
+        self.connected = state.connected
 
     # Play commands
     def add(self, requester: discord.User, track: Track):

@@ -375,7 +375,6 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            ws_ll_log.critical(str(state))  # TODO: Testing: Remove me
             state = PlayerState(
                 position=state.get("position", 0),
                 time=state.get("time", 0),
