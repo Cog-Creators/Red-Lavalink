@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import collections
-from typing import Dict, List, Union
+from typing import Dict, Final, List, Union
 
 
 class FilterMixin:
@@ -93,6 +93,19 @@ class Equalizer(FilterMixin):
         return self._name
 
     def _factory(self, levels: list) -> List[Dict[str, Union[int, float]]]:
+
+        if isinstance(levels[0], dict):
+            pass
+        elif isinstance(levels[0], (int, float)):
+            levels = [
+                dict(zip(["band", "gain"], values))
+                for values in list(zip(list(range(self.band_count)), levels))
+            ]
+        elif isinstance(levels[0], tuple):
+            levels = [dict(zip(["band", "gain"], values)) for values in levels]
+        else:
+            raise TypeError("Equalizer levels should be a list of dictionaries.")
+
         _dict = collections.defaultdict(float)
         _dict.update((d.values() for d in levels))
         _dict = [{"band": i, "gain": _dict[i]} for i in range(self.band_count)]
