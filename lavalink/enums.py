@@ -90,7 +90,15 @@ class LavalinkOutgoingOp(enum.Enum):
     STOP = "stop"
     PAUSE = "pause"
     SEEK = "seek"
-    VOLUME = "volume"
+    VOLUME = "filters"
+    EQ = "filters"
+    KARAOKE = "filters"
+    TIMESCALE = "filters"
+    TREMOLO = "filters"
+    VIBRATO = "filters"
+    ROTATION = "filters"
+    DISTORTION = "filters"
+    FILTERS = "filters"
 
 
 class NodeState(enum.Enum):

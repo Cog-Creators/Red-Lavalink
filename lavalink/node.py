@@ -11,7 +11,7 @@ import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import ws_discord_log, ws_ll_log
+from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
@@ -112,6 +112,7 @@ class Node:
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
         bot: Bot = None,
+        client_name: Optional[str] = None
     ):
         """
         Represents a Lavalink node.
@@ -142,6 +143,8 @@ class Node:
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
             The Bot object thats connect to discord.
+        client_name: str
+            The name of the connecting client.
         """
         self.loop = _loop
         self.bot = bot
@@ -153,6 +156,10 @@ class Node:
         self._resume_key = resume_key
         if self._resume_key is None:
             self._resume_key = self._gen_key()
+            self._client_name = client_name or f"Red-Lavalink-{__version__}--{self.bot.user.id}"
+        else:
+            self._client_name = client_name or f"Red-Lavalink-{__version__}--{self._resume_key}"
+
         self._resume_timeout = resume_timeout
         self._resuming_configured = False
         self.num_shards = num_shards
@@ -269,7 +276,7 @@ class Node:
         headers = {
             "Authorization": self.password,
             "User-Id": str(self.user_id),
-            "Num-Shards": str(self.num_shards),
+            "Client-Name": str(self._client_name)
         }
         if self._resume_key:
             headers["Resume-Key"] = str(self._resume_key)
@@ -368,7 +375,11 @@ class Node:
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
             ws_ll_log.critical(str(state))  # TODO: Remove me
-            state = PlayerState(position=state.get("position", 0), time=state.get("time", 0), connected=state.get("connected", False))
+            state = PlayerState(
+                position=state.get("position", 0),
+                time=state.get("time", 0),
+                connected=state.get("connected", False),
+            )
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
@@ -551,9 +562,129 @@ class Node:
             {"op": LavalinkOutgoingOp.PAUSE.value, "guildId": str(guild_id), "pause": paused}
         )
 
-    async def volume(self, guild_id: int, _volume: int):
+    async def volume(self, guild_id: int, _volume: float):
         await self.send(
             {"op": LavalinkOutgoingOp.VOLUME.value, "guildId": str(guild_id), "volume": _volume}
+        )
+
+    async def equalizer(
+        self, guild_id: int, equalizer_bands: List[typing.Dict[str, typing.Union[int, float]]]
+    ):
+        """
+        equalizer_bands: List[typing.Dict[str, typing.Union[int, float]]
+            band: int
+                Int between 0-14
+            gain: float
+                Float between -0.25 to 1.0
+        Example:
+            equalizer_bands = {
+                                "band": 0,
+                                "gain": 0.2
+                              }
+        """
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.EQ.value,
+                "guildId": str(guild_id),
+                "equalizer": equalizer_bands,
+            }
+        )
+
+    async def karaoke(
+        self, guild_id: int, level: float, monoLevel: float, filterBand: float, filterWidth: float
+    ):
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.KARAOKE.value,
+                "guildId": str(guild_id),
+                "karaoke": {
+                    "level": level,
+                    "monoLevel": monoLevel,
+                    "filterBand": filterBand,
+                    "filterWidth": filterWidth,
+                },
+            }
+        )
+
+    async def timescale(self, guild_id: int, speed: float, pitch: float, rate: float):
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.TIMESCALE.value,
+                "guildId": str(guild_id),
+                "timescale": {"speed": speed, "pitch": pitch, "rate": rate},
+            }
+        )
+
+    async def tremolo(self, guild_id: int, frequency: float, depth: float):
+        """
+        frequency: Float
+            Float larger than 0.0
+
+        depth: Float
+            Float larger than 0.0 and equal to or less than 1.0
+        """
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.TREMOLO.value,
+                "guildId": str(guild_id),
+                "tremolo": {"frequency": frequency, "depth": depth},
+            }
+        )
+
+    async def vibrato(self, guild_id: int, frequency: float, depth: float):
+        """
+        frequency: Float
+            Float larger than 0.0 and equal to or less than 14.0
+
+        depth: Float
+            Float larger than 0.0 and equal to or less than 1.0
+        """
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.VIBRATO.value,
+                "guildId": str(guild_id),
+                "vibrato": {"frequency": frequency, "depth": depth},
+            }
+        )
+
+    async def rotation(self, guild_id: int, frequency: float):
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.ROTATION.value,
+                "guildId": str(guild_id),
+                "rotation": {
+                    "rotationHz": frequency,
+                },
+            }
+        )
+
+    async def distortion(
+        self,
+        guild_id: int,
+        sin_offset: float,
+        sin_scale: float,
+        cos_offset: float,
+        cos_scale: float,
+        tan_offset: float,
+        tan_scale: float,
+        offset: float,
+        scale: float,
+    ):
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.DISTORTION.value,
+                "guildId": str(guild_id),
+                "distortion": {
+                    "sinOffset": sin_offset,
+                    "sinScale": sin_scale,
+                    "cosOffset": cos_offset,
+                    "cosScale": cos_scale,
+                    "tanOffset": tan_offset,
+                    "tanScale": tan_scale,
+                    "offset": offset,
+                    "scale": scale,
+                },
+            }
         )
 
     async def seek(self, guild_id: int, position: int):

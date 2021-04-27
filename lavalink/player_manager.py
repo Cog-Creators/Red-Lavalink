@@ -54,7 +54,7 @@ class Player(RESTClient):
         self.shuffle_bumped = True
         self._is_autoplaying = False
         self._auto_play_sent = False
-        self._volume = 100
+        self._volume = 1.0
         self.state = PlayerState.CREATED
         self.connected_at = None
         self._connected = False
@@ -99,7 +99,7 @@ class Player(RESTClient):
         return self._paused
 
     @property
-    def volume(self) -> int:
+    def volume(self) -> float:
         """
         The current volume.
         """
@@ -395,16 +395,16 @@ class Player(RESTClient):
         self._paused = pause
         await self.node.pause(self.guild.id, pause)
 
-    async def set_volume(self, volume: int):
+    async def set_volume(self, volume: float):
         """
         Sets the volume of Lavalink.
 
         Parameters
         ----------
-        volume : int
-            Between 0 and 150
+        volume : float
+            Greater and 0
         """
-        self._volume = max(min(volume, 150), 0)
+        self._volume = max(volume, 0.0)
         await self.node.volume(self.guild.id, self.volume)
 
     async def seek(self, position: int):
