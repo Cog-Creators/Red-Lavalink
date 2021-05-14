@@ -175,6 +175,7 @@ class Player(RESTClient):
             Volume to set
         """
         await self.node.volume(guild_id=self.channel.guild.id, volume=self.volume)
+        await self.seek(self.position)
         self._volume = volume
 
     async def set_equalizer(self, equalizer: Equalizer) -> None:
@@ -187,6 +188,7 @@ class Player(RESTClient):
             Equalizer to set
         """
         await self.node.equalizer(guild_id=self.channel.guild.id, equalizer=equalizer)
+        await self.seek(self.position)
         self._equalizer = equalizer
 
     async def set_karaoke(self, karaoke: Karaoke) -> None:
@@ -199,6 +201,7 @@ class Player(RESTClient):
             Karaoke to set
         """
         await self.node.karaoke(guild_id=self.channel.guild.id, karaoke=karaoke)
+        await self.seek(self.position)
         self._karaoke = karaoke
 
     async def set_timescale(self, timescale: Timescale) -> None:
@@ -211,6 +214,7 @@ class Player(RESTClient):
             Timescale to set
         """
         await self.node.timescale(guild_id=self.channel.guild.id, timescale=timescale)
+        await self.seek(self.position)
         self._timescale = timescale
 
     async def set_tremolo(self, tremolo: Tremolo) -> None:
@@ -223,6 +227,7 @@ class Player(RESTClient):
             Tremolo to set
         """
         await self.node.tremolo(guild_id=self.channel.guild.id, tremolo=tremolo)
+        await self.seek(self.position)
         self._tremolo = tremolo
 
     async def set_vibrato(self, vibrato: Vibrato) -> None:
@@ -235,6 +240,7 @@ class Player(RESTClient):
             Vibrato to set
         """
         await self.node.vibrato(guild_id=self.channel.guild.id, vibrato=vibrato)
+        await self.seek(self.position)
         self._vibrato = vibrato
 
     async def set_rotation(self, rotation: Rotation) -> None:
@@ -247,6 +253,7 @@ class Player(RESTClient):
             Rotation to set
         """
         await self.node.rotation(guild_id=self.channel.guild.id, rotation=rotation)
+        await self.seek(self.position)
         self._rotation = rotation
 
     async def set_distortion(self, distortion: Distortion) -> None:
@@ -259,6 +266,7 @@ class Player(RESTClient):
             Distortion to set
         """
         await self.node.distortion(guild_id=self.channel.guild.id, distortion=distortion)
+        await self.seek(self.position)
         self._distortion = distortion
 
     async def set_filters(
@@ -300,6 +308,7 @@ class Player(RESTClient):
             self._rotation = rotation
         if distortion:
             self._distortion = distortion
+        await self.seek(self.position)
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
