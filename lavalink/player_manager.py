@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from random import shuffle
-from typing import Optional, TYPE_CHECKING
+from typing import KeysView, Optional, TYPE_CHECKING, ValuesView
 
 import discord
 from discord.backoff import ExponentialBackoff
@@ -57,6 +57,7 @@ class Player(RESTClient):
         self._volume = 100
         self.state = PlayerState.CREATED
         self.connected_at = datetime.datetime.now(datetime.timezone.utc)
+        self._alive = False
 
         self._is_playing = False
         self._metadata = {}
@@ -88,7 +89,7 @@ class Player(RESTClient):
         """
         Current status of playback
         """
-        return self._is_playing and not self._paused
+        return self._is_playing and not self._paused and self._alive
 
     @property
     def paused(self) -> bool:
@@ -110,6 +111,13 @@ class Player(RESTClient):
         Whether the underlying node is ready for requests.
         """
         return self.node.ready
+
+    @property
+    def alive(self) -> bool:
+        """
+        Whether the player is ready to be used.
+        """
+        return self._alive
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -136,6 +144,8 @@ class Player(RESTClient):
         Connects to the voice channel associated with this Player.
         """
         self._last_resume = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.connected_at = datetime.datetime.now(datetime.timezone.utc)
+        self._alive = True
         if channel:
             if self.channel:
                 self._last_channel_id = self.channel.id
@@ -143,7 +153,6 @@ class Player(RESTClient):
         await self.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
         )
-        self.connected_at = datetime.datetime.now(datetime.timezone.utc)
 
     async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False):
         """
@@ -170,6 +179,7 @@ class Player(RESTClient):
         """
         self._is_autoplaying = False
         self._auto_play_sent = False
+        self._alive = False
         if self.state == PlayerState.DISCONNECTING:
             return
 
@@ -269,14 +279,6 @@ class Player(RESTClient):
         ----------
         state : websocket.PlayerState
         """
-
-        # if (
-        #     self.channel
-        #     and self._is_playing
-        #     and self.channel.guild.me.id not in {i.id for i in self.channel.members if i.bot}
-        # ):
-        #     self._is_playing = False
-        #     return
         if state.position > self.position:
             self._is_playing = True
         log.debug(f"Updated player position for player: {self} - {state.position//1000}s.")
@@ -332,6 +334,7 @@ class Player(RESTClient):
         self.current = None
         self.position = 0
         self._paused = False
+        self._alive = True
 
         if not self.queue:
             await self.stop()
@@ -350,6 +353,7 @@ class Player(RESTClient):
         log.debug(f"Resuming current track for player: {self}.")
         self._is_playing = False
         self._paused = True
+        self._alive = True
         await self.node.play(self.guild.id, track, start=start, replace=replace, pause=True)
         await self.pause(True)
         await self.pause(pause, timed=1)
@@ -369,6 +373,7 @@ class Player(RESTClient):
         self._paused = False
         self._is_autoplaying = False
         self._auto_play_sent = False
+        self._alive = True
 
     async def skip(self):
         """
@@ -428,11 +433,11 @@ class PlayerManager:
         self.node.register_state_handler(self.node_state_handler)
 
     @property
-    def players(self):
+    def players(self) -> ValuesView[Player]:
         return self._player_dict.values()
 
     @property
-    def guild_ids(self):
+    def guild_ids(self) -> KeysView[int]:
         return self._player_dict.keys()
 
     async def create_player(self, channel: discord.VoiceChannel, deafen: bool = False) -> Player:

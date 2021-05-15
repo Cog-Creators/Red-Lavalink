@@ -360,6 +360,12 @@ def all_players() -> Tuple[player_manager.Player]:
     return ret
 
 
+def all_live_players() -> Tuple[player_manager.Player]:
+    nodes = node._nodes
+    ret = tuple(p for n in nodes for p in n.player_manager.players if p.alive)
+    return ret
+
+
 def active_players() -> Tuple[player_manager.Player]:
-    ps = all_players()
-    return tuple(p for p in ps if p.current is not None)
+    ps = all_live_players()
+    return tuple(p for p in ps if p.is_playing)

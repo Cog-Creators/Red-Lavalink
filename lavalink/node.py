@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import contextlib
 import secrets
@@ -17,7 +18,7 @@ from .rest_api import Track
 
 __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_voice"]
 
-_nodes = []  # type: List[Node]
+_nodes: List[Node] = []
 
 PlayerState = namedtuple("PlayerState", "position time")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
