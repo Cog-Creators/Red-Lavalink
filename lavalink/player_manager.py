@@ -56,6 +56,7 @@ class Player(RESTClient):
         self._auto_play_sent = False
         self._volume = 100
         self.state = PlayerState.CREATED
+        self.connected_at = datetime.datetime.now(datetime.timezone.utc)
 
         self._is_playing = False
         self._metadata = {}
@@ -142,6 +143,7 @@ class Player(RESTClient):
         await self.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
         )
+        self.connected_at = datetime.datetime.now(datetime.timezone.utc)
 
     async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False):
         """
