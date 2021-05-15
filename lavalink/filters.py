@@ -53,6 +53,9 @@ class Volume(FilterMixin):
     def get(self) -> float:
         return self.value
 
+    def __repr__(self):
+        return str(self.value)
+
 
 # Implementation taken from https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/eqs.py
 # TODO: MERGE: Add reference to MIT License from Wavelink
