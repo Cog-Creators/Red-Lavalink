@@ -316,7 +316,7 @@ class Karaoke(FilterMixin):
 
     @filter_band.setter
     def filter_band(self, v: float):
-        self._level = float(v)
+        self._filter_band = float(v)
 
     @property
     def filter_width(self) -> float:
