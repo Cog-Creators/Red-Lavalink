@@ -308,7 +308,7 @@ class Karaoke(FilterMixin):
 
     @mono_level.setter
     def mono_level(self, v: float):
-        self._filter_band = float(v)
+        self._mono_level = float(v)
 
     @property
     def filter_band(self) -> float:
