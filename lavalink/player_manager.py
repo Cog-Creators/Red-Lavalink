@@ -605,7 +605,7 @@ class Player(RESTClient):
         position : int
             Between 0 and track length.
         """
-        if self.current.seekable:
+        if self.current and self.current.seekable:
             position = max(min(position, self.current.length), 0)
             await self.node.seek(self.guild.id, position)
 
