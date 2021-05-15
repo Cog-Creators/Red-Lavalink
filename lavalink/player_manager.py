@@ -281,7 +281,7 @@ class Player(RESTClient):
         rotation: Rotation = None,
         distortion: Distortion = None,
     ):
-        await self.node.filter(
+        await self.node.filters(
             guild_id=self.channel.guild.id,
             volume=volume,
             equalizer=equalizer,
