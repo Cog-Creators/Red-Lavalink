@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import time
 from random import shuffle
 from typing import KeysView, Optional, TYPE_CHECKING, ValuesView
 
@@ -69,6 +70,7 @@ class Player(RESTClient):
         self._vibrato: Vibrato = Vibrato.default()
         self._rotation: Rotation = Rotation.default()
         self._distortion: Distortion = Distortion.default()
+        self._last_filter = 0
 
         self._is_playing = False
         self._metadata = {}
@@ -175,7 +177,8 @@ class Player(RESTClient):
             Volume to set
         """
         await self.node.volume(guild_id=self.channel.guild.id, volume=self.volume)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._volume = volume
 
     async def set_equalizer(self, equalizer: Equalizer) -> None:
@@ -188,7 +191,8 @@ class Player(RESTClient):
             Equalizer to set
         """
         await self.node.equalizer(guild_id=self.channel.guild.id, equalizer=equalizer)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._equalizer = equalizer
 
     async def set_karaoke(self, karaoke: Karaoke) -> None:
@@ -201,7 +205,8 @@ class Player(RESTClient):
             Karaoke to set
         """
         await self.node.karaoke(guild_id=self.channel.guild.id, karaoke=karaoke)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._karaoke = karaoke
 
     async def set_timescale(self, timescale: Timescale) -> None:
@@ -214,7 +219,8 @@ class Player(RESTClient):
             Timescale to set
         """
         await self.node.timescale(guild_id=self.channel.guild.id, timescale=timescale)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._timescale = timescale
 
     async def set_tremolo(self, tremolo: Tremolo) -> None:
@@ -227,7 +233,8 @@ class Player(RESTClient):
             Tremolo to set
         """
         await self.node.tremolo(guild_id=self.channel.guild.id, tremolo=tremolo)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._tremolo = tremolo
 
     async def set_vibrato(self, vibrato: Vibrato) -> None:
@@ -240,7 +247,8 @@ class Player(RESTClient):
             Vibrato to set
         """
         await self.node.vibrato(guild_id=self.channel.guild.id, vibrato=vibrato)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._vibrato = vibrato
 
     async def set_rotation(self, rotation: Rotation) -> None:
@@ -253,7 +261,8 @@ class Player(RESTClient):
             Rotation to set
         """
         await self.node.rotation(guild_id=self.channel.guild.id, rotation=rotation)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._rotation = rotation
 
     async def set_distortion(self, distortion: Distortion) -> None:
@@ -266,7 +275,8 @@ class Player(RESTClient):
             Distortion to set
         """
         await self.node.distortion(guild_id=self.channel.guild.id, distortion=distortion)
-        await self.seek(self.position)
+        self._last_filter = time.time_ns() // 1_000_000
+        await self.seek(self.position, with_filter=True)
         self._distortion = distortion
 
     async def set_filters(
@@ -292,6 +302,7 @@ class Player(RESTClient):
             rotation=rotation,
             distortion=distortion,
         )
+        self._last_filter = time.time_ns() // 1_000_000
         if volume:
             self._volume = volume
         if equalizer:
@@ -308,7 +319,7 @@ class Player(RESTClient):
             self._rotation = rotation
         if distortion:
             self._distortion = distortion
-        await self.seek(self.position)
+        await self.seek(self.position, with_filter=True)
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -596,7 +607,7 @@ class Player(RESTClient):
         self._paused = pause
         await self.node.pause(self.guild.id, pause)
 
-    async def seek(self, position: int):
+    async def seek(self, position: int, with_filter: bool = False):
         """
         If the track allows it, seeks to a position.
 
@@ -607,6 +618,12 @@ class Player(RESTClient):
         """
         if self.current and self.current.seekable:
             position = max(min(position, self.current.length), 0)
+            if with_filter:
+                now = time.time_ns() // 1_000_000
+                if self.position > position:
+                    position = self.position
+                position += (now - self._last_filter)
+
             await self.node.seek(self.guild.id, position)
 
 
