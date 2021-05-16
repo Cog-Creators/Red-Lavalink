@@ -88,7 +88,7 @@ class Equalizer(FilterMixin):
         return self._name
 
     def __repr__(self):
-        return f"<RedLavalink.filters.Equalizer: {self._name}, Raw: {self._eq}>"
+        return f"<Equalizer: name={self._name}, eq={self._eq}>"
 
     def __eq__(self, other):
         """Overrides the default implementation"""
@@ -304,6 +304,9 @@ class Karaoke(FilterMixin):
         self.filter_band = filter_band
         self.filter_width = filter_width
 
+    def __repr__(self):
+        return f"<Karaoke: level={self.level}, mono_level={self.mono_level}, filter_band={self.filter_band}, filter_width={self.filter_width}>"
+
     @property
     def level(self) -> float:
         return self._level
@@ -361,6 +364,9 @@ class Timescale(FilterMixin):
         self.pitch = pitch
         self.rate = rate
 
+    def __repr__(self):
+        return f"<Timescale: speed={self.speed}, pitch={self.pitch}, rate={self.rate}>"
+
     @property
     def speed(self) -> float:
         return self._speed
@@ -407,6 +413,9 @@ class Tremolo(FilterMixin):
         self.frequency = frequency
         self.depth = depth
 
+    def __repr__(self):
+        return f"<Tremolo: frequency={self.frequency}, depth={self.depth}>"
+
     @property
     def frequency(self) -> float:
         return self._frequency
@@ -447,6 +456,9 @@ class Vibrato(FilterMixin):
         self.frequency = frequency
         self.depth = depth
 
+    def __repr__(self):
+        return f"<Vibrato: frequency={self.frequency}, depth={self.depth}>"
+
     @property
     def frequency(self) -> float:
         return self._frequency
@@ -485,6 +497,9 @@ class Vibrato(FilterMixin):
 class Rotation(FilterMixin):
     def __init__(self, hertz: float):
         self.hertz = hertz
+
+    def __repr__(self):
+        return f"<Rotation: hertz={self.hertz}>"
 
     @property
     def hertz(self) -> float:
@@ -527,6 +542,19 @@ class Distortion(FilterMixin):
         self.tan_scale = tan_scale
         self.offset = offset
         self.scale = scale
+
+    def __repr__(self):
+        return (
+            "<Distortion: "
+            f"sin_offset={self.sin_offset}, "
+            f"sin_scale={self.sin_scale}, "
+            f"cos_offset={self.cos_offset}, "
+            f"cos_scale={self.cos_scale}, "
+            f"tan_offset={self.tan_offset}, "
+            f"tan_scale={self.tan_scale}, "
+            f"offset={self.offset}, "
+            f"scale={self.scale}>"
+        )
 
     @property
     def sin_offset(self) -> float:
