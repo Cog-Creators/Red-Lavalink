@@ -622,7 +622,7 @@ class Player(RESTClient):
                 now = time.time_ns() // 1_000_000
                 if self.position > position:
                     position = self.position
-                position += (now - self._last_filter)
+                position += now - self._last_filter
 
             await self.node.seek(self.guild.id, position)
 

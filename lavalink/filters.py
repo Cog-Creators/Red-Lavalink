@@ -90,6 +90,16 @@ class Equalizer(FilterMixin):
     def __repr__(self):
         return f"<RedLavalink.filters.Equalizer: {self._name}, Raw: {self._eq}>"
 
+    def __eq__(self, other):
+        """Overrides the default implementation"""
+        if isinstance(other, Equalizer):
+            return (
+                self.__dict__.keys() == other.__dict__.keys()
+                and self._eq == other._eq
+                and self.name == other.name
+            )
+        return NotImplemented
+
     @property
     def name(self) -> str:
         """The Equalizers friendly name."""
