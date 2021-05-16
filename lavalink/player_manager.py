@@ -48,7 +48,7 @@ class Player(RESTClient):
         self.guild = channel.guild
         self._last_channel_id = channel.id
         self.queue = []
-        self.position = 0
+        self._position = 0
         self.connected = False
         self.current = None  # type: Track
         self._paused = False
@@ -70,7 +70,7 @@ class Player(RESTClient):
         self._vibrato: Vibrato = Vibrato.default()
         self._rotation: Rotation = Rotation.default()
         self._distortion: Distortion = Distortion.default()
-        self._last_filter = 0
+        self._last_update = 0
 
         self._is_playing = False
         self._metadata = {}
@@ -89,6 +89,16 @@ class Player(RESTClient):
             f"position={self.position}, "
             f"length={self.current.length if self.current else 0}, node={self.node!r}>"
         )
+
+    @property
+    def position(self) -> int:
+        """
+        The current track position in milliseconds.
+        """
+        if not self.current:
+            return 0
+        diff = (time.time_ns() // 1_000_000) - self._last_update
+        return max(min(self._position + diff, self.current.length), 0)
 
     @property
     def volume(self) -> Volume:
@@ -177,7 +187,6 @@ class Player(RESTClient):
             Volume to set
         """
         await self.node.volume(guild_id=self.channel.guild.id, volume=self.volume)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._volume = volume
 
@@ -191,7 +200,6 @@ class Player(RESTClient):
             Equalizer to set
         """
         await self.node.equalizer(guild_id=self.channel.guild.id, equalizer=equalizer)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._equalizer = equalizer
 
@@ -205,7 +213,6 @@ class Player(RESTClient):
             Karaoke to set
         """
         await self.node.karaoke(guild_id=self.channel.guild.id, karaoke=karaoke)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._karaoke = karaoke
 
@@ -219,7 +226,6 @@ class Player(RESTClient):
             Timescale to set
         """
         await self.node.timescale(guild_id=self.channel.guild.id, timescale=timescale)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._timescale = timescale
 
@@ -233,7 +239,6 @@ class Player(RESTClient):
             Tremolo to set
         """
         await self.node.tremolo(guild_id=self.channel.guild.id, tremolo=tremolo)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._tremolo = tremolo
 
@@ -247,7 +252,6 @@ class Player(RESTClient):
             Vibrato to set
         """
         await self.node.vibrato(guild_id=self.channel.guild.id, vibrato=vibrato)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._vibrato = vibrato
 
@@ -261,7 +265,6 @@ class Player(RESTClient):
             Rotation to set
         """
         await self.node.rotation(guild_id=self.channel.guild.id, rotation=rotation)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._rotation = rotation
 
@@ -275,7 +278,6 @@ class Player(RESTClient):
             Distortion to set
         """
         await self.node.distortion(guild_id=self.channel.guild.id, distortion=distortion)
-        self._last_filter = time.time_ns() // 1_000_000
         await self.seek(self.position, with_filter=True)
         self._distortion = distortion
 
@@ -302,7 +304,6 @@ class Player(RESTClient):
             rotation=rotation,
             distortion=distortion,
         )
-        self._last_filter = time.time_ns() // 1_000_000
         if volume:
             self._volume = volume
         if equalizer:
@@ -481,7 +482,7 @@ class Player(RESTClient):
         ----------
         state : websocket.PlayerState
         """
-        if state.position > self.position:
+        if state.position > self._position:
             if state.connected:
                 self._is_playing = True
             else:
@@ -544,7 +545,7 @@ class Player(RESTClient):
             self.queue.append(self.current)
 
         self.current = None
-        self.position = 0
+        self._position = 0
         self._paused = False
 
         if not self.queue:
@@ -579,7 +580,7 @@ class Player(RESTClient):
         await self.node.stop(self.guild.id)
         self.queue = []
         self.current = None
-        self.position = 0
+        self._position = 0
         self._paused = False
         self._is_autoplaying = False
         self._auto_play_sent = False
@@ -617,13 +618,10 @@ class Player(RESTClient):
             Between 0 and track length.
         """
         if self.current and self.current.seekable:
-            position = max(min(position, self.current.length), 0)
             if with_filter:
-                now = time.time_ns() // 1_000_000
-                if self.position > position:
-                    position = self.position
-                position += now - self._last_filter
+                position = self.position
 
+            position = max(min(position, self.current.length), 0)
             await self.node.seek(self.guild.id, position)
 
 
