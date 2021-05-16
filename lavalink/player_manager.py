@@ -186,7 +186,7 @@ class Player(RESTClient):
         await self.update_state(PlayerState.DISCONNECTING)
         guild_id = self.guild.id
         if not requested:
-            log.debug(f"Forcing player disconnect for {self} due to player manager request.")
+            log.debug("Forcing player disconnect for %r due to player manager request.", self)
             self.node.event_handler(
                 LavalinkIncomingOp.EVENT,
                 LavalinkEvents.FORCED_DISCONNECT,
@@ -232,7 +232,7 @@ class Player(RESTClient):
         if state == self.state:
             return
 
-        ws_rll_log.debug(f"Player {self} changing state: {self.state.name} -> {state.name}")
+        ws_rll_log.debug("Player %r changing state: %s -> %s", self, self.state.name, state.name)
 
         old_state = self.state
         self.state = state
@@ -258,7 +258,7 @@ class Player(RESTClient):
         event : node.LavalinkEvents
         extra
         """
-        log.debug(f"Received player event for player: {self} - {event} - {extra}.")
+        log.debug("Received player event for player: %r - %r - %r.", self, event, extra)
 
         if event == LavalinkEvents.TRACK_END:
             if extra == TrackEndReason.FINISHED:
@@ -281,7 +281,7 @@ class Player(RESTClient):
         """
         if state.position > self.position:
             self._is_playing = True
-        log.debug(f"Updated player position for player: {self} - {state.position//1000}s.")
+        log.debug("Updated player position for player: %r - %ds.", self, state.position // 1000)
         self.position = state.position
 
     # Play commands
@@ -344,13 +344,13 @@ class Player(RESTClient):
             track = self.queue.pop(0)
 
             self.current = track
-            log.debug(f"Assigned current track for player: {self}.")
+            log.debug("Assigned current track for player: %r.", self)
             await self.node.play(self.guild.id, track, start=track.start_timestamp, replace=True)
 
     async def resume(
         self, track: Track, replace: bool = True, start: int = 0, pause: bool = False
     ):
-        log.debug(f"Resuming current track for player: {self}.")
+        log.debug("Resuming current track for player: %r.", self)
         self._is_playing = False
         self._paused = True
         self._alive = True
@@ -513,7 +513,7 @@ class PlayerManager:
             await p.disconnect(requested=False)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
-        ws_rll_log.debug(f"Received node state update: {old_state.name} -> {next_state.name}")
+        ws_rll_log.debug("Received node state update: %s -> %s", old_state.name, next_state.name)
         if next_state == NodeState.READY:
             await self.update_player_states(PlayerState.READY)
         elif next_state == NodeState.DISCONNECTING:
@@ -592,8 +592,9 @@ class PlayerManager:
     def remove_player(self, player: Player):
         if player.state != PlayerState.DISCONNECTING:
             log.error(
-                f"Attempting to remove a player ({player}) from player list with state:"
-                f" {player.state.name}"
+                "Attempting to remove a player (%r) from player list with state: %s",
+                player,
+                player.state.name,
             )
             return
         guild_id = player.channel.guild.id

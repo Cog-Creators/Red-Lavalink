@@ -307,7 +307,7 @@ class RESTClient:
                     },
                     "tracks": [],
                 }
-            log.debug(f"Received server disconnected error when player state = {self.state}")
+            log.debug("Received server disconnected error when player state = %s", self.state)
             raise
         return data
 

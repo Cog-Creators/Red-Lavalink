@@ -311,7 +311,7 @@ class Node:
             else:
                 self.session_resumed = ws._response.headers.get("Session-Resumed", False)
                 if self._ws is not None and self.session_resumed:
-                    ws_ll_log.info(f"WEBSOCKET Resumed Session with key: {self._resume_key}")
+                    ws_ll_log.info("WEBSOCKET Resumed Session with key: %s", self._resume_key)
                 self._ws = ws
                 return self._ws
 
@@ -380,7 +380,7 @@ class Node:
             self.stats = NodeStats(data)
             self.event_handler(op, stats, data)
         else:
-            ws_ll_log.info("Unknown op type: {}".format(data))
+            ws_ll_log.info("Unknown op type: %r", data)
 
     async def _reconnect(self):
         self._ready_event.clear()
@@ -430,7 +430,7 @@ class Node:
         if next_state == self.state:
             return
 
-        ws_ll_log.debug(f"Changing node state: {self.state.name} -> {next_state.name}")
+        ws_ll_log.debug("Changing node state: %s -> %s", self.state.name, next_state.name)
         old_state = self.state
         self.state = next_state
         if self.loop.is_closed():
