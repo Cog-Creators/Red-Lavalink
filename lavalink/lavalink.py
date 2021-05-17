@@ -256,7 +256,7 @@ def _get_update_args(data: enums.PlayerState, raw_data: dict):
 
     try:
         player = get_player(guild_id)
-    except KeyError:
+    except (KeyError, IndexError):
         log.debug(
             "Got a player update for a guild that we have no player for."
             " This may be because of a forced voice channel disconnect."
