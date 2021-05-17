@@ -69,12 +69,12 @@ class Player(RESTClient):
         return (
             "<Player: "
             f"state={self.state.name}, "
-            f'guild="{self.guild.name}" ({self.guild.id}), '
-            f'channel="{self.channel.name}" ({self.channel.id}), '
+            f"guild={self.guild.name!r} ({self.guild.id}), "
+            f"channel={self.channel.name!r} ({self.channel.id}), "
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
             f"queue_size={len(self.queue)}, current={self.current}, "
             f"position={self.position}, "
-            f"length={self.current.length if self.current else 0}, node={self.node}>"
+            f"length={self.current.length if self.current else 0}, node={self.node!r}>"
         )
 
     @property
@@ -163,7 +163,7 @@ class Player(RESTClient):
         channel : discord.VoiceChannel
         """
         if channel.guild != self.guild:
-            raise TypeError(f"Cannot move {self} to a different guild.")
+            raise TypeError(f"Cannot move {self!r} to a different guild.")
         if self.channel:
             self._last_channel_id = self.channel.id
         self.channel = channel

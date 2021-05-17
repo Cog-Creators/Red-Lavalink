@@ -179,10 +179,10 @@ class Track:
     def __repr__(self):
         return (
             "<Track: "
-            f"track_identifier={self.track_identifier}, "
-            f"author={self.author}, "
+            f"track_identifier={self.track_identifier!r}, "
+            f"author={self.author!r}, "
             f"length={self.length}, "
-            f"is_stream={self.is_stream}, uri={self.uri}, title={self.title}>"
+            f"is_stream={self.is_stream}, uri={self.uri!r}, title={self.title!r}>"
         )
 
 
@@ -307,7 +307,7 @@ class RESTClient:
                     },
                     "tracks": [],
                 }
-            log.debug("Received server disconnected error when player state = %s", self.state)
+            log.debug("Received server disconnected error when player state = %s", self.state.name)
             raise
         return data
 
