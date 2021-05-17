@@ -101,12 +101,12 @@ class NodeState(enum.Enum):
 
 
 class PlayerState(enum.Enum):
-    CREATED = 0
-    CONNECTING = 1
-    READY = 2
-    NODE_BUSY = 3
-    RECONNECTING = 4
-    DISCONNECTING = 5
+    CREATED = -1
+    CONNECTING = 0
+    READY = 1
+    NODE_BUSY = 2
+    RECONNECTING = 3
+    DISCONNECTING = 4
 
 
 class LoadType(enum.Enum):
