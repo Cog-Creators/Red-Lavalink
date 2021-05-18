@@ -320,7 +320,7 @@ class Player(RESTClient):
                 equalizer=equalizer or (self.equalizer if self.equalizer.changed else None),
                 karaoke=karaoke or (self.karaoke if self.karaoke.changed else None),
                 timescale=timescale or (self.timescale if self.timescale.changed else None),
-                tremolo=tremolo or (self.tremolo if self.timescale.changed else None),
+                tremolo=tremolo or (self.tremolo if self.tremolo.changed else None),
                 vibrato=vibrato or (self.vibrato if self.vibrato.changed else None),
                 rotation=rotation or (self.rotation if self.rotation.changed else None),
                 distortion=distortion or (self.distortion if self.distortion.changed else None),
