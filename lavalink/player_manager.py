@@ -188,13 +188,13 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=volume,
-            equalizer=self.equalizer,
-            karaoke=self.karaoke,
-            timescale=self.timescale,
-            tremolo=self.tremolo,
-            vibrato=self.vibrato,
-            rotation=self.rotation,
-            distortion=self.distortion,
+            equalizer=self.equalizer if self.equalizer.changed else None,
+            karaoke=self.karaoke if self.karaoke.changed else None,
+            timescale=self.timescale if self.timescale.changed else None,
+            tremolo=self.tremolo if self.timescale.changed else None,
+            vibrato=self.vibrato if self.vibrato.changed else None,
+            rotation=self.rotation if self.rotation.changed else None,
+            distortion=self.distortion if self.distortion.changed else None,
         )
 
     async def set_equalizer(self, equalizer: Equalizer, forced: bool = False) -> None:
@@ -209,12 +209,12 @@ class Player(RESTClient):
         await self.set_filters(
             volume=self.volume,
             equalizer=equalizer,
-            karaoke=self.karaoke if not forced else None,
-            timescale=self.timescale if not forced else None,
-            tremolo=self.tremolo if not forced else None,
-            vibrato=self.vibrato if not forced else None,
-            rotation=self.rotation if not forced else None,
-            distortion=self.distortion if not forced else None,
+            karaoke=self.karaoke if self.karaoke.changed and not forced else None,
+            timescale=self.timescale if self.timescale.changed and not forced else None,
+            tremolo=self.tremolo if self.timescale.changed and not forced else None,
+            vibrato=self.vibrato if self.vibrato.changed and not forced else None,
+            rotation=self.rotation if self.rotation.changed and not forced else None,
+            distortion=self.distortion if self.distortion.changed and not forced else None,
             reset_not_reset=forced,
         )
 
@@ -229,13 +229,13 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=self.volume,
-            equalizer=self.equalizer if not forced else None,
+            equalizer=self.equalizer if self.equalizer.changed and not forced else None,
             karaoke=karaoke,
-            timescale=self.timescale if not forced else None,
-            tremolo=self.tremolo if not forced else None,
-            vibrato=self.vibrato if not forced else None,
-            rotation=self.rotation if not forced else None,
-            distortion=self.distortion if not forced else None,
+            timescale=self.timescale if self.timescale.changed and not forced else None,
+            tremolo=self.tremolo if self.timescale.changed and not forced else None,
+            vibrato=self.vibrato if self.vibrato.changed and not forced else None,
+            rotation=self.rotation if self.rotation.changed and not forced else None,
+            distortion=self.distortion if self.distortion.changed and not forced else None,
             reset_not_reset=forced,
         )
 
@@ -250,13 +250,13 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=self.volume,
-            equalizer=self.equalizer if not forced else None,
-            karaoke=self.karaoke if not forced else None,
+            equalizer=self.equalizer if self.equalizer.changed and not forced else None,
+            karaoke=self.karaoke if self.karaoke.changed and not forced else None,
             timescale=timescale,
-            tremolo=self.tremolo if not forced else None,
-            vibrato=self.vibrato if not forced else None,
-            rotation=self.rotation if not forced else None,
-            distortion=self.distortion if not forced else None,
+            tremolo=self.tremolo if self.timescale.changed and not forced else None,
+            vibrato=self.vibrato if self.vibrato.changed and not forced else None,
+            rotation=self.rotation if self.rotation.changed and not forced else None,
+            distortion=self.distortion if self.distortion.changed and not forced else None,
             reset_not_reset=forced,
         )
 
@@ -271,13 +271,13 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=self.volume,
-            equalizer=self.equalizer if not forced else None,
-            karaoke=self.karaoke if not forced else None,
-            timescale=self.timescale if not forced else None,
+            equalizer=self.equalizer if self.equalizer.changed and not forced else None,
+            karaoke=self.karaoke if self.karaoke.changed and not forced else None,
+            timescale=self.timescale if self.timescale.changed and not forced else None,
             tremolo=tremolo,
-            vibrato=self.vibrato if not forced else None,
-            rotation=self.rotation if not forced else None,
-            distortion=self.distortion if not forced else None,
+            vibrato=self.vibrato if self.vibrato.changed and not forced else None,
+            rotation=self.rotation if self.rotation.changed and not forced else None,
+            distortion=self.distortion if self.distortion.changed and not forced else None,
             reset_not_reset=forced,
         )
 
@@ -292,13 +292,13 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=self.volume,
-            equalizer=self.equalizer if not forced else None,
-            karaoke=self.karaoke if not forced else None,
-            timescale=self.timescale if not forced else None,
-            tremolo=self.tremolo if not forced else None,
+            equalizer=self.equalizer if self.equalizer.changed and not forced else None,
+            karaoke=self.karaoke if self.karaoke.changed and not forced else None,
+            timescale=self.timescale if self.timescale.changed and not forced else None,
+            tremolo=self.tremolo if self.timescale.changed and not forced else None,
             vibrato=vibrato,
-            rotation=self.rotation if not forced else None,
-            distortion=self.distortion if not forced else None,
+            rotation=self.rotation if self.rotation.changed and not forced else None,
+            distortion=self.distortion if self.distortion.changed and not forced else None,
             reset_not_reset=forced,
         )
 
@@ -313,13 +313,13 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=self.volume,
-            equalizer=self.equalizer if not forced else None,
-            karaoke=self.karaoke if not forced else None,
-            timescale=self.timescale if not forced else None,
-            tremolo=self.tremolo if not forced else None,
-            vibrato=self.vibrato if not forced else None,
+            equalizer=self.equalizer if self.equalizer.changed and not forced else None,
+            karaoke=self.karaoke if self.karaoke.changed and not forced else None,
+            timescale=self.timescale if self.timescale.changed and not forced else None,
+            tremolo=self.tremolo if self.timescale.changed and not forced else None,
+            vibrato=self.vibrato if self.vibrato.changed and not forced else None,
             rotation=rotation,
-            distortion=self.distortion if not forced else None,
+            distortion=self.distortion if self.distortion.changed and not forced else None,
             reset_not_reset=forced,
         )
 
@@ -334,12 +334,12 @@ class Player(RESTClient):
         """
         await self.set_filters(
             volume=self.volume,
-            equalizer=self.equalizer if not forced else None,
-            karaoke=self.karaoke if not forced else None,
-            timescale=self.timescale if not forced else None,
-            tremolo=self.tremolo if not forced else None,
-            vibrato=self.vibrato if not forced else None,
-            rotation=self.rotation if not forced else None,
+            equalizer=self.equalizer if self.equalizer.changed and not forced else None,
+            karaoke=self.karaoke if self.karaoke.changed and not forced else None,
+            timescale=self.timescale if self.timescale.changed and not forced else None,
+            tremolo=self.tremolo if self.timescale.changed and not forced else None,
+            vibrato=self.vibrato if self.vibrato.changed and not forced else None,
+            rotation=self.rotation if self.rotation.changed and not forced else None,
             distortion=distortion,
             reset_not_reset=forced,
         )
@@ -370,16 +370,24 @@ class Player(RESTClient):
                 distortion=distortion,
             )
         else:
+            equalizer = (self.equalizer if self.equalizer.changed else None,)
+            karaoke = (self.karaoke if self.karaoke.changed else None,)
+            timescale = (self.timescale if self.timescale.changed else None,)
+            tremolo = (self.tremolo if self.timescale.changed else None,)
+            vibrato = (self.vibrato if self.vibrato.changed else None,)
+            rotation = (self.rotation if self.rotation.changed else None,)
+            distortion = (self.distortion if self.distortion.changed else None,)
+
             await self.node.filters(
                 guild_id=self.channel.guild.id,
                 volume=self.volume,
-                equalizer=equalizer or self.equalizer,
-                karaoke=karaoke or self.karaoke,
-                timescale=timescale or self.timescale,
-                tremolo=tremolo or self.tremolo,
-                vibrato=vibrato or self.vibrato,
-                rotation=rotation or self.rotation,
-                distortion=distortion or self.distortion,
+                equalizer=equalizer or self.equalizer if self.equalizer.changed else None,
+                karaoke=karaoke or self.karaoke if self.karaoke.changed else None,
+                timescale=timescale or self.timescale if self.timescale.changed else None,
+                tremolo=tremolo or self.tremolo if self.timescale.changed else None,
+                vibrato=vibrato or self.vibrato if self.vibrato.changed else None,
+                rotation=rotation or self.rotation if self.rotation.changed else None,
+                distortion=distortion or self.distortion if self.distortion.changed else None,
             )
         if volume:
             self._volume = volume
