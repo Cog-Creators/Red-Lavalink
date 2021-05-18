@@ -18,6 +18,7 @@ __all__ = [
     "register_stats_listener",
     "unregister_stats_listener",
     "all_players",
+    "all_connected_players",
     "active_players",
 ]
 
@@ -358,6 +359,12 @@ def all_players() -> Tuple[player_manager.Player]:
     return ret
 
 
+def all_connected_players() -> Tuple[player_manager.Player]:
+    nodes = node._nodes
+    ret = tuple(p for n in nodes for p in n.player_manager.players if p.connected)
+    return ret
+
+
 def active_players() -> Tuple[player_manager.Player]:
-    ps = all_players()
-    return tuple(p for p in ps if p.current is not None)
+    ps = all_connected_players()
+    return tuple(p for p in ps if p.is_playing)

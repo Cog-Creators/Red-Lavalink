@@ -59,14 +59,14 @@ def user():
 
 @pytest.fixture
 def guild():
-    Guild = namedtuple("Guild", "id")
-    return Guild(987654321)
+    Guild = namedtuple("Guild", "id name")
+    return Guild(987654321, "Testing")
 
 
 @pytest.fixture()
 def voice_channel(guild):
-    VoiceChannel = namedtuple("VoiceChannel", "id guild")
-    return VoiceChannel(9999999999, guild)
+    VoiceChannel = namedtuple("VoiceChannel", "id guild name")
+    return VoiceChannel(9999999999, guild, "Testing VC")
 
 
 @pytest.fixture

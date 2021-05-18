@@ -101,6 +101,7 @@ class NodeState(enum.Enum):
 
 
 class PlayerState(enum.Enum):
+    CREATED = -1
     CONNECTING = 0
     READY = 1
     NODE_BUSY = 2

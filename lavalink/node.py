@@ -1,3 +1,4 @@
+from __future__ import annotations
 import asyncio
 import contextlib
 import secrets
@@ -17,7 +18,7 @@ from .rest_api import Track
 
 __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_voice"]
 
-_nodes = []  # type: List[Node]
+_nodes: List[Node] = []
 
 PlayerState = namedtuple("PlayerState", "position time")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
@@ -81,6 +82,17 @@ class NodeStats:
         self.frames_sent = frame_stats.get("sent", -1)
         self.frames_nulled = frame_stats.get("nulled", -1)
         self.frames_deficit = frame_stats.get("deficit", -1)
+
+    def __repr__(self):
+        return (
+            "<NoteStats: "
+            f"uptime={self.uptime}, "
+            f"players={self.players}, "
+            f"playing_players={self.playing_players}, "
+            f"memory_free={self.memory_free}, memory_used={self.memory_used}, "
+            f"cpu_cores={self.cpu_cores}, system_load={self.system_load}, "
+            f"lavalink_load={self.lavalink_load}>"
+        )
 
 
 class Node:
@@ -169,6 +181,16 @@ class Node:
             aiohttp.WSMsgType.CLOSE,
             aiohttp.WSMsgType.CLOSING,
             aiohttp.WSMsgType.CLOSED,
+        )
+
+    def __repr__(self):
+        return (
+            "<Node: "
+            f"state={self.state.name}, "
+            f"host={self.host}, "
+            f"port={self.port}, "
+            f"password={'*' * len(self.password)}, resume_key={self._resume_key}, "
+            f"shards={self.num_shards}, user={self.user_id}, stats={self.stats}>"
         )
 
     @property
@@ -289,7 +311,7 @@ class Node:
             else:
                 self.session_resumed = ws._response.headers.get("Session-Resumed", False)
                 if self._ws is not None and self.session_resumed:
-                    ws_ll_log.info(f"WEBSOCKET Resumed Session with key: {self._resume_key}")
+                    ws_ll_log.info("WEBSOCKET Resumed Session with key: %s", self._resume_key)
                 self._ws = ws
                 return self._ws
 
@@ -330,7 +352,7 @@ class Node:
                 )
         if self.state != NodeState.RECONNECTING:
             ws_ll_log.warning(
-                "[NODE] | WS %s SHUTDOWN %s.", not self._ws.closed, self._is_shutdown
+                "[NODE] | %s - WS %s SHUTDOWN %s.", self, not self._ws.closed, self._is_shutdown
             )
             self.update_state(NodeState.RECONNECTING)
             self.loop.create_task(self._reconnect())
@@ -358,7 +380,7 @@ class Node:
             self.stats = NodeStats(data)
             self.event_handler(op, stats, data)
         else:
-            ws_ll_log.info("Unknown op type: {}".format(data))
+            ws_ll_log.info("Unknown op type: %r", data)
 
     async def _reconnect(self):
         self._ready_event.clear()
@@ -408,7 +430,7 @@ class Node:
         if next_state == self.state:
             return
 
-        ws_ll_log.debug(f"Changing node state: {self.state.name} -> {next_state.name}")
+        ws_ll_log.debug("Changing node state: %s -> %s", self.state.name, next_state.name)
         old_state = self.state
         self.state = next_state
         if self.loop.is_closed():

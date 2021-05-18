@@ -176,6 +176,15 @@ class Track:
         """Overrides the default implementation"""
         return hash(tuple(sorted([self.track_identifier, self.title, self.author, self.uri])))
 
+    def __repr__(self):
+        return (
+            "<Track: "
+            f"track_identifier={self.track_identifier!r}, "
+            f"author={self.author!r}, "
+            f"length={self.length}, "
+            f"is_stream={self.is_stream}, uri={self.uri!r}, title={self.title!r}>"
+        )
+
 
 class LoadResult:
     """
@@ -298,7 +307,7 @@ class RESTClient:
                     },
                     "tracks": [],
                 }
-            log.debug(f"Received server disconnected error when player state = {self.state}")
+            log.debug("Received server disconnected error when player state = %s", self.state.name)
             raise
         return data
 
