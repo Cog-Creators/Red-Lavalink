@@ -299,9 +299,9 @@ class Player(RESTClient):
         vibrato: Vibrato = None,
         rotation: Rotation = None,
         distortion: Distortion = None,
-        reset_not_reset: bool = False,
+        reset_not_set: bool = False,
     ):
-        if reset_not_reset:
+        if reset_not_set:
             await self.node.filters(
                 guild_id=self.channel.guild.id,
                 volume=volume,
