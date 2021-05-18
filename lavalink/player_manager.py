@@ -370,14 +370,6 @@ class Player(RESTClient):
                 distortion=distortion,
             )
         else:
-            equalizer = (self.equalizer if self.equalizer.changed else None,)
-            karaoke = (self.karaoke if self.karaoke.changed else None,)
-            timescale = (self.timescale if self.timescale.changed else None,)
-            tremolo = (self.tremolo if self.timescale.changed else None,)
-            vibrato = (self.vibrato if self.vibrato.changed else None,)
-            rotation = (self.rotation if self.rotation.changed else None,)
-            distortion = (self.distortion if self.distortion.changed else None,)
-
             await self.node.filters(
                 guild_id=self.channel.guild.id,
                 volume=self.volume,
