@@ -19,7 +19,7 @@ __all__ = [
     "register_stats_listener",
     "unregister_stats_listener",
     "all_players",
-    "all_live_players",
+    "all_connected_players",
     "active_players",
 ]
 
