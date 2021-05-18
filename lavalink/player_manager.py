@@ -56,7 +56,7 @@ class Player(RESTClient):
         self._auto_play_sent = False
         self._volume = 100
         self.state = PlayerState.CREATED
-        self.connected_at = datetime.datetime.now(datetime.timezone.utc)
+        self.connected_at = None
         self._alive = False
 
         self._is_playing = False
@@ -68,7 +68,7 @@ class Player(RESTClient):
     def __repr__(self):
         return (
             "<Player: "
-            f"state={self.state.name}, "
+            f"state={self.state.name}, connected={self.alive}, "
             f"guild={self.guild.name!r} ({self.guild.id}), "
             f"channel={self.channel.name!r} ({self.channel.id}), "
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "

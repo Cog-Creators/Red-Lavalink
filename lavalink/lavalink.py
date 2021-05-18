@@ -118,7 +118,6 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
     """
     node_ = node.get_node(channel.guild.id)
     p = await node_.player_manager.create_player(channel, deafen=deafen)
-    p.connected_at = datetime.datetime.now(datetime.timezone.utc)
     return p
 
 
