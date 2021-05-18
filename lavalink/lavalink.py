@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 from typing import Optional, Tuple
 
 import discord
