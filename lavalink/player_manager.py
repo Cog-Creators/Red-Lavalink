@@ -87,7 +87,15 @@ class Player(RESTClient):
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
             f"queue_size={len(self.queue)}, current={self.current!r}, "
             f"position={self.position}, "
-            f"length={self.current.length if self.current else 0}, node={self.node!r}>"
+            f"length={self.current.length if self.current else 0}, "
+            f"equalizer={self.equalizer!r}, "
+            f"karaoke={self.karaoke!r}, "
+            f"timescale={self.timescale!r}, "
+            f"tremolo={self.tremolo!r}, "
+            f"vibrato={self.vibrato!r}, "
+            f"rotation={self.rotation!r}, "
+            f"distortion={self.distortion!r}, "
+            f"node={self.node!r}>"
         )
 
     @property
@@ -509,13 +517,13 @@ class Player(RESTClient):
             else:
                 self._is_playing = False
                 log.debug(
-                    f"Player position changed but player isn't connected. (Ignoring position update), %r", self
+                    f"Player position changed but player isn't connected. (Ignoring position update), %r",
+                    self,
                 )
-                self.position = state.position
-
                 return
         log.debug("Updated player position for player: %r - %ds.", self, state.position // 1000)
-        self.position = state.position
+        self._last_update = time.time_ns() // 1_000_000
+        self._position = state.position
         self.connected = state.connected
 
     # Play commands
@@ -819,6 +827,6 @@ class PlayerManager:
                 player.state.name,
             )
             return
-        guild_id = player.channel.guild.id
+        guild_id = player.guild.id
         if guild_id in self._player_dict:
             del self._player_dict[guild_id]
