@@ -186,11 +186,18 @@ class Player(RESTClient):
         volume : Volume
             Volume to set
         """
-        await self.node.volume(guild_id=self.channel.guild.id, volume=self.volume)
-        await self.seek(self.position, with_filter=True)
-        self._volume = volume
+        await self.set_filters(
+            volume=volume,
+            equalizer=self.equalizer,
+            karaoke=self.karaoke,
+            timescale=self.timescale,
+            tremolo=self.tremolo,
+            vibrato=self.vibrato,
+            rotation=self.rotation,
+            distortion=self.distortion,
+        )
 
-    async def set_equalizer(self, equalizer: Equalizer) -> None:
+    async def set_equalizer(self, equalizer: Equalizer, forced: bool = False) -> None:
         """
         Sets the Equalizer of Lavalink.
 
@@ -199,11 +206,19 @@ class Player(RESTClient):
         equalizer : Equalizer
             Equalizer to set
         """
-        await self.node.equalizer(guild_id=self.channel.guild.id, equalizer=equalizer)
-        await self.seek(self.position, with_filter=True)
-        self._equalizer = equalizer
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=equalizer,
+            karaoke=self.karaoke if not forced else None,
+            timescale=self.timescale if not forced else None,
+            tremolo=self.tremolo if not forced else None,
+            vibrato=self.vibrato if not forced else None,
+            rotation=self.rotation if not forced else None,
+            distortion=self.distortion if not forced else None,
+            reset_not_reset=forced,
+        )
 
-    async def set_karaoke(self, karaoke: Karaoke) -> None:
+    async def set_karaoke(self, karaoke: Karaoke, forced: bool = False) -> None:
         """
         Sets the Karaoke of Lavalink.
 
@@ -212,11 +227,19 @@ class Player(RESTClient):
         karaoke : Karaoke
             Karaoke to set
         """
-        await self.node.karaoke(guild_id=self.channel.guild.id, karaoke=karaoke)
-        await self.seek(self.position, with_filter=True)
-        self._karaoke = karaoke
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=self.equalizer if not forced else None,
+            karaoke=karaoke,
+            timescale=self.timescale if not forced else None,
+            tremolo=self.tremolo if not forced else None,
+            vibrato=self.vibrato if not forced else None,
+            rotation=self.rotation if not forced else None,
+            distortion=self.distortion if not forced else None,
+            reset_not_reset=forced,
+        )
 
-    async def set_timescale(self, timescale: Timescale) -> None:
+    async def set_timescale(self, timescale: Timescale, forced: bool = False) -> None:
         """
         Sets the Timescale of Lavalink.
 
@@ -225,11 +248,19 @@ class Player(RESTClient):
         timescale : Timescale
             Timescale to set
         """
-        await self.node.timescale(guild_id=self.channel.guild.id, timescale=timescale)
-        await self.seek(self.position, with_filter=True)
-        self._timescale = timescale
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=self.equalizer if not forced else None,
+            karaoke=self.karaoke if not forced else None,
+            timescale=timescale,
+            tremolo=self.tremolo if not forced else None,
+            vibrato=self.vibrato if not forced else None,
+            rotation=self.rotation if not forced else None,
+            distortion=self.distortion if not forced else None,
+            reset_not_reset=forced,
+        )
 
-    async def set_tremolo(self, tremolo: Tremolo) -> None:
+    async def set_tremolo(self, tremolo: Tremolo, forced: bool = False) -> None:
         """
         Sets the Tremolo of Lavalink.
 
@@ -238,11 +269,19 @@ class Player(RESTClient):
         tremolo : Tremolo
             Tremolo to set
         """
-        await self.node.tremolo(guild_id=self.channel.guild.id, tremolo=tremolo)
-        await self.seek(self.position, with_filter=True)
-        self._tremolo = tremolo
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=self.equalizer if not forced else None,
+            karaoke=self.karaoke if not forced else None,
+            timescale=self.timescale if not forced else None,
+            tremolo=tremolo,
+            vibrato=self.vibrato if not forced else None,
+            rotation=self.rotation if not forced else None,
+            distortion=self.distortion if not forced else None,
+            reset_not_reset=forced,
+        )
 
-    async def set_vibrato(self, vibrato: Vibrato) -> None:
+    async def set_vibrato(self, vibrato: Vibrato, forced: bool = False) -> None:
         """
         Sets the Vibrato of Lavalink.
 
@@ -251,11 +290,19 @@ class Player(RESTClient):
         vibrato : Vibrato
             Vibrato to set
         """
-        await self.node.vibrato(guild_id=self.channel.guild.id, vibrato=vibrato)
-        await self.seek(self.position, with_filter=True)
-        self._vibrato = vibrato
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=self.equalizer if not forced else None,
+            karaoke=self.karaoke if not forced else None,
+            timescale=self.timescale if not forced else None,
+            tremolo=self.tremolo if not forced else None,
+            vibrato=vibrato,
+            rotation=self.rotation if not forced else None,
+            distortion=self.distortion if not forced else None,
+            reset_not_reset=forced,
+        )
 
-    async def set_rotation(self, rotation: Rotation) -> None:
+    async def set_rotation(self, rotation: Rotation, forced: bool = False) -> None:
         """
         Sets the Rotation of Lavalink.
 
@@ -264,11 +311,19 @@ class Player(RESTClient):
         rotation : Rotation
             Rotation to set
         """
-        await self.node.rotation(guild_id=self.channel.guild.id, rotation=rotation)
-        await self.seek(self.position, with_filter=True)
-        self._rotation = rotation
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=self.equalizer if not forced else None,
+            karaoke=self.karaoke if not forced else None,
+            timescale=self.timescale if not forced else None,
+            tremolo=self.tremolo if not forced else None,
+            vibrato=self.vibrato if not forced else None,
+            rotation=rotation,
+            distortion=self.distortion if not forced else None,
+            reset_not_reset=forced,
+        )
 
-    async def set_distortion(self, distortion: Distortion) -> None:
+    async def set_distortion(self, distortion: Distortion, forced: bool = False) -> None:
         """
         Sets the Distortion of Lavalink.
 
@@ -277,9 +332,17 @@ class Player(RESTClient):
         distortion : Distortion
             Distortion to set
         """
-        await self.node.distortion(guild_id=self.channel.guild.id, distortion=distortion)
-        await self.seek(self.position, with_filter=True)
-        self._distortion = distortion
+        await self.set_filters(
+            volume=self.volume,
+            equalizer=self.equalizer if not forced else None,
+            karaoke=self.karaoke if not forced else None,
+            timescale=self.timescale if not forced else None,
+            tremolo=self.tremolo if not forced else None,
+            vibrato=self.vibrato if not forced else None,
+            rotation=self.rotation if not forced else None,
+            distortion=distortion,
+            reset_not_reset=forced,
+        )
 
     async def set_filters(
         self,
@@ -292,18 +355,32 @@ class Player(RESTClient):
         vibrato: Vibrato = None,
         rotation: Rotation = None,
         distortion: Distortion = None,
+        reset_not_reset: bool = False,
     ):
-        await self.node.filters(
-            guild_id=self.channel.guild.id,
-            volume=volume,
-            equalizer=equalizer,
-            karaoke=karaoke,
-            timescale=timescale,
-            tremolo=tremolo,
-            vibrato=vibrato,
-            rotation=rotation,
-            distortion=distortion,
-        )
+        if reset_not_reset:
+            await self.node.filters(
+                guild_id=self.channel.guild.id,
+                volume=volume,
+                equalizer=equalizer,
+                karaoke=karaoke,
+                timescale=timescale,
+                tremolo=tremolo,
+                vibrato=vibrato,
+                rotation=rotation,
+                distortion=distortion,
+            )
+        else:
+            await self.node.filters(
+                guild_id=self.channel.guild.id,
+                volume=self.volume,
+                equalizer=equalizer or self.equalizer,
+                karaoke=karaoke or self.karaoke,
+                timescale=timescale or self.timescale,
+                tremolo=tremolo or self.tremolo,
+                vibrato=vibrato or self.vibrato,
+                rotation=rotation or self.rotation,
+                distortion=distortion or self.distortion,
+            )
         if volume:
             self._volume = volume
         if equalizer:
