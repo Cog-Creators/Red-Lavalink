@@ -57,7 +57,7 @@ class Player(RESTClient):
         self._volume = 100
         self.state = PlayerState.CREATED
         self.connected_at = None
-        self._alive = False
+        self._connected = False
 
         self._is_playing = False
         self._metadata = {}
@@ -68,7 +68,7 @@ class Player(RESTClient):
     def __repr__(self):
         return (
             "<Player: "
-            f"state={self.state.name}, connected={self.alive}, "
+            f"state={self.state.name}, connected={self.connected}, "
             f"guild={self.guild.name!r} ({self.guild.id}), "
             f"channel={self.channel.name!r} ({self.channel.id}), "
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
@@ -89,7 +89,7 @@ class Player(RESTClient):
         """
         Current status of playback
         """
-        return self._is_playing and not self._paused and self._alive
+        return self._is_playing and not self._paused and self._connected
 
     @property
     def paused(self) -> bool:
@@ -113,11 +113,11 @@ class Player(RESTClient):
         return self.node.ready
 
     @property
-    def alive(self) -> bool:
+    def connected(self) -> bool:
         """
         Whether the player is ready to be used.
         """
-        return self._alive
+        return self._connected
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -145,7 +145,7 @@ class Player(RESTClient):
         """
         self._last_resume = datetime.datetime.now(tz=datetime.timezone.utc)
         self.connected_at = datetime.datetime.now(datetime.timezone.utc)
-        self._alive = True
+        self._connected = True
         if channel:
             if self.channel:
                 self._last_channel_id = self.channel.id
@@ -179,7 +179,7 @@ class Player(RESTClient):
         """
         self._is_autoplaying = False
         self._auto_play_sent = False
-        self._alive = False
+        self._connected = False
         if self.state == PlayerState.DISCONNECTING:
             return
 
