@@ -334,7 +334,6 @@ class Player(RESTClient):
         self.current = None
         self.position = 0
         self._paused = False
-        self._alive = True
 
         if not self.queue:
             await self.stop()
@@ -353,7 +352,6 @@ class Player(RESTClient):
         log.debug("Resuming current track for player: %r.", self)
         self._is_playing = False
         self._paused = True
-        self._alive = True
         await self.node.play(self.guild.id, track, start=start, replace=replace, pause=True)
         await self.pause(True)
         await self.pause(pause, timed=1)
@@ -373,7 +371,6 @@ class Player(RESTClient):
         self._paused = False
         self._is_autoplaying = False
         self._auto_play_sent = False
-        self._alive = True
 
     async def skip(self):
         """
