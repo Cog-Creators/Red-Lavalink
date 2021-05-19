@@ -209,7 +209,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             equalizer=equalizer,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_karaoke(self, karaoke: Karaoke, forced: bool = False) -> None:
@@ -223,7 +223,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             karaoke=karaoke,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_timescale(self, timescale: Timescale, forced: bool = False) -> None:
@@ -237,7 +237,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             timescale=timescale,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_tremolo(self, tremolo: Tremolo, forced: bool = False) -> None:
@@ -251,7 +251,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             tremolo=tremolo,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_vibrato(self, vibrato: Vibrato, forced: bool = False) -> None:
@@ -265,7 +265,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             vibrato=vibrato,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_rotation(self, rotation: Rotation, forced: bool = False) -> None:
@@ -279,7 +279,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             rotation=rotation,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_distortion(self, distortion: Distortion, forced: bool = False) -> None:
@@ -293,7 +293,7 @@ class Player(RESTClient):
         """
         await self.set_filters(
             distortion=distortion,
-            reset_not_reset=forced,
+            reset_not_set=forced,
         )
 
     async def set_filters(
