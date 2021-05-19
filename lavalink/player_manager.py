@@ -49,7 +49,7 @@ class Player(RESTClient):
         self._last_channel_id = channel.id
         self.queue = []
         self._position = 0
-        self.connected = False
+        self.ll_connected = False
         self.current = None  # type: Track
         self._paused = False
         self.repeat = False
@@ -524,7 +524,7 @@ class Player(RESTClient):
         log.debug("Updated player position for player: %r - %ds.", self, state.position // 1000)
         self._last_update = time.time_ns() // 1_000_000
         self._position = state.position
-        self.connected = state.connected
+        self.ll_connected = state.connected
 
     # Play commands
     def add(self, requester: discord.User, track: Track):
