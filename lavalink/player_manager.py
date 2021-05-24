@@ -77,9 +77,10 @@ class Player(RESTClient):
         self.manager = manager
         self._con_delay = None
         self._last_resume = None
+        self._effect_enabled = False
 
     def __repr__(self):
-        return (
+        _repr = (
             "<Player: "
             f"state={self.state.name}, connected={self.connected}, "
             f"guild={self.guild.name!r} ({self.guild.id}), "
@@ -88,15 +89,28 @@ class Player(RESTClient):
             f"queue_size={len(self.queue)}, current={self.current!r}, "
             f"position={self.position}, "
             f"length={self.current.length if self.current else 0}, "
-            f"equalizer={self.equalizer!r}, "
-            f"karaoke={self.karaoke!r}, "
-            f"timescale={self.timescale!r}, "
-            f"tremolo={self.tremolo!r}, "
-            f"vibrato={self.vibrato!r}, "
-            f"rotation={self.rotation!r}, "
-            f"distortion={self.distortion!r}, "
-            f"node={self.node!r}>"
         )
+
+        if self.has_effects:
+            if self.equalizer.changed:
+                _repr += f"equalizer={self.equalizer!r}, "
+            if self.karaoke.changed:
+                _repr += f"karaoke={self.karaoke!r}, "
+            if self.timescale.changed:
+                _repr += f"timescale={self.timescale!r}, "
+            if self.tremolo.changed:
+                _repr += f"tremolo={self.tremolo!r}, "
+            if self.vibrato.changed:
+                _repr += f"vibrato={self.vibrato!r}, "
+            if self.rotation.changed:
+                _repr += f"rotation={self.rotation!r}, "
+            if self.distortion.changed:
+                _repr += f"distortion={self.distortion!r}, "
+        return _repr + f"node={self.node!r}>"
+
+    @property
+    def has_effects(self):
+        return self._effect_enabled
 
     @property
     def position(self) -> int:
@@ -333,22 +347,32 @@ class Player(RESTClient):
                 rotation=rotation or (self.rotation if self.rotation.changed else None),
                 distortion=distortion or (self.distortion if self.distortion.changed else None),
             )
+        changed = False
         if volume:
             self._volume = volume
         if equalizer:
+            changed = True
             self._equalizer = equalizer
         if karaoke:
+            changed = True
             self._karaoke = karaoke
         if timescale:
+            changed = True
             self._timescale = timescale
         if tremolo:
+            changed = True
             self._tremolo = tremolo
         if vibrato:
+            changed = True
             self._vibrato = vibrato
         if rotation:
+            changed = True
             self._rotation = rotation
         if distortion:
+            changed = True
             self._distortion = distortion
+
+        self._effect_enabled = changed
         await self.seek(self.position, with_filter=True)
 
     async def wait_until_ready(
