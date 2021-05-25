@@ -109,6 +109,11 @@ venv.bak/
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 .idea
 
+# User-specific stuff:
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
 # CMake
 cmake-build-debug/
 cmake-build-release/
