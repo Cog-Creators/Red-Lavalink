@@ -110,7 +110,6 @@ venv.bak/
 .idea
 
 # User-specific stuff:
-*.iws
 .vscode/
 *.sublime-project
 *.sublime-workspace
