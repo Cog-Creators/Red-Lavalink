@@ -1,12 +1,11 @@
+import asyncio
 from collections import namedtuple
 from types import SimpleNamespace
-
-import pytest
-import asyncio
 from unittest.mock import MagicMock, patch
 
-from discord.gateway import DiscordWebSocket
+import pytest
 from discord.ext.commands import AutoShardedBot
+from discord.gateway import DiscordWebSocket
 
 import lavalink.node
 

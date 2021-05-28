@@ -1,7 +1,7 @@
 from copy import copy
 
-import pytest
 import aiohttp
+import pytest
 
 
 @pytest.mark.asyncio

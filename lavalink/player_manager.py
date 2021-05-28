@@ -2,14 +2,25 @@ import asyncio
 import datetime
 import time
 from random import shuffle
-from typing import KeysView, Optional, TYPE_CHECKING, ValuesView
+from typing import TYPE_CHECKING, KeysView, Optional, ValuesView
 
 import discord
 from discord.backoff import ExponentialBackoff
 
 from . import log, ws_rll_log
 from .enums import *
-from .filters import Distortion, Equalizer, Karaoke, Rotation, Timescale, Tremolo, Vibrato, Volume
+from .filters import (
+    ChannelMix,
+    Distortion,
+    Equalizer,
+    Karaoke,
+    LowPass,
+    Rotation,
+    Timescale,
+    Tremolo,
+    Vibrato,
+    Volume,
+)
 from .rest_api import RESTClient, Track
 
 if TYPE_CHECKING:
@@ -70,6 +81,9 @@ class Player(RESTClient):
         self._vibrato: Vibrato = Vibrato.default()
         self._rotation: Rotation = Rotation.default()
         self._distortion: Distortion = Distortion.default()
+        self._low_pass: LowPass = LowPass.default()
+        self._channel_mix: ChannelMix = ChannelMix.default()
+
         self._last_update = 0
 
         self._is_playing = False
@@ -106,6 +120,10 @@ class Player(RESTClient):
                 _repr += f"rotation={self.rotation!r}, "
             if self.distortion.changed:
                 _repr += f"distortion={self.distortion!r}, "
+            if self.low_pass.changed:
+                _repr += f"low_pass={self.low_pass!r}, "
+            if self.channel_mix.changed:
+                _repr += f"channel_mix={self.channel_mix!r}, "
         return _repr + f"node={self.node!r}>"
 
     @property
@@ -163,6 +181,16 @@ class Player(RESTClient):
     def distortion(self) -> Distortion:
         """The currently applied Distortion filter."""
         return self._distortion
+
+    @property
+    def low_pass(self) -> LowPass:
+        """The currently applied Low Pass filter."""
+        return self._low_pass
+
+    @property
+    def channel_mix(self) -> ChannelMix:
+        """The currently applied Channel Mix filter."""
+        return self._channel_mix
 
     @property
     def is_auto_playing(self) -> bool:
@@ -310,6 +338,34 @@ class Player(RESTClient):
             reset_not_set=forced,
         )
 
+    async def set_low_pass(self, low_pass: LowPass, forced: bool = False) -> None:
+        """
+        Sets the LowPass of Lavalink.
+
+        Parameters
+        ----------
+        low_pass : LowPass
+            LowPass to set
+        """
+        await self.set_filters(
+            low_pass=low_pass,
+            reset_not_set=forced,
+        )
+
+    async def set_channel_mix(self, channel_mix: ChannelMix, forced: bool = False) -> None:
+        """
+        Sets the ChannelMix of Lavalink.
+
+        Parameters
+        ----------
+        channel_mix : ChannelMix
+            ChannelMix to set
+        """
+        await self.set_filters(
+            channel_mix=channel_mix,
+            reset_not_set=forced,
+        )
+
     async def set_filters(
         self,
         *,
@@ -321,6 +377,8 @@ class Player(RESTClient):
         vibrato: Vibrato = None,
         rotation: Rotation = None,
         distortion: Distortion = None,
+        low_pass: LowPass = None,
+        channel_mix: ChannelMix = None,
         reset_not_set: bool = False,
     ):
         if reset_not_set:
@@ -334,6 +392,8 @@ class Player(RESTClient):
                 vibrato=vibrato,
                 rotation=rotation,
                 distortion=distortion,
+                low_pass=low_pass,
+                channel_mix=channel_mix,
             )
         else:
             await self.node.filters(
@@ -346,6 +406,9 @@ class Player(RESTClient):
                 vibrato=vibrato or (self.vibrato if self.vibrato.changed else None),
                 rotation=rotation or (self.rotation if self.rotation.changed else None),
                 distortion=distortion or (self.distortion if self.distortion.changed else None),
+                low_pass=low_pass or (self.low_pass if self.low_pass.changed else None),
+                channel_mix=channel_mix
+                or (self.channel_mix if self.channel_mix.changed else None),
             )
         changed = False
         if volume:
@@ -371,6 +434,12 @@ class Player(RESTClient):
         if distortion:
             changed = True
             self._distortion = distortion
+        if low_pass:
+            changed = True
+            self._low_pass = low_pass
+        if channel_mix:
+            changed = True
+            self._channel_mix = channel_mix
 
         self._effect_enabled = changed
         await self.seek(self.position, with_filter=True)

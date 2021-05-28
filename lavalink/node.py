@@ -1,19 +1,31 @@
 from __future__ import annotations
+
 import asyncio
 import contextlib
 import secrets
 import string
+import typing
 from collections import namedtuple
 from typing import Awaitable, List, Optional, cast
 
 import aiohttp
-import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
 from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
-from .filters import Distortion, Equalizer, Karaoke, Rotation, Timescale, Tremolo, Vibrato, Volume
+from .filters import (
+    ChannelMix,
+    Distortion,
+    Equalizer,
+    Karaoke,
+    LowPass,
+    Rotation,
+    Timescale,
+    Tremolo,
+    Vibrato,
+    Volume,
+)
 from .player_manager import PlayerManager
 from .rest_api import Track
 
@@ -574,6 +586,8 @@ class Node:
         vibrato: Vibrato = None,
         rotation: Rotation = None,
         distortion: Distortion = None,
+        low_pass: LowPass = None,
+        channel_mix: ChannelMix = None,
     ):
         op = {
             "op": LavalinkOutgoingOp.FILTERS.value,
@@ -595,6 +609,10 @@ class Node:
             op["rotation"] = rotation.get()
         if distortion:
             op["distortion"] = distortion.get()
+        if low_pass:
+            op["lowPass"] = low_pass.get()
+        if channel_mix:
+            op["channelMix"] = channel_mix.get()
 
         await self.send(op)
 
@@ -667,6 +685,24 @@ class Node:
                 "op": LavalinkOutgoingOp.DISTORTION.value,
                 "guildId": str(guild_id),
                 "distortion": distortion.get(),
+            }
+        )
+
+    async def low_pass(self, guild_id: int, low_pass: LowPass):
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.LOWPASS.value,
+                "guildId": str(guild_id),
+                "lowPass": low_pass.get(),
+            }
+        )
+
+    async def channel_mix(self, guild_id: int, channel_mix: ChannelMix):
+        await self.send(
+            {
+                "op": LavalinkOutgoingOp.CHANNELMIX.value,
+                "guildId": str(guild_id),
+                "channelMix": channel_mix.get(),
             }
         )
 

@@ -98,6 +98,9 @@ class LavalinkOutgoingOp(enum.Enum):
     VIBRATO = "filters"
     ROTATION = "filters"
     DISTORTION = "filters"
+    LOWPASS = "filters"
+    CHANNELMIX = "filters"
+
     FILTERS = "filters"
 
 

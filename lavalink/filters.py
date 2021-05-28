@@ -654,3 +654,103 @@ class Distortion(FilterMixin):
         self.tan_scale = 1.0
         self.offset = 0.0
         self.scale = 1.0
+
+
+class LowPass(FilterMixin):
+    def __init__(self, smoothing: float):
+        self._smoothing = smoothing
+
+    def __repr__(self):
+        return f"<LowPass: smoothing={self.smoothing}>"
+
+    @property
+    def smoothing(self) -> float:
+        return self._smoothing
+
+    @smoothing.setter
+    def smoothing(self, v: float):
+        self._smoothing = float(v)
+
+    @classmethod
+    def default(cls) -> LowPass:
+        return cls(smoothing=20.0)
+
+    def get(self) -> Dict[str, float]:
+        return {
+            "smoothing": self.smoothing,
+        }
+
+    def reset(self) -> None:
+        self.smoothing = 20.0
+
+
+class ChannelMix(FilterMixin):
+    def __init__(
+        self,
+        left_to_left: float,
+        left_to_right: float,
+        right_to_left: float,
+        right_to_right: float,
+    ):
+        self.left_to_left = left_to_left
+        self.left_to_right = left_to_right
+        self.right_to_left = right_to_left
+        self.right_to_right = right_to_right
+
+    def __repr__(self):
+        return (
+            f"<ChannelMix: left_to_left={self.left_to_left}, "
+            f"left_to_right={self.left_to_right}, "
+            f"right_to_left={self.right_to_left}, "
+            f"right_to_right={self.right_to_right}>"
+        )
+
+    @property
+    def left_to_left(self) -> float:
+        return self._left_to_left
+
+    @left_to_left.setter
+    def left_to_left(self, v: float):
+        self._left_to_left = float(v)
+
+    @property
+    def left_to_right(self) -> float:
+        return self._left_to_right
+
+    @left_to_right.setter
+    def left_to_right(self, v: float):
+        self._left_to_right = float(v)
+
+    @property
+    def right_to_left(self) -> float:
+        return self._right_to_left
+
+    @right_to_left.setter
+    def right_to_left(self, v: float):
+        self._right_to_left = float(v)
+
+    @property
+    def right_to_right(self) -> float:
+        return self._right_to_right
+
+    @right_to_right.setter
+    def right_to_right(self, v: float):
+        self._right_to_right = float(v)
+
+    @classmethod
+    def default(cls) -> ChannelMix:
+        return cls(left_to_left=1.0, left_to_right=1.0, right_to_left=220.0, right_to_right=100.0)
+
+    def get(self) -> Dict[str, float]:
+        return {
+            "leftToLeft": self.left_to_left,
+            "leftToRight": self.left_to_right,
+            "rightToLeft": self.right_to_left,
+            "rightToRight": self.right_to_right,
+        }
+
+    def reset(self) -> None:
+        self.left_to_left = 1.0
+        self.left_to_right = 0.0
+        self.right_to_left = 0.0
+        self.right_to_right = 1.0
