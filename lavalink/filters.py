@@ -82,7 +82,6 @@ class Equalizer(FilterMixin):
     def __init__(self, *, levels: list, name: str = "CustomEqualizer"):
         self.band_count: Final[int] = 15
         self._eq = self._factory(levels)
-        self._index = dict((d["band"], dict(d, index=index)) for (index, d) in enumerate(self._eq))
         self._raw = levels
         self._name = name
         self.off = False
@@ -92,6 +91,10 @@ class Equalizer(FilterMixin):
 
     def __repr__(self):
         return f"<Equalizer: name={self._name}, eq={self._eq}>"
+
+    @property
+    def index(self):
+        return dict((d["band"], dict(d, index=index)) for (index, d) in enumerate(self._eq))
 
     def __eq__(self, other):
         """Overrides the default implementation"""
@@ -273,13 +276,14 @@ class Equalizer(FilterMixin):
     def get_gain(self, band: int) -> float:
         if band < 0 or band >= self.band_count:
             raise IndexError(f"Band {band} does not exist!")
-        return self._index[band].get("gain", 0.0)
+        return self.index[band].get("gain", 0.0)
 
     def visualise(self):
         block = ""
         bands = [str(band + 1).zfill(2) for band in range(self.band_count)]
         bottom = (" " * 8) + " ".join(bands)
-        gains = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0.0, -0.1, -0.2, -0.25]
+        gains = [x * 0.01 for x in range(-25, 105,  5)]
+        gains.reverse()
 
         for gain in gains:
             prefix = ""
