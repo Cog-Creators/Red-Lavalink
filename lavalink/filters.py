@@ -739,7 +739,7 @@ class ChannelMix(FilterMixin):
 
     @classmethod
     def default(cls) -> ChannelMix:
-        return cls(left_to_left=1.0, left_to_right=1.0, right_to_left=220.0, right_to_right=100.0)
+        return cls(left_to_left=1.0, left_to_right=0.0, right_to_left=0.0, right_to_right=1.0)
 
     def get(self) -> Dict[str, float]:
         return {
