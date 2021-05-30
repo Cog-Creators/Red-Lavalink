@@ -373,7 +373,6 @@ class Karaoke(FilterMixin):
         self.off = True
 
 
-
 class Timescale(FilterMixin):
     def __init__(self, speed: float, pitch: float, rate: float):
         self.speed = speed
@@ -530,6 +529,7 @@ class Vibrato(FilterMixin):
         self.frequency = 2.0
         self.depth = 0.5  # TODO: Testing: Check: According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
         self.off = True
+
 
 class Rotation(FilterMixin):
     def __init__(self, hertz: float):
