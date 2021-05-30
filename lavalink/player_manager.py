@@ -384,7 +384,7 @@ class Player(RESTClient):
         if reset_not_set:
             await self.node.filters(
                 guild_id=self.channel.guild.id,
-                volume=volume,
+                volume=volume or self.volume,
                 equalizer=equalizer,
                 karaoke=karaoke,
                 timescale=timescale,
@@ -411,35 +411,36 @@ class Player(RESTClient):
                 or (self.channel_mix if self.channel_mix.changed else None),
             )
         changed = False
-        if volume:
+        if volume and volume.changed:
             self._volume = volume
-        if equalizer:
             changed = True
+        if equalizer and equalizer.changed:
             self._equalizer = equalizer
-        if karaoke:
             changed = True
+        if karaoke and karaoke.changed:
             self._karaoke = karaoke
-        if timescale:
             changed = True
+        if timescale and timescale.changed:
             self._timescale = timescale
-        if tremolo:
             changed = True
+        if tremolo and tremolo.changed:
             self._tremolo = tremolo
-        if vibrato:
             changed = True
+        if vibrato and vibrato.changed:
             self._vibrato = vibrato
-        if rotation:
             changed = True
+        if rotation and rotation.changed:
             self._rotation = rotation
-        if distortion:
             changed = True
+        if distortion and distortion.changed:
             self._distortion = distortion
-        if low_pass:
             changed = True
+        if low_pass and low_pass.changed:
             self._low_pass = low_pass
-        if channel_mix:
             changed = True
+        if channel_mix and channel_mix.changed:
             self._channel_mix = channel_mix
+            changed = True
 
         self._effect_enabled = changed
         await self.seek(self.position, with_filter=True)

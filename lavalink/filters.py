@@ -366,11 +366,12 @@ class Karaoke(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.level = 1.0
         self.mono_level = 1.0
         self.filter_band = 220.0
         self.filter_width = 100.0
+        self.off = True
+
 
 
 class Timescale(FilterMixin):
@@ -425,10 +426,10 @@ class Timescale(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.speed = 1.0
         self.pitch = 1.0
         self.rate = 1.0
+        self.off = True
 
 
 class Tremolo(FilterMixin):
@@ -476,9 +477,9 @@ class Tremolo(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.frequency = 2.0
-        self.depth = 0.5  # TODO: Testing:  According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
+        self.depth = 0.5
+        self.off = True
 
 
 class Vibrato(FilterMixin):
@@ -526,10 +527,9 @@ class Vibrato(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.frequency = 2.0
         self.depth = 0.5  # TODO: Testing: Check: According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
-
+        self.off = True
 
 class Rotation(FilterMixin):
     def __init__(self, hertz: float):
@@ -561,8 +561,8 @@ class Rotation(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.hertz = 0.0
+        self.off = True
 
 
 class Distortion(FilterMixin):
@@ -700,7 +700,6 @@ class Distortion(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.sin_offset = 0.0
         self.sin_scale = 1.0
         self.cos_offset = 0.0
@@ -709,6 +708,7 @@ class Distortion(FilterMixin):
         self.tan_scale = 1.0
         self.offset = 0.0
         self.scale = 1.0
+        self.off = True
 
 
 class LowPass(FilterMixin):
@@ -741,8 +741,8 @@ class LowPass(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.smoothing = 20.0
+        self.off = True
 
 
 class ChannelMix(FilterMixin):
@@ -819,8 +819,8 @@ class ChannelMix(FilterMixin):
         }
 
     def reset(self) -> None:
-        self.off = True
         self.left_to_left = 1.0
         self.left_to_right = 0.0
         self.right_to_left = 0.0
         self.right_to_right = 1.0
+        self.off = True
