@@ -1,7 +1,7 @@
 from .log import log, set_logging_level, socket_log, ws_discord_log, ws_ll_log, ws_rll_log
 
 set_logging_level()
-__version__ = "0.9.0"
+__version__ = "0.9.1"
 
 from . import utils
 from .enums import LavalinkEvents, NodeState, PlayerState, TrackEndReason
