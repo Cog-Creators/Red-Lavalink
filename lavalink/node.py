@@ -12,6 +12,11 @@ import aiohttp
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
+try:
+    from redbot import json
+except ImportError:
+    import json
+
 from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .filters import (
@@ -182,7 +187,7 @@ class Node:
 
         self._ws = None
         self._listener_task = None
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(json_serialize=json.dumps)
 
         self._queue: List = []
 
@@ -352,7 +357,7 @@ class Node:
                     ws_ll_log.info("[NODE] | Listener closing: %s", msg.extra)
                     break
             elif msg.type == aiohttp.WSMsgType.TEXT:
-                data = msg.json()
+                data = msg.json(loads=json.loads)
                 try:
                     op = LavalinkIncomingOp(data.get("op"))
                 except ValueError:

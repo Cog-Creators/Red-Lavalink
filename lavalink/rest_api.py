@@ -6,6 +6,11 @@ from urllib.parse import quote, urlparse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ServerDisconnectedError
 
+try:
+    from redbot import json
+except ImportError:
+    import json
+
 from . import log
 from .enums import *
 
@@ -287,7 +292,7 @@ class RESTClient:
 
     def reset_session(self):
         if self._session is None or self._session.closed:
-            self._session = ClientSession(loop=self.node.loop)
+            self._session = ClientSession(loop=self.node.loop, json_serialize=json.dumps)
 
     def __check_node_ready(self):
         if self.state != PlayerState.READY:
@@ -296,7 +301,7 @@ class RESTClient:
     async def _get(self, url):
         try:
             async with self._session.get(url, headers=self._headers) as resp:
-                data = await resp.json(content_type=None)
+                data = await resp.json(content_type=None, loads=json.loads)
         except ServerDisconnectedError:
             if self.state == PlayerState.DISCONNECTING:
                 return {
