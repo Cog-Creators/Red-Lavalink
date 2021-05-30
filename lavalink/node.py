@@ -598,25 +598,25 @@ class Node:
             "op": LavalinkOutgoingOp.FILTERS.value,
             "guildId": str(guild_id),
         }
-        if volume:
+        if volume and volume.changed:
             op["volume"] = volume.get()
-        if equalizer:
+        if equalizer and equalizer.changed:
             op["equalizer"] = equalizer.get()
-        if karaoke:
+        if karaoke and karaoke.changed:
             op["karaoke"] = karaoke.get()
-        if timescale:
+        if timescale and timescale.changed:
             op["timescale"] = timescale.get()
-        if tremolo:
+        if tremolo and tremolo.changed:
             op["tremolo"] = tremolo.get()
-        if vibrato:
+        if vibrato and vibrato.changed:
             op["vibrato"] = vibrato.get()
-        if rotation:
+        if rotation and rotation.changed:
             op["rotation"] = rotation.get()
-        if distortion:
+        if distortion and distortion.changed:
             op["distortion"] = distortion.get()
-        if low_pass:
+        if low_pass and low_pass.changed:
             op["lowPass"] = low_pass.get()
-        if channel_mix:
+        if channel_mix and channel_mix.changed:
             op["channelMix"] = channel_mix.get()
 
         await self.send(op)

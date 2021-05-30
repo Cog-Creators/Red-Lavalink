@@ -5,6 +5,8 @@ from typing import Dict, Final, List, Union
 
 
 class FilterMixin:
+    off: bool = True
+
     def __eq__(self, other):
         """Overrides the default implementation"""
         if isinstance(other, self.__class__):
@@ -17,12 +19,13 @@ class FilterMixin:
 
     @property
     def changed(self) -> bool:
-        return self != self.__class__.default()
+        return self.off is False
 
 
 class Volume(FilterMixin):
     def __init__(self, value: float):
         self.value = value
+        self.off = False
 
     def __float__(self):
         return self.value
@@ -81,8 +84,8 @@ class Equalizer(FilterMixin):
         self._eq = self._factory(levels)
         self._index = dict((d["band"], dict(d, index=index)) for (index, d) in enumerate(self._eq))
         self._raw = levels
-
         self._name = name
+        self.off = False
 
     def __str__(self):
         return self._name
@@ -248,9 +251,12 @@ class Equalizer(FilterMixin):
         return cls.flat()
 
     def get(self) -> List[Dict[str, Union[int, float]]]:
+        if self.off:
+            return []
         return self._eq
 
     def reset(self) -> None:
+        self.off = True
         eq = Equalizer.flat()
         self._eq = eq._eq
         self._name = eq._name
@@ -314,6 +320,7 @@ class Karaoke(FilterMixin):
     @level.setter
     def level(self, v: float):
         self._level = float(v)
+        self.off = False
 
     @property
     def mono_level(self) -> float:
@@ -322,6 +329,7 @@ class Karaoke(FilterMixin):
     @mono_level.setter
     def mono_level(self, v: float):
         self._mono_level = float(v)
+        self.off = False
 
     @property
     def filter_band(self) -> float:
@@ -330,6 +338,7 @@ class Karaoke(FilterMixin):
     @filter_band.setter
     def filter_band(self, v: float):
         self._filter_band = float(v)
+        self.off = False
 
     @property
     def filter_width(self) -> float:
@@ -338,12 +347,17 @@ class Karaoke(FilterMixin):
     @filter_width.setter
     def filter_width(self, v: float):
         self._filter_width = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> Karaoke:
-        return cls(level=1.0, mono_level=1.0, filter_band=220.0, filter_width=100.0)
+        c = cls(level=1.0, mono_level=1.0, filter_band=220.0, filter_width=100.0)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "level": self.level,
             "monoLevel": self.mono_level,
@@ -352,6 +366,7 @@ class Karaoke(FilterMixin):
         }
 
     def reset(self) -> None:
+        self.off = True
         self.level = 1.0
         self.mono_level = 1.0
         self.filter_band = 220.0
@@ -374,6 +389,7 @@ class Timescale(FilterMixin):
     @speed.setter
     def speed(self, v: float):
         self._speed = float(v)
+        self.off = False
 
     @property
     def pitch(self) -> float:
@@ -382,6 +398,7 @@ class Timescale(FilterMixin):
     @pitch.setter
     def pitch(self, v: float):
         self._pitch = float(v)
+        self.off = False
 
     @property
     def rate(self) -> float:
@@ -390,12 +407,17 @@ class Timescale(FilterMixin):
     @rate.setter
     def rate(self, v: float):
         self._rate = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> Timescale:
-        return cls(speed=1.0, pitch=1.0, rate=1.0)
+        c = cls(speed=1.0, pitch=1.0, rate=1.0)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "speed": self.speed,
             "pitch": self.pitch,
@@ -403,6 +425,7 @@ class Timescale(FilterMixin):
         }
 
     def reset(self) -> None:
+        self.off = True
         self.speed = 1.0
         self.pitch = 1.0
         self.rate = 1.0
@@ -425,6 +448,7 @@ class Tremolo(FilterMixin):
         if v <= 0:
             raise ValueError(f"Frequency must be must be greater than 0, not {v}")
         self._frequency = float(v)
+        self.off = False
 
     @property
     def depth(self) -> float:
@@ -435,18 +459,24 @@ class Tremolo(FilterMixin):
         if not (0.0 < v <= 1.0):
             raise ValueError(f"Depth must be must be 0.0 < x ≤ 1.0, not {v}")
         self._depth = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> Tremolo:
-        return cls(frequency=2.0, depth=0.5)
+        c = cls(frequency=2.0, depth=0.5)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "frequency": self.frequency,
             "depth": self.depth,
         }
 
     def reset(self) -> None:
+        self.off = True
         self.frequency = 2.0
         self.depth = 0.5  # TODO: Testing:  According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
 
@@ -468,6 +498,7 @@ class Vibrato(FilterMixin):
         if not (0.0 < v <= 14.0):
             raise ValueError(f"Frequency must be must be 0.0 < v <= 14.0, not {v}")
         self._frequency = float(v)
+        self.off = False
 
     @property
     def depth(self) -> float:
@@ -478,18 +509,24 @@ class Vibrato(FilterMixin):
         if not (0.0 < v <= 1.0):
             raise ValueError(f"Depth must be must be 0.0 < x ≤ 1.0, not {v}")
         self._depth = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> Vibrato:
-        return cls(frequency=2.0, depth=0.5)
+        c = cls(frequency=2.0, depth=0.5)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "frequency": self.frequency,
             "depth": self.depth,
         }
 
     def reset(self) -> None:
+        self.off = True
         self.frequency = 2.0
         self.depth = 0.5  # TODO: Testing: Check: According to LL Code setting this to 0 disableds it .... but 0.5 is also the default.
 
@@ -508,17 +545,23 @@ class Rotation(FilterMixin):
     @hertz.setter
     def hertz(self, v: float):
         self._hertz = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> Rotation:
-        return cls(hertz=0.0)
+        c = cls(hertz=0.0)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "rotationHz": self.hertz,
         }
 
     def reset(self) -> None:
+        self.off = True
         self.hertz = 0.0
 
 
@@ -563,6 +606,7 @@ class Distortion(FilterMixin):
     @sin_offset.setter
     def sin_offset(self, v: float):
         self._sin_offset = float(v)
+        self.off = False
 
     @property
     def sin_scale(self) -> float:
@@ -579,6 +623,7 @@ class Distortion(FilterMixin):
     @cos_offset.setter
     def cos_offset(self, v: float):
         self._cos_offset = float(v)
+        self.off = False
 
     @property
     def cos_scale(self) -> float:
@@ -587,6 +632,7 @@ class Distortion(FilterMixin):
     @cos_scale.setter
     def cos_scale(self, v: float):
         self._cos_scale = float(v)
+        self.off = False
 
     @property
     def tan_offset(self) -> float:
@@ -595,6 +641,7 @@ class Distortion(FilterMixin):
     @tan_offset.setter
     def tan_offset(self, v: float):
         self._tan_offset = float(v)
+        self.off = False
 
     @property
     def tan_scale(self) -> float:
@@ -603,6 +650,7 @@ class Distortion(FilterMixin):
     @tan_scale.setter
     def tan_scale(self, v: float):
         self._tan_scale = float(v)
+        self.off = False
 
     @property
     def offset(self) -> float:
@@ -611,6 +659,7 @@ class Distortion(FilterMixin):
     @offset.setter
     def offset(self, v: float):
         self._offset = float(v)
+        self.off = False
 
     @property
     def scale(self) -> float:
@@ -619,10 +668,11 @@ class Distortion(FilterMixin):
     @scale.setter
     def scale(self, v: float):
         self._scale = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> Distortion:
-        return cls(
+        c = cls(
             sin_offset=0.0,
             sin_scale=1.0,
             cos_offset=0.0,
@@ -632,8 +682,12 @@ class Distortion(FilterMixin):
             offset=0.0,
             scale=1.0,
         )
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "sinOffset": self.sin_offset,
             "sinScale": self.sin_scale,
@@ -646,6 +700,7 @@ class Distortion(FilterMixin):
         }
 
     def reset(self) -> None:
+        self.off = True
         self.sin_offset = 0.0
         self.sin_scale = 1.0
         self.cos_offset = 0.0
@@ -670,17 +725,23 @@ class LowPass(FilterMixin):
     @smoothing.setter
     def smoothing(self, v: float):
         self._smoothing = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> LowPass:
-        return cls(smoothing=20.0)
+        c = cls(smoothing=20.0)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "smoothing": self.smoothing,
         }
 
     def reset(self) -> None:
+        self.off = True
         self.smoothing = 20.0
 
 
@@ -712,6 +773,7 @@ class ChannelMix(FilterMixin):
     @left_to_left.setter
     def left_to_left(self, v: float):
         self._left_to_left = float(v)
+        self.off = False
 
     @property
     def left_to_right(self) -> float:
@@ -720,6 +782,7 @@ class ChannelMix(FilterMixin):
     @left_to_right.setter
     def left_to_right(self, v: float):
         self._left_to_right = float(v)
+        self.off = False
 
     @property
     def right_to_left(self) -> float:
@@ -728,6 +791,7 @@ class ChannelMix(FilterMixin):
     @right_to_left.setter
     def right_to_left(self, v: float):
         self._right_to_left = float(v)
+        self.off = False
 
     @property
     def right_to_right(self) -> float:
@@ -736,12 +800,17 @@ class ChannelMix(FilterMixin):
     @right_to_right.setter
     def right_to_right(self, v: float):
         self._right_to_right = float(v)
+        self.off = False
 
     @classmethod
     def default(cls) -> ChannelMix:
-        return cls(left_to_left=1.0, left_to_right=0.0, right_to_left=0.0, right_to_right=1.0)
+        c = cls(left_to_left=1.0, left_to_right=0.0, right_to_left=0.0, right_to_right=1.0)
+        c.off = True
+        return c
 
     def get(self) -> Dict[str, float]:
+        if self.off:
+            return {}
         return {
             "leftToLeft": self.left_to_left,
             "leftToRight": self.left_to_right,
@@ -750,6 +819,7 @@ class ChannelMix(FilterMixin):
         }
 
     def reset(self) -> None:
+        self.off = True
         self.left_to_left = 1.0
         self.left_to_right = 0.0
         self.right_to_left = 0.0
