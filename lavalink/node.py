@@ -569,7 +569,7 @@ class Node:
         start: int = 0,
         pause: bool = False,
     ):
-        # await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
+        await self.send({"op": LavalinkOutgoingOp.STOP.value, "guildId": str(guild_id)})
         await self.no_stop_play(
             guild_id=guild_id, track=track, replace=replace, start=start, pause=pause
         )
