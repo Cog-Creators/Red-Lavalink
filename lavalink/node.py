@@ -85,7 +85,7 @@ class NodeStats:
 
     def __repr__(self):
         return (
-            "<NoteStats: "
+            "<NodeStats: "
             f"uptime={self.uptime}, "
             f"players={self.players}, "
             f"playing_players={self.playing_players}, "
