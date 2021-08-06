@@ -79,7 +79,7 @@ async def initialize(
         password,
         port=ws_port,
         user_id=player_manager.user_id,
-        num_shards=bot.shard_count if bot.shard_count is not None else 1,
+        num_shards=bot.shard_count or 1,
         resume_key=resume_key,
         resume_timeout=resume_timeout,
         bot=bot,
@@ -88,7 +88,7 @@ async def initialize(
     await lavalink_node.connect(timeout=timeout)
     lavalink_node._retries = 0
 
-    bot.add_listener(node.on_socket_response)
+    # bot.add_listener(node.on_socket_response)
     bot.add_listener(_on_guild_remove, name="on_guild_remove")
 
     return lavalink_node
@@ -116,13 +116,13 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
         If there are no available lavalink nodes ready to connect to discord.
     """
     node_ = node.get_node(channel.guild.id)
-    p = await node_.player_manager.create_player(channel, deafen=deafen)
+    p = await node_.create_player(channel, deafen=deafen)
     return p
 
 
 def get_player(guild_id: int) -> player_manager.Player:
     node_ = node.get_node(guild_id)
-    return node_.player_manager.get_player(guild_id)
+    return node_.get_player(guild_id)
 
 
 async def _on_guild_remove(guild):
@@ -182,7 +182,7 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
 
     try:
         node_ = node.get_node(guild_id, ignore_ready_status=True)
-        player = node_.player_manager.get_player(guild_id)
+        player = node_.get_player(guild_id)
     except (IndexError, KeyError):
         if data != enums.LavalinkEvents.TRACK_END:
             log.debug(
@@ -345,7 +345,7 @@ async def close(bot):
     """
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
-    bot.remove_listener(node.on_socket_response)
+    # bot.remove_listener(node.on_socket_response)
     bot.remove_listener(_on_guild_remove, name="on_guild_remove")
     await node.disconnect()
 
@@ -355,13 +355,13 @@ async def close(bot):
 
 def all_players() -> Tuple[player_manager.Player]:
     nodes = node._nodes
-    ret = tuple(p for n in nodes for p in n.player_manager.players)
+    ret = tuple(p for n in nodes for p in n.players)
     return ret
 
 
 def all_connected_players() -> Tuple[player_manager.Player]:
     nodes = node._nodes
-    ret = tuple(p for n in nodes for p in n.player_manager.players if p.connected)
+    ret = tuple(p for n in nodes for p in n.players if p.connected)
     return ret
 
 

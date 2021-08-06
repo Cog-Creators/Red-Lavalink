@@ -277,7 +277,7 @@ class RESTClient:
 
     def __init__(self, node):
         self.node = node
-        self._session = None
+        self._session = node.session
         self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.port)
         self._headers = {"Authorization": node.password}
 
@@ -285,9 +285,9 @@ class RESTClient:
 
         self._warned = False
 
-    def reset_session(self):
-        if self._session is None or self._session.closed:
-            self._session = ClientSession(loop=self.node.loop)
+    # def reset_session(self):
+    #     if self._session is None or self._session.closed:
+    #         self._session = ClientSession(loop=self.node.loop)
 
     def __check_node_ready(self):
         if self.state != PlayerState.READY:
@@ -388,7 +388,7 @@ class RESTClient:
         """
         return await self.load_tracks("scsearch:{}".format(query))
 
-    async def close(self):
-        if self._session is not None:
-            await self._session.close()
-        log.debug("Closed REST session.")
+    # async def close(self):
+    #     if self._session is not None:
+    #         await self._session.close()
+    #     log.debug("Closed REST session.")
