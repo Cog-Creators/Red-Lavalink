@@ -105,7 +105,6 @@ class Node(RESTClient):
         self,
         _loop: asyncio.BaseEventLoop,
         event_handler: typing.Callable,
-        voice_ws_func: typing.Callable,
         host: str,
         password: str,
         port: int,
@@ -124,8 +123,6 @@ class Node(RESTClient):
             The event loop of the bot.
         event_handler
             Function to dispatch events to.
-        voice_ws_func : typing.Callable
-            Function that takes one argument, guild ID, and returns a websocket.
         host : str
             Lavalink player host.
         password : str
@@ -148,7 +145,7 @@ class Node(RESTClient):
         self.loop = _loop
         self.bot = bot
         self.event_handler = event_handler
-        self.get_voice_ws = voice_ws_func
+        self.get_voice_ws = bot._connection._get_websocket
         self.host = host
         self.port = port
         self.password = password
@@ -464,13 +461,6 @@ class Node(RESTClient):
     def unregister_state_handler(self, func):
         self._state_handlers.remove(func)
 
-    async def join_voice_channel(self, guild_id, channel_id, deafen: bool = False):
-        """
-        Alternative way to join a voice channel if node is known.
-        """
-        voice_ws = self.get_voice_ws(guild_id)
-        await voice_ws.voice_state(guild_id, channel_id, self_deaf=deafen)
-
     async def create_player(self, channel: VoiceChannel, deafen: bool = False) -> Player:
         """
         Connects to a discord voice channel.
@@ -544,7 +534,7 @@ class Node(RESTClient):
             pass
         else:
             del self._players_dict[guild_id]
-            await p.disconnect(requested=False)
+            await p.disconnect(force=True)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         ws_rll_log.debug("Received node state update: %s -> %s", old_state.name, next_state.name)
@@ -725,19 +715,6 @@ def get_node(guild_id: int = None, ignore_ready_status: bool = False) -> Node:
 
 def get_nodes_stats():
     return [node.stats for node in _nodes]
-
-
-async def join_voice(guild_id: int, channel_id: int, deafen: bool = False):
-    """
-    Joins a voice channel by ID's.
-
-    Parameters
-    ----------
-    guild_id : int
-    channel_id : int
-    """
-    node = get_node(guild_id)
-    await node.join_voice_channel(guild_id, channel_id, deafen)
 
 
 async def disconnect():

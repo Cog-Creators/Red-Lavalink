@@ -72,11 +72,10 @@ async def initialize(
     register_update_listener(_handle_update)
 
     lavalink_node = node.Node(
-        _loop,
-        dispatch,
-        bot._connection._get_websocket,
-        host,
-        password,
+        _loop=_loop,
+        event_handler=dispatch,
+        host=host,
+        password=password,
         port=ws_port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count or 1,
