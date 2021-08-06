@@ -140,21 +140,29 @@ class Player(VoiceProtocol):
     async def on_voice_state_update(self, data: dict) -> None:
         self._voice_state.update({"sessionId": data["session_id"]})
         if (channel_id := data["channel_id"]) is None:
+            ws_rll_log.info("Received voice disconnect from discord, removing player.")
             self._voice_state.clear()
-            return
+            await self.node._remove_player(int(data["guild_id"]))
+        else:
+            channel = self.guild.get_channel(int(channel_id))
+            if channel != self.channel:
+                if self.channel:
+                    self._last_channel_id = self.channel.id
+                self.channel = channel
 
-        self.channel = self.guild.get_channel(int(channel_id))
+        # self.channel = self.guild.get_channel(int(channel_id))
         await self._send_lavalink_voice_update({**self._voice_state, "event": data})
 
     async def _send_lavalink_voice_update(self, voice_state: dict):
-        await self.node.send(
-            {
-                "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
-                "guildId": str(self.guild.id),
-                "sessionId": voice_state["sessionId"],
-                "event": voice_state["event"],
-            }
-        )
+        if {"sessionId", "event"} == self._voice_state.keys():
+            await self.node.send(
+                {
+                    "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
+                    "guildId": str(self.guild.id),
+                    "sessionId": voice_state["sessionId"],
+                    "event": voice_state["event"],
+                }
+            )
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -240,15 +248,10 @@ class Player(VoiceProtocol):
             )
 
         voice_ws = self.node.get_voice_ws(guild_id)
-
         if not voice_ws.socket.closed:
             await self.guild.change_voice_state(channel=None)
-
         await self.node.destroy_guild(guild_id)
-        # await self.close()
-
         self.node.remove_player(self)
-
         self.cleanup()
 
     def store(self, key, value):
