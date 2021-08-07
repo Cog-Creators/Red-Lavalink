@@ -284,10 +284,6 @@ class RESTClient:
 
         self._warned = False
 
-    # def reset_session(self):
-    #     if self._session is None or self._session.closed:
-    #         self._session = ClientSession(loop=self.node.loop)
-
     def __check_node_ready(self):
         if self.state != PlayerState.READY:
             raise RuntimeError("Cannot execute REST request when node not ready.")
@@ -386,8 +382,3 @@ class RESTClient:
         list of Track
         """
         return await self.load_tracks("scsearch:{}".format(query))
-
-    # async def close(self):
-    #     if self._session is not None:
-    #         await self._session.close()
-    #     log.debug("Closed REST session.")
