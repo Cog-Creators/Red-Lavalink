@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import asyncio
 import secrets
 import string
+import typing
 from collections import namedtuple
 from typing import List, Optional
 
 import aiohttp
-import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
@@ -19,7 +20,7 @@ from .enums import (
     DiscordVoiceSocketResponses,
 )
 from .player_manager import Player
-from .rest_api import Track
+from .rest_api import RESTClient, Track
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 from .utils import VoiceChannel
 
@@ -30,12 +31,11 @@ __all__ = [
     "get_node",
     "get_nodes_stats",
     "get_all_nodes",
-    "join_voice",
 ]
 
 _nodes: List[Node] = []
 
-PlayerStatePosition = namedtuple("PlayerStatePosition", "position time connected")
+PositionTime = namedtuple("PositionTime", "position time connected")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
@@ -427,7 +427,7 @@ class Node(RESTClient):
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PlayerStatePosition(
+            state = PositionTime(
                 position=state.get("position", 0),
                 time=state.get("time", 0),
                 connected=state.get("connected", False),
@@ -572,17 +572,6 @@ class Node(RESTClient):
         if guild_id in self._players_dict:
             return self._players_dict[guild_id]
         raise KeyError("No such player for that guild.")
-
-    def _ensure_player(self, channel_id: int):
-        channel = channel_finder_func(channel_id)
-        if channel is not None:
-            try:
-                p = self.get_player(channel.guild.id)
-            except KeyError:
-                log.debug("Received voice channel connection without a player.")
-                p = Player(self.bot, channel, self)
-                self._players_dict[channel.guild.id] = p
-            return p, channel
 
     async def _remove_player(self, guild_id: int):
         try:
