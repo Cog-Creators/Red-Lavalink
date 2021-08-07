@@ -151,7 +151,7 @@ class Player(VoiceProtocol):
                 if self.channel:
                     self._last_channel_id = self.channel.id
                 self.channel = channel
-        
+
         await self._send_lavalink_voice_update({**self._voice_state, "event": data})
 
     async def _send_lavalink_voice_update(self, voice_state: dict):
