@@ -141,7 +141,6 @@ async def node(bot):
     node_ = lavalink.node.Node(
         loop=bot.loop,
         event_handler=MagicMock(),
-        voice_ws_func=bot._connection._get_websocket,
         host="localhost",
         password="password",
         port=2333,
