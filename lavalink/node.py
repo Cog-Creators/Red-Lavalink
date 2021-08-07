@@ -1,30 +1,30 @@
 from __future__ import annotations
+
 import asyncio
 import contextlib
 import secrets
 import string
+import typing
 from collections import namedtuple
 from typing import Awaitable, KeysView, List, Optional, ValuesView, cast
 
 import aiohttp
-import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import ws_discord_log, ws_ll_log, log, ws_rll_log
-from .enums import *
+from . import log, ws_ll_log, ws_rll_log
+from .enums import LavalinkEvents, LavalinkIncomingOp, LavalinkOutgoingOp, NodeState, PlayerState
 from .player_manager import Player
-from .rest_api import Track, RESTClient
+from .rest_api import RESTClient, Track
 from .utils import VoiceChannel
 
-__all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_voice"]
+__all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats"]
 
 _nodes: List[Node] = []
 
-PlayerStatePosition = namedtuple("PlayerStatePosition", "position time")
+PositionTime = namedtuple("PositionTime", "position time")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
-channel_finder_func = lambda channel_id: None
 
 
 # Originally Added in: https://github.com/PythonistaGuild/Wavelink/pull/66
@@ -377,9 +377,7 @@ class Node(RESTClient):
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PlayerStatePosition(
-                position=state.get("position", 0), time=state.get("time", 0)
-            )
+            state = PositionTime(position=state.get("position", 0), time=state.get("time", 0))
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
@@ -515,17 +513,6 @@ class Node(RESTClient):
         if guild_id in self._players_dict:
             return self._players_dict[guild_id]
         raise KeyError("No such player for that guild.")
-
-    def _ensure_player(self, channel_id: int):
-        channel = channel_finder_func(channel_id)
-        if channel is not None:
-            try:
-                p = self.get_player(channel.guild.id)
-            except KeyError:
-                log.debug("Received voice channel connection without a player.")
-                p = Player(self.bot, channel, self)
-                self._players_dict[channel.guild.id] = p
-            return p, channel
 
     async def _remove_player(self, guild_id: int):
         try:

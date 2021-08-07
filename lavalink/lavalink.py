@@ -66,8 +66,6 @@ async def initialize(
     global _loop
     _loop = bot.loop
 
-    player_manager.user_id = bot.user.id
-    player_manager.channel_finder_func = bot.get_channel
     register_event_listener(_handle_event)
     register_update_listener(_handle_update)
 
@@ -77,7 +75,7 @@ async def initialize(
         host=host,
         password=password,
         port=ws_port,
-        user_id=player_manager.user_id,
+        user_id=bot.user.id,
         num_shards=bot.shard_count or 1,
         resume_key=resume_key,
         resume_timeout=resume_timeout,
@@ -87,7 +85,6 @@ async def initialize(
     await lavalink_node.connect(timeout=timeout)
     lavalink_node._retries = 0
 
-    # bot.add_listener(node.on_socket_response)
     bot.add_listener(_on_guild_remove, name="on_guild_remove")
 
     return lavalink_node
@@ -344,7 +341,6 @@ async def close(bot):
     """
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
-    # bot.remove_listener(node.on_socket_response)
     bot.remove_listener(_on_guild_remove, name="on_guild_remove")
     await node.disconnect()
 

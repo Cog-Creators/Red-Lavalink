@@ -3,11 +3,10 @@ from collections import namedtuple
 from typing import Tuple, Union
 from urllib.parse import quote, urlparse
 
-from aiohttp import ClientSession
 from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
-from .enums import *
+from .enums import ExceptionSeverity, LoadType, PlayerState
 
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
