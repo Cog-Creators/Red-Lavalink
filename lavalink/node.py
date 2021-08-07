@@ -538,11 +538,9 @@ class Node(RESTClient):
             p = self.get_player(channel.guild.id)
             await p.move_to(channel, deafen=deafen)
         else:
-            # p = Player(self.bot, channel, self)
             p = await channel.connect(cls=Player)
             if deafen:
                 await p.guild.change_voice_state(channel=p.channel, self_deaf=True)
-            # await p.connect(deafen=deafen)
             self._players_dict[channel.guild.id] = p
             await self.refresh_player_state(p)
         return p

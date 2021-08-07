@@ -72,7 +72,6 @@ class Player(VoiceProtocol):
 
         self._is_playing = False
         self._metadata = {}
-        # self.manager = manager
         if node is None:
             from .node import get_node
 
@@ -152,8 +151,7 @@ class Player(VoiceProtocol):
                 if self.channel:
                     self._last_channel_id = self.channel.id
                 self.channel = channel
-
-        # self.channel = self.guild.get_channel(int(channel_id))
+        
         await self._send_lavalink_voice_update({**self._voice_state, "event": data})
 
     async def _send_lavalink_voice_update(self, voice_state: dict):
@@ -196,10 +194,6 @@ class Player(VoiceProtocol):
         self._connected = True
         self.node._players_dict[self.guild.id] = self
         await self.node.refresh_player_state(self)
-        # if channel:
-        #     if self.channel:
-        #         self._last_channel_id = self.channel.id
-        #     self.channel = channel
         await self.guild.change_voice_state(
             channel=self.channel, self_mute=False, self_deaf=deafen
         )
@@ -286,9 +280,6 @@ class Player(VoiceProtocol):
 
         if self._con_delay:
             self._con_delay = None
-
-        # if state == PlayerState.READY:
-        #     self.reset_session()
 
     async def handle_event(self, event: "node.LavalinkEvents", extra):
         """
