@@ -707,25 +707,3 @@ def get_nodes_stats():
 async def disconnect():
     for node in _nodes.copy():
         await node.disconnect()
-
-
-# async def on_socket_response(data):
-#     raw_event = data.get("t")
-#     try:
-#         event = DiscordVoiceSocketResponses(raw_event)
-#     except ValueError:
-#         return
-
-#     guild_id = data["d"]["guild_id"]
-
-#     try:
-#         node = get_node(guild_id, ignore_ready_status=True)
-#     except IndexError:
-#         ws_discord_log.info(
-#             f"Received unhandled Discord WS voice response for guild: %d, %s", int(guild_id), data
-#         )
-#     else:
-#         ws_ll_log.debug(
-#             f"Received Discord WS voice response for guild: %d, %s", int(guild_id), data
-#         )
-#         await node.player_manager.on_socket_response(data)
