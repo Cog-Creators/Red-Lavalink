@@ -155,7 +155,7 @@ class Player(VoiceProtocol):
         await self._send_lavalink_voice_update({**self._voice_state, "event": data})
 
     async def _send_lavalink_voice_update(self, voice_state: dict):
-        if {"sessionId", "event"} == self._voice_state.keys():
+        if self._voice_state.keys() == {"sessionId", "event"}:
             await self.node.send(
                 {
                     "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
