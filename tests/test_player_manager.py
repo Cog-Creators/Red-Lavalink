@@ -50,13 +50,7 @@ async def test_autoconnect(
     initialize_lavalink, voice_channel, voice_server_update, voice_state_update
 ):
     node = lavalink.node.get_node(voice_channel.guild.id)
-    server = voice_server_update()
-    state = voice_state_update()
-    await node.player_manager.on_socket_response(server)
-
-    assert voice_channel.guild.id not in set(node.player_manager.guild_ids)
-
-    await node.player_manager.on_socket_response(state)
+    assert voice_channel.guild.id not in set(node.guild_ids)
 
     send_call = {
         "op": "voiceUpdate",
