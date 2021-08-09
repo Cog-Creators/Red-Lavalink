@@ -243,8 +243,7 @@ class Player(VoiceProtocol):
                 },
             )
 
-        voice_ws = self.node.get_voice_ws(guild_id)
-        if not voice_ws.socket.closed:
+        if not self.client.is_closed():
             await self.guild.change_voice_state(channel=None)
         await self.node.destroy_guild(guild_id)
         self.node.remove_player(self)

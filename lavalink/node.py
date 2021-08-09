@@ -145,7 +145,6 @@ class Node(RESTClient):
         self.loop = _loop
         self.bot = bot
         self.event_handler = event_handler
-        self.get_voice_ws = bot._connection._get_websocket
         self.host = host
         self.port = port
         self.password = password
