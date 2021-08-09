@@ -78,6 +78,11 @@ class Player(VoiceProtocol):
             node = get_node()
         self.node = node
 
+        # Here for compatibility reasons.
+        self.get_tracks = self.node.get_tracks
+        self.search_yt = self.node.search_yt
+        self.search_sc = self.node.search_sc
+
         self._con_delay = None
         self._last_resume = None
 
