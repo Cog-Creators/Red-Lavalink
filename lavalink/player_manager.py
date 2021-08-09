@@ -79,6 +79,7 @@ class Player(VoiceProtocol):
         self.node = node
 
         # Here for compatibility reasons.
+        self.load_tracks = self.node.load_tracks
         self.get_tracks = self.node.get_tracks
         self.search_yt = self.node.search_yt
         self.search_sc = self.node.search_sc
