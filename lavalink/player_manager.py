@@ -243,7 +243,7 @@ class Player(VoiceProtocol):
                 },
             )
 
-        if not self.client.is_closed():
+        if not self.client.shards[self.guild.shard_id].is_closed():
             await self.guild.change_voice_state(channel=None)
         await self.node.destroy_guild(guild_id)
         self.node.remove_player(self)
