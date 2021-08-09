@@ -158,7 +158,6 @@ class Node(RESTClient):
         self.loop = loop
         self.bot = bot
         self.event_handler = event_handler
-        self.get_voice_ws = bot._connection._get_websocket
         self.host = host
         self.secured = secured
         if port is None:
