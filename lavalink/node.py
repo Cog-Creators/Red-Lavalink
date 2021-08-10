@@ -110,7 +110,7 @@ class NodeStats:
         )
 
 
-class Node(RESTClient):
+class Node:
 
     _is_shutdown: bool = False
 
@@ -203,8 +203,6 @@ class Node(RESTClient):
         )
 
         self.register_state_handler(self.node_state_handler)
-
-        super().__init__(self)
 
     def __repr__(self):
         return (

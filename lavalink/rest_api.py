@@ -1,12 +1,15 @@
 import re
 from collections import namedtuple
-from typing import Tuple, Union
+from typing import TYPE_CHECKING, Tuple, Union
 from urllib.parse import quote, urlparse
 
 from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
 from .enums import ExceptionSeverity, LoadType, PlayerState
+
+if TYPE_CHECKING:
+    from . import player_manager
 
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
@@ -277,7 +280,7 @@ class RESTClient:
     def __init__(self, node):
         self.node = node
         self.secured = node.secured
-        self._session = None
+        self._session = self.node.session
         if self.secured:
             protocol = "https"
         else:
@@ -285,7 +288,7 @@ class RESTClient:
         self._uri = f"{protocol}://{node.host}:{node.port}/loadtracks?identifier="
         self._headers = {"Authorization": node.password}
 
-        self.state = PlayerState.CONNECTING
+        self.state = player.state
 
         self._warned = False
 
