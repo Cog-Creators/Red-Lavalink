@@ -15,7 +15,7 @@ from .enums import (
     PlayerState,
     TrackEndReason,
 )
-from .rest_api import Track
+from .rest_api import RESTClient, Track
 from .utils import VoiceChannel
 
 if TYPE_CHECKING:
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 __all__ = ["Player"]
 
 
-class Player(VoiceProtocol):
+class Player(RESTClient, VoiceProtocol):
     """
     The Player class represents the current state of playback.
     It also is used to control playback and queue tracks.
@@ -50,7 +50,9 @@ class Player(VoiceProtocol):
 
         return self
 
-    def __init__(self, client: discord.Client = None, channel: VoiceChannel = None, node=None):
+    def __init__(
+        self, client: discord.Client = None, channel: VoiceChannel = None, node: "node.Node" = None
+    ):
         self.client = client
         self.channel = channel
         self.guild = channel.guild
@@ -78,14 +80,10 @@ class Player(VoiceProtocol):
             node = get_node()
         self.node = node
 
-        # Here for compatibility reasons.
-        self.load_tracks = self.node.load_tracks
-        self.get_tracks = self.node.get_tracks
-        self.search_yt = self.node.search_yt
-        self.search_sc = self.node.search_sc
-
         self._con_delay = None
         self._last_resume = None
+
+        super().__init__(self)
 
     def __repr__(self):
         return (

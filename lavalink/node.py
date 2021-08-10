@@ -15,7 +15,7 @@ from discord.ext.commands import Bot
 from . import log, ws_ll_log, ws_rll_log
 from .enums import LavalinkEvents, LavalinkIncomingOp, LavalinkOutgoingOp, NodeState, PlayerState
 from .player_manager import Player
-from .rest_api import RESTClient, Track
+from .rest_api import Track
 from .utils import VoiceChannel
 
 __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats"]
@@ -97,7 +97,7 @@ class NodeStats:
         )
 
 
-class Node(RESTClient):
+class Node:
 
     _is_shutdown = False  # type: bool
 
@@ -181,8 +181,6 @@ class Node(RESTClient):
         )
 
         self.register_state_handler(self.node_state_handler)
-
-        super().__init__(self)
 
     def __repr__(self):
         return (
