@@ -148,7 +148,7 @@ class Player(RESTClient, VoiceProtocol):
         if (channel_id := data["channel_id"]) is None:
             ws_rll_log.info("Received voice disconnect from discord, removing player.")
             self._voice_state.clear()
-            await self.node._remove_player(int(data["guild_id"]))
+            await self.disconnect(force=True)
         else:
             channel = self.guild.get_channel(int(channel_id))
             if channel != self.channel:
