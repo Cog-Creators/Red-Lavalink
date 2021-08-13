@@ -509,15 +509,6 @@ class Node:
             return self._players_dict[guild_id]
         raise KeyError("No such player for that guild.")
 
-    async def _remove_player(self, guild_id: int):
-        try:
-            p = self.get_player(guild_id)
-        except KeyError:
-            pass
-        else:
-            del self._players_dict[guild_id]
-            await p.disconnect(force=True)
-
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         ws_rll_log.debug("Received node state update: %s -> %s", old_state.name, next_state.name)
         if next_state == NodeState.READY:
