@@ -371,6 +371,7 @@ class Player(RESTClient):
         self._paused = False
         self._is_autoplaying = False
         self._auto_play_sent = False
+        self._is_playing = False
 
     async def skip(self):
         """
