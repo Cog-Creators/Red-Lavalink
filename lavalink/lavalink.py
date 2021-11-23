@@ -196,7 +196,12 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
     if data == enums.LavalinkEvents.TRACK_END:
         extra = enums.TrackEndReason(raw_data.get("reason"))
     elif data == enums.LavalinkEvents.TRACK_EXCEPTION:
-        extra = raw_data.get("error")
+        extra = {
+            "message": raw_data.get("exception", {}).get(
+                "message", "Something went wrong when decoding the track."
+            ),
+            "cause": raw_data.get("exception", {}).get("cause", "Unhandled Exception"),
+        }
     elif data == enums.LavalinkEvents.TRACK_STUCK:
         extra = raw_data.get("thresholdMs")
     elif data == enums.LavalinkEvents.TRACK_START:

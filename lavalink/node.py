@@ -11,7 +11,7 @@ import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import ws_discord_log, ws_ll_log
+from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
@@ -20,7 +20,7 @@ __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_vo
 
 _nodes: List[Node] = []
 
-PlayerState = namedtuple("PlayerState", "position time")
+PlayerState = namedtuple("PlayerState", "position time connected")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
@@ -112,6 +112,7 @@ class Node:
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
         bot: Bot = None,
+        client_name: Optional[str] = None,
     ):
         """
         Represents a Lavalink node.
@@ -141,7 +142,9 @@ class Node:
         resume_timeout : int
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
-            The Bot object thats connect to discord.
+            The Bot object that connects to discord.
+        client_name: str
+            The name of the connecting client.
         """
         self.loop = _loop
         self.bot = bot
@@ -153,6 +156,9 @@ class Node:
         self._resume_key = resume_key
         if self._resume_key is None:
             self._resume_key = self._gen_key()
+            self._client_name = client_name or f"Red-Lavalink-{__version__}--{self.bot.user.id}"
+        else:
+            self._client_name = client_name or f"Red-Lavalink-{__version__}--{self._resume_key}"
         self._resume_timeout = resume_timeout
         self._resuming_configured = False
         self.num_shards = num_shards
@@ -269,7 +275,7 @@ class Node:
         headers = {
             "Authorization": self.password,
             "User-Id": str(self.user_id),
-            "Num-Shards": str(self.num_shards),
+            "Client-Name": str(self._client_name),
         }
         if self._resume_key:
             headers["Resume-Key"] = str(self._resume_key)
@@ -367,7 +373,11 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PlayerState(position=state.get("position", 0), time=state.get("time", 0))
+            state = PlayerState(
+                position=state.get("position", 0),
+                time=state.get("time", 0),
+                connected=state.get("connected", False),
+            )
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
