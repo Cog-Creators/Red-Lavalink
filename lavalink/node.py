@@ -272,9 +272,12 @@ class Node:
         await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
 
     def _get_connect_headers(self) -> dict:
+        # Num-Shards is not used on Lavalink jar files >= v3.4
+        # but kept for compatability to avoid NPEs on older builds
         headers = {
             "Authorization": self.password,
             "User-Id": str(self.user_id),
+            "Num-Shards": str(self.num_shards),
             "Client-Name": str(self._client_name),
         }
         if self._resume_key:
