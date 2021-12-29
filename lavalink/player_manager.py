@@ -261,10 +261,9 @@ class Player(RESTClient):
         log.debug("Received player event for player: %r - %r - %r.", self, event, extra)
 
         if event == LavalinkEvents.TRACK_END:
+            self._is_playing = False
             if extra == TrackEndReason.FINISHED:
                 await self.play()
-            else:
-                self._is_playing = False
         elif event == LavalinkEvents.WEBSOCKET_CLOSED:
             code = extra.get("code")
             if code in (4015, 4014, 4009, 4006, 4000, 1006):
@@ -371,6 +370,7 @@ class Player(RESTClient):
         self._paused = False
         self._is_autoplaying = False
         self._auto_play_sent = False
+        self._is_playing = False
 
     async def skip(self):
         """
