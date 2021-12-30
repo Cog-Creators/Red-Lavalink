@@ -11,7 +11,7 @@ import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import ws_discord_log, ws_ll_log
+from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
@@ -20,7 +20,7 @@ __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_vo
 
 _nodes: List[Node] = []
 
-PlayerState = namedtuple("PlayerState", "position time")
+PlayerState = namedtuple("PlayerState", "position time connected")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
@@ -141,7 +141,7 @@ class Node:
         resume_timeout : int
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
-            The Bot object thats connect to discord.
+            The Bot object that connects to discord.
         """
         self.loop = _loop
         self.bot = bot
@@ -266,10 +266,13 @@ class Node:
         await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
 
     def _get_connect_headers(self) -> dict:
+        # Num-Shards is not used on Lavalink jar files >= v3.4
+        # but kept for compatibility to avoid NPEs on older builds
         headers = {
             "Authorization": self.password,
             "User-Id": str(self.user_id),
             "Num-Shards": str(self.num_shards),
+            "Client-Name": f"Red-Lavalink/{__version__}",
         }
         if self._resume_key:
             headers["Resume-Key"] = str(self._resume_key)
@@ -367,7 +370,11 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PlayerState(position=state.get("position", 0), time=state.get("time", 0))
+            state = PlayerState(
+                position=state.get("position", 0),
+                time=state.get("time", 0),
+                connected=state.get("connected", False),
+            )
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
