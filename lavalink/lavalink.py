@@ -146,7 +146,7 @@ def register_event_listener(coro):
     be a :py:class:`TrackEndReason`.
 
     If the second argument is :py:attr:`LavalinkEvents.TRACK_EXCEPTION`, the extra
-    will be an error string.
+    will be a dictionary with ``message``, ``cause``, and ``severity`` keys.
 
     If the second argument is :py:attr:`LavalinkEvents.TRACK_STUCK`, the extra will
     be the threshold milliseconds that the track has been stuck for.
