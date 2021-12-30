@@ -112,7 +112,6 @@ class Node:
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
         bot: Bot = None,
-        client_name: Optional[str] = None,
     ):
         """
         Represents a Lavalink node.
@@ -143,8 +142,6 @@ class Node:
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
             The Bot object that connects to discord.
-        client_name: str
-            The name of the connecting client.
         """
         self.loop = _loop
         self.bot = bot
@@ -156,9 +153,6 @@ class Node:
         self._resume_key = resume_key
         if self._resume_key is None:
             self._resume_key = self._gen_key()
-            self._client_name = client_name or f"Red-Lavalink-{__version__}--{self.bot.user.id}"
-        else:
-            self._client_name = client_name or f"Red-Lavalink-{__version__}--{self._resume_key}"
         self._resume_timeout = resume_timeout
         self._resuming_configured = False
         self.num_shards = num_shards
@@ -273,12 +267,12 @@ class Node:
 
     def _get_connect_headers(self) -> dict:
         # Num-Shards is not used on Lavalink jar files >= v3.4
-        # but kept for compatability to avoid NPEs on older builds
+        # but kept for compatibility to avoid NPEs on older builds
         headers = {
             "Authorization": self.password,
             "User-Id": str(self.user_id),
             "Num-Shards": str(self.num_shards),
-            "Client-Name": str(self._client_name),
+            "Client-Name": f"Red-Lavalink/{__version__}",
         }
         if self._resume_key:
             headers["Resume-Key"] = str(self._resume_key)
