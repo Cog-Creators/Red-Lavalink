@@ -136,3 +136,4 @@ class ExceptionSeverity(enum.Enum):
     COMMON = "COMMON"
     SUSPICIOUS = "SUSPICIOUS"
     FATAL = "FATAL"
+    FAULT = "FAULT"
