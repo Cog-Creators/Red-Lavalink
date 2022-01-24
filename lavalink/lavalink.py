@@ -142,7 +142,7 @@ def register_event_listener(coro):
     be a :py:class:`TrackEndReason`.
 
     If the second argument is :py:attr:`LavalinkEvents.TRACK_EXCEPTION`, the extra
-    will be an error string.
+    will be a dictionary with ``message``, ``cause``, and ``severity`` keys.
 
     If the second argument is :py:attr:`LavalinkEvents.TRACK_STUCK`, the extra will
     be the threshold milliseconds that the track has been stuck for.
@@ -192,7 +192,12 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
     if data == enums.LavalinkEvents.TRACK_END:
         extra = enums.TrackEndReason(raw_data.get("reason"))
     elif data == enums.LavalinkEvents.TRACK_EXCEPTION:
-        extra = raw_data.get("error")
+        exception_data = raw_data["exception"]
+        extra = {
+            "message": exception_data["message"],
+            "cause": exception_data["cause"],
+            "severity": enums.ExceptionSeverity(exception_data["severity"]),
+        }
     elif data == enums.LavalinkEvents.TRACK_STUCK:
         extra = raw_data.get("thresholdMs")
     elif data == enums.LavalinkEvents.TRACK_START:

@@ -140,7 +140,7 @@ class Node:
         resume_timeout : int
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
-            The Bot object thats connect to discord.
+            The Bot object that connects to discord.
         """
         self.loop = _loop
         self.bot = bot
@@ -273,10 +273,13 @@ class Node:
         await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
 
     def _get_connect_headers(self) -> dict:
+        # Num-Shards is not used on Lavalink jar files >= v3.4
+        # but kept for compatibility to avoid NPEs on older builds
         headers = {
             "Authorization": self.password,
             "User-Id": str(self.user_id),
             "Num-Shards": str(self.num_shards),
+            "Client-Name": f"Red-Lavalink/{__version__}",
         }
         if self._resume_key:
             headers["Resume-Key"] = str(self._resume_key)
