@@ -5,7 +5,7 @@ import secrets
 import string
 import typing
 from collections import namedtuple
-from typing import List, Optional
+from typing import Awaitable, KeysView, List, Optional, ValuesView, cast
 
 import aiohttp
 from discord.backoff import ExponentialBackoff
