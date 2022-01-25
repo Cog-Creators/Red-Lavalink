@@ -1,13 +1,15 @@
 import re
 from collections import namedtuple
-from typing import Tuple, Union
+from typing import TYPE_CHECKING, Tuple, Union
 from urllib.parse import quote, urlparse
 
-from aiohttp import ClientSession
 from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
-from .enums import *
+from .enums import ExceptionSeverity, LoadType, PlayerState
+
+if TYPE_CHECKING:
+    from . import player_manager
 
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
@@ -275,19 +277,15 @@ class RESTClient:
     Client class used to access the REST endpoints on a Lavalink node.
     """
 
-    def __init__(self, node):
-        self.node = node
-        self._session = None
-        self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.port)
-        self._headers = {"Authorization": node.password}
-
-        self.state = PlayerState.CONNECTING
+    def __init__(self, player: "player_manager.Player"):
+        self.player = player
+        self.node = player.node
+        self._session = self.node.session
+        self._uri = "http://{}:{}/loadtracks?identifier=".format(self.node.host, self.node.port)
+        self._headers = {"Authorization": self.node.password}
+        self.state = player.state
 
         self._warned = False
-
-    def reset_session(self):
-        if self._session is None or self._session.closed:
-            self._session = ClientSession(loop=self.node.loop)
 
     def __check_node_ready(self):
         if self.state != PlayerState.READY:
@@ -387,8 +385,3 @@ class RESTClient:
         list of Track
         """
         return await self.load_tracks("scsearch:{}".format(query))
-
-    async def close(self):
-        if self._session is not None:
-            await self._session.close()
-        log.debug("Closed REST session.")
