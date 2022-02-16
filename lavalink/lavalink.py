@@ -96,7 +96,6 @@ async def initialize(
     return lavalink_node
 
 
-
 async def connect(channel: discord.VoiceChannel, deafen: bool = False):
     """
     Connects to a discord voice channel.
