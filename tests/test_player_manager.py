@@ -53,4 +53,4 @@ async def test_autoconnect(bot, voice_channel, voice_server_update, voice_state_
     await player.on_voice_state_update(state)
 
     assert len(lavalink.all_players()) == 1
-    assert lavalink.get_player(voice_channel.guild.id).channel == voice_channel
+    assert node.get_player(voice_channel.guild.id) == player
