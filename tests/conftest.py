@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import namedtuple
 from types import SimpleNamespace
 
@@ -59,11 +61,14 @@ def user():
 
 @pytest.fixture
 def guild():
-    Guild = namedtuple("Guild", "id name")
-    return Guild(987654321, "Testing")
+    Guild = MagicMock()
+    Guild.id = 987654321
+    Guild.name = "Testing"
+    Guild.get_channel = lambda channel_id: voice_channel
+    yield Guild
 
 
-@pytest.fixture()
+@pytest.fixture
 def voice_channel(guild):
     VoiceChannel = namedtuple("VoiceChannel", "id guild name")
     return VoiceChannel(9999999999, guild, "Testing VC")
@@ -124,6 +129,7 @@ async def node(bot):
         num_shards=bot.shard_count,
         resume_key="Test",
         resume_timeout=60,
+        bot=bot,
     )
 
     # node_.send = MagicMock(wraps=send)
