@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import namedtuple
 from types import SimpleNamespace
 from typing import NamedTuple
@@ -148,6 +150,7 @@ async def node(bot):
         num_shards=bot.shard_count,
         resume_key="Test",
         resume_timeout=60,
+        bot=bot,
     )
 
     # node_.send = MagicMock(wraps=send)
