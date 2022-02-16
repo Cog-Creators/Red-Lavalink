@@ -90,22 +90,19 @@ async def initialize(
     return lavalink_node
 
 
+
 async def connect(channel: discord.VoiceChannel, deafen: bool = False):
     """
     Connects to a discord voice channel.
-
     This is the publicly exposed way to connect to a discord voice channel.
     The :py:func:`initialize` function must be called first!
-
     Parameters
     ----------
     channel
-
     Returns
     -------
     Player
         The created Player object.
-
     Raises
     ------
     IndexError

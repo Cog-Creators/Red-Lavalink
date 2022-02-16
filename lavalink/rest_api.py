@@ -283,7 +283,6 @@ class RESTClient:
         self._session = self.node.session
         self._uri = "http://{}:{}/loadtracks?identifier=".format(self.node.host, self.node.port)
         self._headers = {"Authorization": self.node.password}
-
         self.state = player.state
 
         self._warned = False

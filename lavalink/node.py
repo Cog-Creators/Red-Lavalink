@@ -9,10 +9,11 @@ from collections import namedtuple
 from typing import Awaitable, KeysView, List, Optional, ValuesView, cast
 
 import aiohttp
+from typing import Awaitable, KeysView, List, Optional, ValuesView, cast
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import log, ws_ll_log, ws_rll_log
+from . import log, ws_ll_log, ws_rll_log, __version__
 from .enums import LavalinkEvents, LavalinkIncomingOp, LavalinkOutgoingOp, NodeState, PlayerState
 from .player_manager import Player
 from .rest_api import Track
@@ -22,7 +23,7 @@ __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats"]
 
 _nodes: List[Node] = []
 
-PositionTime = namedtuple("PositionTime", "position time")
+PositionTime = namedtuple("PositionTime", "position time connected")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
@@ -377,7 +378,11 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PositionTime(position=state.get("position", 0), time=state.get("time", 0))
+            state = PositionTime(
+                position=state.get("position", 0),
+                time=state.get("time", 0),
+                connected=state.get("connected", False),
+            )
             self.event_handler(op, state, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
@@ -462,14 +467,11 @@ class Node:
     async def create_player(self, channel: VoiceChannel, deafen: bool = False) -> Player:
         """
         Connects to a discord voice channel.
-
         This function is safe to repeatedly call as it will return an existing
         player if there is one.
-
         Parameters
         ----------
         channel
-
         Returns
         -------
         Player
@@ -492,16 +494,13 @@ class Node:
     def get_player(self, guild_id: int) -> Player:
         """
         Gets a Player object from a guild ID.
-
         Parameters
         ----------
         guild_id : int
             Discord guild ID.
-
         Returns
         -------
         Player
-
         Raises
         ------
         KeyError
