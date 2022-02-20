@@ -158,16 +158,18 @@ class Player(RESTClient, VoiceProtocol):
         await self._send_lavalink_voice_update({**self._voice_state, "event": data})
 
     async def _send_lavalink_voice_update(self, voice_state: dict):
-        if voice_state.keys() == {"sessionId", "event"}:
-            if voice_state["event"].keys() == {"token", "guild_id", "endpoint"}:
-                await self.node.send(
-                    {
-                        "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
-                        "guildId": str(self.guild.id),
-                        "sessionId": voice_state["sessionId"],
-                        "event": voice_state["event"],
-                    }
-                )
+        if voice_state.keys() != {"sessionId", "event"}:
+            return
+
+        if voice_state["event"].keys() == {"token", "guild_id", "endpoint"}:
+            await self.node.send(
+                {
+                    "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
+                    "guildId": str(self.guild.id),
+                    "sessionId": voice_state["sessionId"],
+                    "event": voice_state["event"],
+                }
+            )
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
