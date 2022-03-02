@@ -61,8 +61,8 @@ class Stats:
 
 
 # Node stats related class below and how it is called is originally from:
-# https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/stats.py#L41
-# https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/websocket.py#L132
+# https://github.com/PythonistaGuild/Wavelink/blob/abba49e9806af3c50886f82054ea603129ad08b9/wavelink/stats.py#L41
+# https://github.com/PythonistaGuild/Wavelink/blob/abba49e9806af3c50886f82054ea603129ad08b9/wavelink/websocket.py#L132
 class NodeStats:
     def __init__(self, data: dict):
         self.uptime = data["uptime"]
@@ -215,12 +215,14 @@ class Node:
             self._resume_key.__repr__()
             return self._resume_key
 
-    async def connect(self, timeout=None):
+    async def connect(self, timeout=None, secured=False):
         """
         Connects to the Lavalink player event websocket.
 
         Parameters
         ----------
+        secured: bool
+           Whether to use the `wss://` protocol.
         timeout : int
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
@@ -232,8 +234,10 @@ class Node:
             If the websocket failed to connect after the given time.
         """
         self._is_shutdown = False
-
-        uri = "ws://{}:{}".format(self.host, self.port)
+        if secured:
+            uri = f"wss://{self.host}:{self.port}"
+        else:
+            uri = f"ws://{self.host}:{self.port}"
 
         ws_ll_log.info("Lavalink WS connecting to %s with headers %s", uri, self.headers)
 

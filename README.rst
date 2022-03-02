@@ -9,7 +9,7 @@ Red-Lavalink
 .. image:: https://readthedocs.org/projects/red-lavalink/badge/?version=latest
     :target: http://red-lavalink.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
-    
+
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
     :target: https://github.com/ambv/black
     :alt: Code style: black
