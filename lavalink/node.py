@@ -58,8 +58,8 @@ class Stats:
 
 
 # Node stats related class below and how it is called is originally from:
-# https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/stats.py#L41
-# https://github.com/PythonistaGuild/Wavelink/blob/master/wavelink/websocket.py#L132
+# https://github.com/PythonistaGuild/Wavelink/blob/abba49e9806af3c50886f82054ea603129ad08b9/wavelink/stats.py#L41
+# https://github.com/PythonistaGuild/Wavelink/blob/abba49e9806af3c50886f82054ea603129ad08b9/wavelink/websocket.py#L132
 class NodeStats:
     def __init__(self, data: dict):
         self.uptime = data["uptime"]
