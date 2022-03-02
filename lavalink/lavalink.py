@@ -37,7 +37,7 @@ async def initialize(
     timeout=30,
     resume_key: Optional[str] = None,
     resume_timeout: int = 60,
-    secured: bool = False
+    secured: bool = False,
 ):
     """
     Initializes the websocket connection to the lavalink player.
