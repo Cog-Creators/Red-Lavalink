@@ -1,0 +1,40 @@
+default_language_version:
+  python: python3.8
+repos:
+  - repo: https://github.com/psf/black
+    rev: '22.1.0'
+    hooks:
+      - id: black
+  - repo: https://github.com/Pierre-Sassoulas/black-disable-checker
+    rev: '1.0.1'
+    hooks:
+      - id: black-disable-checker
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      # all files should end with an empty line (for one, it minimizes the diffs)
+      - id: end-of-file-fixer
+      # `.gitattributes` should technically already handle this
+      # but autocrlf can result in local files keeping the CRLF
+      # which is problematic for some tools
+      - id: mixed-line-ending
+        args:
+          - "--fix=lf"
+
+      # Trailing whitespace is evil
+      - id: trailing-whitespace
+
+      # Ensure that links to code on GitHub use the permalinks
+      - id: check-vcs-permalinks
+
+      # Syntax validation
+      - id: check-ast
+      - id: check-toml
+      # can be switched to yamllint when this issue gets resolved:
+      # https://github.com/adrienverge/yamllint/issues/238
+      - id: check-yaml
+
+      # Checks for git-related issues
+      - id: check-case-conflict
+      - id: check-merge-conflict
