@@ -37,6 +37,7 @@ async def initialize(
     timeout=30,
     resume_key: Optional[str] = None,
     resume_timeout: int = 60,
+    secured: bool = False
 ):
     """
     Initializes the websocket connection to the lavalink player.
@@ -62,6 +63,8 @@ async def initialize(
         A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
     resume_timeout : inr
         How long the node should wait for a connection while disconnected before clearing all players.
+    secured: bool
+           Whether to use the `wss://` protocol.
     """
     global _loop
     _loop = bot.loop
@@ -85,7 +88,7 @@ async def initialize(
         bot=bot,
     )
 
-    await lavalink_node.connect(timeout=timeout)
+    await lavalink_node.connect(timeout=timeout, secured=secured)
     lavalink_node._retries = 0
 
     bot.add_listener(node.on_socket_response)
