@@ -264,7 +264,7 @@ class Node:
                 )
             )
             self._resuming_configured = True
-            ws_ll_log.debug("Server Resuming has been configured.")
+            ws_ll_log.debug("Node Resuming has been configured.")
 
     async def wait_until_ready(self, timeout: Optional[float] = None):
         await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
@@ -411,7 +411,7 @@ class Node:
                 await self.connect()
             except asyncio.TimeoutError:
                 delay = backoff.delay()
-                ws_ll_log.info("[NODE] | Failed to reconnect to the Lavalink server.")
+                ws_ll_log.info("[NODE] | Failed to reconnect to the Lavalink node.")
                 ws_ll_log.info(
                     "[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s",
                     attempt,
@@ -498,7 +498,7 @@ class Node:
         if self._ws is None or self._ws.closed:
             self._queue.append(data)
         else:
-            ws_ll_log.debug("Sending data to Lavalink: %s", data)
+            ws_ll_log.debug("Sending data to Lavalink node: %s", data)
             await self._ws.send_json(data)
 
     async def send_lavalink_voice_update(self, guild_id, session_id, event):

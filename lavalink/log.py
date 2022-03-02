@@ -5,7 +5,7 @@ socket_log = logging.getLogger("red.core.RLL.socket")
 socket_log.setLevel(logging.INFO)
 
 ws_discord_log = logging.getLogger("red.Audio.WS.discord")
-ws_ll_log = logging.getLogger("red.Audio.WS.LLServer")
+ws_ll_log = logging.getLogger("red.Audio.WS.LLNode")
 ws_rll_log = logging.getLogger("red.Audio.WS.RLL")
 
 
