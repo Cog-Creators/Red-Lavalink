@@ -13,10 +13,9 @@ from .rest_api import RESTClient, Track
 if TYPE_CHECKING:
     from . import node
 
-__all__ = ["user_id", "channel_finder_func", "Player", "PlayerManager"]
+__all__ = ["user_id", "Player", "PlayerManager"]
 
 user_id = None
-channel_finder_func = lambda channel_id: None
 
 
 class Player(RESTClient):
@@ -489,15 +488,18 @@ class PlayerManager:
             return self._player_dict[guild_id]
         raise KeyError("No such player for that guild.")
 
-    def _ensure_player(self, channel_id: int):
-        channel = channel_finder_func(channel_id)
+    def _ensure_player(self, guild_id: int, channel_id: int):
+        guild: discord.Guild = self.bot.get_guild(guild_id)
+        if guild is None:
+            return
+        channel = guild.get_channel(channel_id)
         if channel is not None:
             try:
-                p = self.get_player(channel.guild.id)
+                p = self.get_player(guild_id)
             except KeyError:
                 log.debug("Received voice channel connection without a player.")
                 p = Player(self, channel)
-                self._player_dict[channel.guild.id] = p
+                self._player_dict[guild_id] = p
             return p, channel
 
     async def _remove_player(self, guild_id: int):
@@ -564,10 +566,21 @@ class PlayerManager:
 
             else:
                 # After initial connection, get session ID
-                p, channel = self._ensure_player(int(channel_id))
-                if channel != p.channel:
-                    if p.channel:
-                        p._last_channel_id = p.channel.id
+                response = self._ensure_player(int(guild_id), int(channel_id))
+                if response is None:
+                    # We disconnected
+                    p = self._player_dict.get(guild_id)
+                    msg = "Received voice disconnect from discord, removing player."
+                    if p:
+                        msg += f" {p}"
+                    ws_rll_log.info(msg)
+                    self.voice_states[guild_id] = {}
+                    await self._remove_player(int(guild_id))
+                else:
+                    p, channel = response
+                    if channel != p.channel:
+                        if p.channel:
+                            p._last_channel_id = p.channel.id
                     p.channel = channel
 
             session_id = data["d"]["session_id"]

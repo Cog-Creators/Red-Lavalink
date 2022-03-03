@@ -27,7 +27,6 @@ __all__ = [
     "NodeStats",
     "Stats",
     "user_id",
-    "channel_finder_func",
     "Player",
     "PlayerManager",
     "initialize",

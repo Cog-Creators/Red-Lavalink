@@ -70,7 +70,6 @@ async def initialize(
     _loop = bot.loop
 
     player_manager.user_id = bot.user.id
-    player_manager.channel_finder_func = bot.get_channel
     register_event_listener(_handle_event)
     register_update_listener(_handle_update)
 
