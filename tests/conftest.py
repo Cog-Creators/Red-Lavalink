@@ -1,5 +1,6 @@
 from collections import namedtuple
 from types import SimpleNamespace
+from typing import NamedTuple
 
 import pytest
 import asyncio
@@ -51,26 +52,48 @@ class ProxyWebSocket:
         return self._closed
 
 
-@pytest.fixture
+class Guild:
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+
+
+class VoiceChannel:
+    def __init__(self, id, name):
+        self.id = id
+        self.name = name
+
+
+@pytest.fixture(scope="session")
 def user():
     User = namedtuple("User", "id")
     return User(1234567890)
 
 
-@pytest.fixture
-def guild():
-    Guild = namedtuple("Guild", "id name")
+@pytest.fixture(scope="session")
+def _guild():
     return Guild(987654321, "Testing")
 
 
-@pytest.fixture()
-def voice_channel(guild):
-    VoiceChannel = namedtuple("VoiceChannel", "id guild name")
-    return VoiceChannel(9999999999, guild, "Testing VC")
+@pytest.fixture(scope="session")
+def _voice_channel():
+    return VoiceChannel(9999999999, "Testing VC")
+
+
+@pytest.fixture(scope="session")
+def guild(_guild, _voice_channel):
+    _guild.get_channel = lambda channel_id: _voice_channel
+    return _guild
+
+
+@pytest.fixture(scope="session")
+def voice_channel(guild, _voice_channel):
+    _voice_channel.guild = guild
+    return _voice_channel
 
 
 @pytest.fixture
-async def bot(event_loop, user, voice_channel):
+async def bot(event_loop, user, guild, voice_channel):
     async def voice_state(guild_id=None, channel_id=None):
         pass
 
@@ -90,7 +113,7 @@ async def bot(event_loop, user, voice_channel):
     bot_.loop = event_loop
     bot_._connection = conn
     bot_.user = user
-    bot_.get_channel = lambda channel_id: voice_channel
+    bot_.get_guild = lambda guild_id: guild
     bot_.shard_count = 1
 
     yield bot_
