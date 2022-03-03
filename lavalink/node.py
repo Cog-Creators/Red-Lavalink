@@ -233,12 +233,7 @@ class Node:
 
         ws_ll_log.info("Lavalink WS connecting to %s with headers %s", uri, self.headers)
 
-        for task in asyncio.as_completed([self._multi_try_connect(uri)], timeout=timeout):
-            with contextlib.suppress(Exception):
-                if await cast(Awaitable[Optional[aiohttp.ClientWebSocketResponse]], task):
-                    break
-        else:
-            raise asyncio.TimeoutError
+        await asyncio.wait_for(self._multi_try_connect(uri), timeout)
 
         ws_ll_log.debug("Creating Lavalink WS listener.")
         if self._listener_task is not None:
@@ -314,13 +309,13 @@ class Node:
                     raise asyncio.TimeoutError
             except aiohttp.WSServerHandshakeError:
                 ws_ll_log.error("Failed connect WSServerHandshakeError")
-                return None
+                raise asyncio.TimeoutError
             else:
                 self.session_resumed = ws._response.headers.get("Session-Resumed", False)
                 if self._ws is not None and self.session_resumed:
                     ws_ll_log.info("WEBSOCKET Resumed Session with key: %s", self._resume_key)
                 self._ws = ws
-                return self._ws
+                break
 
     async def listener(self):
         """
