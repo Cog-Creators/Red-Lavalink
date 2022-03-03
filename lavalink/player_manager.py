@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from random import shuffle
-from typing import KeysView, Optional, TYPE_CHECKING, ValuesView
+from typing import KeysView, Optional, Tuple, TYPE_CHECKING, ValuesView
 
 import discord
 from discord.backoff import ExponentialBackoff
@@ -488,10 +488,12 @@ class PlayerManager:
             return self._player_dict[guild_id]
         raise KeyError("No such player for that guild.")
 
-    def _ensure_player(self, guild_id: int, channel_id: int):
+    def _ensure_player(
+        self, guild_id: int, channel_id: int
+    ) -> Optional[Tuple[Player, discord.TextChannel]]:
         guild: discord.Guild = self.bot.get_guild(guild_id)
         if guild is None:
-            return
+            return None
         channel = guild.get_channel(channel_id)
         if channel is not None:
             try:
