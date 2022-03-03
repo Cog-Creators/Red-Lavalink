@@ -70,6 +70,7 @@ async def initialize(
     global _loop
     _loop = bot.loop
 
+    player_manager.user_id = bot.user.id
     register_event_listener(_handle_event)
     register_update_listener(_handle_update)
 
