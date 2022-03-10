@@ -10,6 +10,7 @@ from discord.gateway import DiscordWebSocket
 from discord.ext.commands import AutoShardedBot
 
 import lavalink.node
+from lavalink import NodeNotFound, PlayerNotFound
 
 
 class ProxyWebSocket:
@@ -158,7 +159,7 @@ async def node(bot):
 
     try:
         await node_.disconnect()
-    except KeyError:
+    except (PlayerNotFound, NodeNotFound):
         pass
 
 

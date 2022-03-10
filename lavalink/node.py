@@ -15,6 +15,7 @@ from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
+from .errors import NodeNotReady, NodeNotFound
 
 __all__ = [
     "Stats",
@@ -288,7 +289,7 @@ class Node:
     @property
     def lavalink_major_version(self):
         if not self.ready:
-            raise RuntimeError("Node not ready!")
+            raise NodeNotReady("Node not ready!")
         return self._ws.response_headers.get("Lavalink-Major-Version")
 
     @property
@@ -606,7 +607,7 @@ def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
             return node
 
     if least_used is None:
-        raise IndexError("No nodes found.")
+        raise NodeNotFound("No Lavalink nodes found.")
 
     return least_used
 
@@ -648,7 +649,7 @@ async def on_socket_response(data):
 
     try:
         node = get_node(guild_id, ignore_ready_status=True)
-    except IndexError:
+    except NodeNotFound:
         ws_discord_log.info(
             f"Received unhandled Discord WS voice response for guild: %d, %s", int(guild_id), data
         )
