@@ -15,6 +15,7 @@ from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
+from .errors import NodeNotReady, NodeNotFound
 from .utils import task_callback_exception, task_callback_debug, task_callback_trace
 from .errors import NodeNotReady, NodeNotFound
 
