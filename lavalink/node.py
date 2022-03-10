@@ -16,7 +16,15 @@ from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
 
-__all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_voice"]
+__all__ = [
+    "Stats",
+    "Node",
+    "NodeStats",
+    "get_node",
+    "get_nodes_stats",
+    "get_all_nodes",
+    "join_voice",
+]
 
 _nodes: List[Node] = []
 
@@ -605,6 +613,10 @@ def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
 
 def get_nodes_stats():
     return [node.stats for node in _nodes]
+
+
+def get_all_nodes() -> List[Node]:
+    return [node for node in _nodes]
 
 
 async def join_voice(guild_id: int, channel_id: int, deafen: bool = False):
