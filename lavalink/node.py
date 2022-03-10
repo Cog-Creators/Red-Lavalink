@@ -112,6 +112,7 @@ class Node:
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
         bot: Bot = None,
+        secured: bool = False,
     ):
         """
         Represents a Lavalink node.
@@ -157,6 +158,7 @@ class Node:
         self._resuming_configured = False
         self.num_shards = num_shards
         self.user_id = user_id
+        self.secured = secured
 
         self._ready_event = asyncio.Event()
 
@@ -225,8 +227,9 @@ class Node:
         asyncio.TimeoutError
             If the websocket failed to connect after the given time.
         """
+        self.secured = secured
         self._is_shutdown = False
-        if secured:
+        if self.secured:
             uri = f"wss://{self.host}:{self.port}"
         else:
             uri = f"ws://{self.host}:{self.port}"
@@ -403,7 +406,7 @@ class Node:
         while self.state == NodeState.RECONNECTING:
             attempt += 1
             try:
-                await self.connect()
+                await self.connect(secured=self.secured)
             except asyncio.TimeoutError:
                 delay = backoff.delay()
                 ws_ll_log.info("[NODE] | Failed to reconnect to the Lavalink node.")

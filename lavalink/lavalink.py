@@ -85,6 +85,7 @@ async def initialize(
         resume_key=resume_key,
         resume_timeout=resume_timeout,
         bot=bot,
+        secured=secured,
     )
 
     await lavalink_node.connect(timeout=timeout, secured=secured)
