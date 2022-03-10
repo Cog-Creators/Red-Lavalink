@@ -11,11 +11,17 @@ from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
 from . import __version__, ws_discord_log, ws_ll_log
-from .enums import *
+from .enums import (
+    LavalinkIncomingOp,
+    NodeState,
+    LavalinkEvents,
+    LavalinkOutgoingOp,
+    DiscordVoiceSocketResponses,
+)
 from .player_manager import PlayerManager
 from .rest_api import Track
 from .utils import task_callback_exception, task_callback_debug, task_callback_trace
-from .errors import NodeNotReady, NodeNotFound
+from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 
 __all__ = [
     "Stats",
@@ -172,6 +178,8 @@ class Node:
         self._ws = None
         self._listener_task = None
         self.session = aiohttp.ClientSession()
+        self.reconnect_task = None
+        self.try_connect_task = None
 
         self._queue: List = []
 
@@ -216,7 +224,7 @@ class Node:
             self._resume_key.__repr__()
             return self._resume_key
 
-    async def connect(self, timeout=None):
+    async def connect(self, timeout=None, shutdown=False):
         """
         Connects to the Lavalink player event websocket.
 
@@ -226,34 +234,30 @@ class Node:
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
             certain point.
-
+        shutdown: bool
+            Whether the node was told to shut down
         Raises
         ------
         asyncio.TimeoutError
             If the websocket failed to connect after the given time.
+        AbortingConnectionException:
+            If the connection attempt must be aborted during a reconnect attempt
         """
-        self._is_shutdown = False
+        self._is_shutdown = shutdown
         if self.secured:
             uri = f"wss://{self.host}:{self.port}"
         else:
             uri = f"ws://{self.host}:{self.port}"
 
         ws_ll_log.info("Lavalink WS connecting to %s with headers %s", uri, self.headers)
-
-        await asyncio.wait_for(self._multi_try_connect(uri), timeout)
-
-        ws_ll_log.debug("Creating Lavalink WS listener.")
-        if self._listener_task is not None:
-            self._listener_task.cancel()
-        self._listener_task = self.loop.create_task(self.listener())
-        self._listener_task.add_done_callback(task_callback_exception)
-        self.loop.create_task(self._configure_resume()).add_done_callback(task_callback_debug)
-        if self._queue:
-            for data in self._queue:
-                await self.send(data)
-            self._queue.clear()
-        self._ready_event.set()
-        self.update_state(NodeState.READY)
+        if self.try_connect_task is not None:
+            self.try_connect_task.cancel()
+        try:
+            self.try_connect_task = asyncio.create_task(self._multi_try_connect(uri))
+            for task in asyncio.as_completed([self.try_connect_task], timeout=timeout):
+                await task
+        except asyncio.CancelledError:
+            raise AbortingNodeConnection
 
     async def _configure_resume(self):
         if self._resuming_configured:
@@ -301,11 +305,16 @@ class Node:
     async def _multi_try_connect(self, uri):
         backoff = ExponentialBackoff()
         attempt = 1
+        if self._listener_task is not None:
+            self._listener_task.cancel()
         if self._ws is not None:
             await self._ws.close(code=4006, message=b"Reconnecting")
 
         while self._is_shutdown is False and (self._ws is None or self._ws.closed):
             self._retries += 1
+            if self._is_shutdown is True:
+                ws_ll_log.error("Lavalink node was shutdown during a connect attempt.")
+                raise asyncio.CancelledError
             try:
                 ws = await self.session.ws_connect(url=uri, headers=self.headers, heartbeat=60)
             except (OSError, aiohttp.ClientConnectionError):
@@ -319,11 +328,28 @@ class Node:
                 ws_ll_log.error("Failed connect WSServerHandshakeError")
                 raise asyncio.TimeoutError
             else:
+                if self._is_shutdown is True:
+                    ws_ll_log.error("Lavalink node was shutdown during a connect attempt.")
+                    raise asyncio.CancelledError
                 self.session_resumed = ws._response.headers.get("Session-Resumed", False)
                 if self._ws is not None and self.session_resumed:
                     ws_ll_log.info("WEBSOCKET Resumed Session with key: %s", self._resume_key)
                 self._ws = ws
                 break
+        if self._is_shutdown is True:
+            raise asyncio.CancelledError
+        ws_ll_log.info("Lavalink WS connected to %s", uri)
+        ws_ll_log.debug("Creating Lavalink WS listener.")
+        if self._is_shutdown is False:
+            self._listener_task = self.loop.create_task(self.listener())
+            self.loop.create_task(self._configure_resume())
+            if self._queue:
+                temp = self._queue.copy()
+                self._queue.clear()
+                for data in temp:
+                    await self.send(data)
+            self._ready_event.set()
+            self.update_state(NodeState.READY)
 
     async def listener(self):
         """
@@ -334,9 +360,14 @@ class Node:
             if msg.type in self._closers:
                 if self._resuming_configured:
                     if self.state != NodeState.RECONNECTING:
+                        if self.reconnect_task is not None:
+                            self.reconnect_task.cancel()
                         ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
                         self.update_state(NodeState.RECONNECTING)
-                        self.loop.create_task(self._reconnect()).add_done_callback(
+                        self.reconnect_task = self.loop.create_task(
+                            self._reconnect(self._is_shutdown)
+                        )
+                        self.reconnect_task.add_done_callback(
                             task_callback_debug
                         )
                     return
@@ -367,13 +398,17 @@ class Node:
                     msg.type,
                     msg.data,
                 )
-        if self.state != NodeState.RECONNECTING:
+        if self.state != NodeState.RECONNECTING and not self._is_shutdown:
             ws_ll_log.warning(
                 "[NODE] | %s - WS %s SHUTDOWN %s.", self, not self._ws.closed, self._is_shutdown
             )
+            if self.reconnect_task is not None:
+                self.reconnect_task.cancel()
             self.update_state(NodeState.RECONNECTING)
-            self.loop.create_task(self._reconnect()).add_done_callback(task_callback_debug)
-
+            self.reconnect_task = self.loop.create_task(self._reconnect(self._is_shutdown))
+            self.reconnect_task.add_done_callback(
+                task_callback_debug
+            )
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
             try:
@@ -403,10 +438,10 @@ class Node:
         else:
             ws_ll_log.verbose("Unknown op type: %r", data)
 
-    async def _reconnect(self):
+    async def _reconnect(self, shutdown: bool = False):
         self._ready_event.clear()
 
-        if self._is_shutdown is True:
+        if self._is_shutdown is True or shutdown:
             ws_ll_log.info("[NODE] | Shutting down Lavalink WS.")
             return
         if self.state != NodeState.CONNECTING:
@@ -417,16 +452,22 @@ class Node:
         attempt = 1
         while self.state == NodeState.RECONNECTING:
             attempt += 1
+            if attempt > 10:
+                ws_ll_log.info("[NODE] | Failed reconnection attempt too many times, aborting ...")
+                await self.disconnect()
+                return
             try:
-                await self.connect()
+                await self.connect(shutdown=shutdown)
+            except AbortingNodeConnection:
+                return
             except asyncio.TimeoutError:
                 delay = backoff.delay()
                 ws_ll_log.warning(
-                    "[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s",
+                    "[NODE] | Lavalink WS reconnect attempt %s, retrying in %s",
                     attempt,
                     delay,
                 )
-
+                await asyncio.sleep(delay)
             else:
                 ws_ll_log.info("[NODE] | Reconnect successful.")
                 self.dispatch_reconnect()
@@ -484,6 +525,11 @@ class Node:
         """
         self._is_shutdown = True
         self._ready_event.clear()
+        self._queue.clear()
+        if self.try_connect_task is not None:
+            self.try_connect_task.cancel()
+        if self.reconnect_task is not None:
+            self.reconnect_task.cancel()
 
         self.update_state(NodeState.DISCONNECTING)
 
