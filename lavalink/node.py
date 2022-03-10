@@ -338,16 +338,16 @@ class Node:
                 try:
                     op = LavalinkIncomingOp(data.get("op"))
                 except ValueError:
-                    ws_ll_log.info("[NODE] | Received unknown op: %s", data)
+                    ws_ll_log.debug("[NODE] | Received unknown op: %s", data)
                 else:
-                    ws_ll_log.debug("[NODE] | Received known op: %s", data)
+                    ws_ll_log.trace("[NODE] | Received known op: %s", data)
                     self.loop.create_task(self._handle_op(op, data))
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 exc = self._ws.exception()
                 ws_ll_log.info("[NODE] | Exception in WebSocket!", exc_info=exc)
                 break
             else:
-                ws_ll_log.info(
+                ws_ll_log.debug(
                     "[NODE] | WebSocket connection received unexpected message: %s:%s",
                     msg.type,
                     msg.data,
@@ -364,7 +364,7 @@ class Node:
             try:
                 event = LavalinkEvents(data.get("type"))
             except ValueError:
-                ws_ll_log.info("Unknown event type: %s", data)
+                ws_ll_log.debug("Unknown event type: %s", data)
             else:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
@@ -436,7 +436,7 @@ class Node:
         if next_state == self.state:
             return
 
-        ws_ll_log.debug("Changing node state: %s -> %s", self.state.name, next_state.name)
+        ws_ll_log.trace("Changing node state: %s -> %s", self.state.name, next_state.name)
         old_state = self.state
         self.state = next_state
         if self.loop.is_closed():
@@ -493,7 +493,7 @@ class Node:
         if self._ws is None or self._ws.closed:
             self._queue.append(data)
         else:
-            ws_ll_log.debug("Sending data to Lavalink node: %s", data)
+            ws_ll_log.trace("Sending data to Lavalink node: %s", data)
             await self._ws.send_json(data)
 
     async def send_lavalink_voice_update(self, guild_id, session_id, event):
@@ -641,7 +641,7 @@ async def on_socket_response(data):
             f"Received unhandled Discord WS voice response for guild: %d, %s", int(guild_id), data
         )
     else:
-        ws_ll_log.debug(
+        ws_ll_log.trace(
             f"Received Discord WS voice response for guild: %d, %s", int(guild_id), data
         )
         await node.player_manager.on_socket_response(data)

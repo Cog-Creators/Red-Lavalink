@@ -231,7 +231,7 @@ class Player(RESTClient):
         if state == self.state:
             return
 
-        ws_rll_log.debug("Player %r changing state: %s -> %s", self, self.state.name, state.name)
+        ws_rll_log.trace("Player %r changing state: %s -> %s", self, self.state.name, state.name)
 
         old_state = self.state
         self.state = state
@@ -257,7 +257,7 @@ class Player(RESTClient):
         event : node.LavalinkEvents
         extra
         """
-        log.debug("Received player event for player: %r - %r - %r.", self, event, extra)
+        log.trace("Received player event for player: %r - %r - %r.", self, event, extra)
 
         if event == LavalinkEvents.TRACK_END:
             self._is_playing = False
@@ -279,7 +279,7 @@ class Player(RESTClient):
         """
         if state.position > self.position:
             self._is_playing = True
-        log.debug("Updated player position for player: %r - %ds.", self, state.position // 1000)
+        log.trace("Updated player position for player: %r - %ds.", self, state.position // 1000)
         self.position = state.position
 
     # Play commands
@@ -514,7 +514,7 @@ class PlayerManager:
             await p.disconnect(requested=False)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
-        ws_rll_log.debug("Received node state update: %s -> %s", old_state.name, next_state.name)
+        ws_rll_log.trace("Received node state update: %s -> %s", old_state.name, next_state.name)
         if next_state == NodeState.READY:
             await self.update_player_states(PlayerState.READY)
         elif next_state == NodeState.DISCONNECTING:
@@ -562,7 +562,7 @@ class PlayerManager:
                 msg = "Received voice disconnect from discord, removing player."
                 if p:
                     msg += f" {p}"
-                ws_rll_log.info(msg)
+                ws_rll_log.debug(msg)
                 self.voice_states[guild_id] = {}
                 await self._remove_player(int(guild_id))
 
@@ -575,7 +575,7 @@ class PlayerManager:
                     msg = "Received voice disconnect from discord, removing player."
                     if p:
                         msg += f" {p}"
-                    ws_rll_log.info(msg)
+                    ws_rll_log.debug(msg)
                     self.voice_states[guild_id] = {}
                     await self._remove_player(int(guild_id))
                 else:
