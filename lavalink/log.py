@@ -19,7 +19,6 @@ def _update_logger_class():
 
         def trace(self, msg, *args, **kwargs):
             if self.isEnabledFor(TRACE):
-
                 self._log(TRACE, msg, args, **kwargs)
 
     if logging.getLoggerClass().__name__ != "RedTraceLogger":
