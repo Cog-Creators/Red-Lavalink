@@ -255,7 +255,7 @@ def register_update_listener(coro):
         _update_listeners.append(coro)
 
 
-async def _handle_update(player, data: enums.PlayerState, raw_data: dict):
+async def _handle_update(player, data: node.PlayerState, raw_data: dict):
     await player.handle_player_update(data)
 
 
