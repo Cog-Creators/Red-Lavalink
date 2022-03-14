@@ -514,7 +514,7 @@ class PlayerManager:
             await p.disconnect(requested=False)
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
-        ws_rll_log.trace("Received node state update: %s -> %s", old_state.name, next_state.name)
+        ws_rll_log.verbose("Received node state update: %s -> %s", old_state.name, next_state.name)
         if next_state == NodeState.READY:
             await self.update_player_states(PlayerState.READY)
         elif next_state == NodeState.DISCONNECTING:

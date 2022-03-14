@@ -338,7 +338,7 @@ class Node:
                 try:
                     op = LavalinkIncomingOp(data.get("op"))
                 except ValueError:
-                    ws_ll_log.debug("[NODE] | Received unknown op: %s", data)
+                    ws_ll_log.verbose("[NODE] | Received unknown op: %s", data)
                 else:
                     ws_ll_log.trace("[NODE] | Received known op: %s", data)
                     self.loop.create_task(self._handle_op(op, data))
@@ -364,7 +364,7 @@ class Node:
             try:
                 event = LavalinkEvents(data.get("type"))
             except ValueError:
-                ws_ll_log.debug("Unknown event type: %s", data)
+                ws_ll_log.verbose("Unknown event type: %s", data)
             else:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
@@ -386,7 +386,7 @@ class Node:
             self.stats = NodeStats(data)
             self.event_handler(op, stats, data)
         else:
-            ws_ll_log.info("Unknown op type: %r", data)
+            ws_ll_log.verbose("Unknown op type: %r", data)
 
     async def _reconnect(self):
         self._ready_event.clear()
@@ -406,7 +406,6 @@ class Node:
                 await self.connect()
             except asyncio.TimeoutError:
                 delay = backoff.delay()
-                ws_ll_log.info("[NODE] | Failed to reconnect to the Lavalink node.")
                 ws_ll_log.info(
                     "[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s",
                     attempt,
@@ -436,7 +435,7 @@ class Node:
         if next_state == self.state:
             return
 
-        ws_ll_log.trace("Changing node state: %s -> %s", self.state.name, next_state.name)
+        ws_ll_log.verbose("Changing node state: %s -> %s", self.state.name, next_state.name)
         old_state = self.state
         self.state = next_state
         if self.loop.is_closed():
