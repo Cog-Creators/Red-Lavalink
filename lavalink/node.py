@@ -455,7 +455,7 @@ class Node:
             attempt += 1
             if attempt > 10:
                 ws_ll_log.info("[NODE] | Failed reconnection attempt too many times, aborting ...")
-                await self.disconnect()
+                asyncio.create_task(self.disconnect())
                 return
             try:
                 await self.connect(shutdown=shutdown)
@@ -524,17 +524,26 @@ class Node:
         """
         Shuts down and disconnects the websocket.
         """
+        global _nodes
         self._is_shutdown = True
         self._ready_event.clear()
         self._queue.clear()
-        if self.try_connect_task is not None:
+        if (
+            self.try_connect_task is not None
+            and not self.try_connect_task.cancelled()
+            and not self.loop.is_closed()
+        ):
             self.try_connect_task.cancel()
-        if self.reconnect_task is not None:
+        if (
+            self.reconnect_task is not None
+            and not self.reconnect_task.cancelled()
+            and not self.loop.is_closed()
+        ):
             self.reconnect_task.cancel()
 
         self.update_state(NodeState.DISCONNECTING)
 
-        if self._resuming_configured:
+        if self._resuming_configured and not (self._ws is None or self._ws.closed):
             await self.send(dict(op="configureResuming", key=None))
         self._resuming_configured = False
         await self.player_manager.disconnect()
@@ -542,14 +551,20 @@ class Node:
         if self._ws is not None and not self._ws.closed:
             await self._ws.close()
 
-        if self._listener_task is not None and not self.loop.is_closed():
+        if (
+            self._listener_task is not None
+            and not self._listener_task.cancelled()
+            and not self.loop.is_closed()
+        ):
             self._listener_task.cancel()
 
         await self.session.close()
 
         self._state_handlers = []
-
-        _nodes.remove(self)
+        if len(_nodes) == 1:
+            _nodes = []
+        elif len(_nodes) > 1:
+            _nodes.remove(self)
         ws_ll_log.info("Shutdown Lavalink WS.")
 
     async def send(self, data):
