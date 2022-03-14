@@ -342,6 +342,7 @@ class Node:
         ws_ll_log.debug("Creating Lavalink WS listener.")
         if self._is_shutdown is False:
             self._listener_task = self.loop.create_task(self.listener())
+            self._listener_task.add_done_callback(task_callback)
             self.loop.create_task(self._configure_resume())
             if self._queue:
                 temp = self._queue.copy()
