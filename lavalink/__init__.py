@@ -4,7 +4,7 @@ set_logging_level()
 __version__ = "0.9.2"
 
 from .lavalink import *
-from .node import Node, NodeStats, Stats
+from .node import Node, NodeStats, Stats, get_all_nodes
 from .player_manager import *
 from .enums import NodeState, PlayerState, TrackEndReason, LavalinkEvents
 from .rest_api import Track
@@ -42,4 +42,5 @@ __all__ = [
     "all_players",
     "all_connected_players",
     "active_players",
+    "get_all_nodes",
 ]
