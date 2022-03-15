@@ -277,19 +277,15 @@ class RESTClient:
     Client class used to access the REST endpoints on a Lavalink node.
     """
 
-    def __init__(self, node):
-        self.node = node
-        self.secured = node.secured
+    def __init__(self):
+        self.secured = self.node.secured
         self._session = self.node.session
         if self.secured:
             protocol = "https"
         else:
             protocol = "http"
-        self._uri = f"{protocol}://{node.host}:{node.port}/loadtracks?identifier="
-        self._headers = {"Authorization": node.password}
-
-        self.state = player.state
-
+        self._uri = f"{protocol}://{self.node.host}:{self.node.port}/loadtracks?identifier="
+        self._headers = {"Authorization": self.node.password}
         self._warned = False
 
     def __check_node_ready(self):
