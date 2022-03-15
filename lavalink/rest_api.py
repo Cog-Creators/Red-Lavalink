@@ -277,8 +277,13 @@ class RESTClient:
 
     def __init__(self, node):
         self.node = node
+        self.secured = node.secured
         self._session = None
-        self._uri = "http://{}:{}/loadtracks?identifier=".format(node.host, node.port)
+        if self.secured:
+            protocol = "https"
+        else:
+            protocol = "http"
+        self._uri = f"{protocol}://{node.host}:{node.port}/loadtracks?identifier="
         self._headers = {"Authorization": node.password}
 
         self.state = PlayerState.CONNECTING

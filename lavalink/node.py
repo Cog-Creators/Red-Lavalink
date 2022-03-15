@@ -120,6 +120,7 @@ class Node:
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
         bot: Bot = None,
+        secured: bool = False,
     ):
         """
         Represents a Lavalink node.
@@ -165,6 +166,7 @@ class Node:
         self._resuming_configured = False
         self.num_shards = num_shards
         self.user_id = user_id
+        self.secured = secured
 
         self._ready_event = asyncio.Event()
 
@@ -215,14 +217,12 @@ class Node:
             self._resume_key.__repr__()
             return self._resume_key
 
-    async def connect(self, timeout=None, secured=False):
+    async def connect(self, timeout=None):
         """
         Connects to the Lavalink player event websocket.
 
         Parameters
         ----------
-        secured: bool
-           Whether to use the `wss://` protocol.
         timeout : int
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
@@ -234,7 +234,7 @@ class Node:
             If the websocket failed to connect after the given time.
         """
         self._is_shutdown = False
-        if secured:
+        if self.secured:
             uri = f"wss://{self.host}:{self.port}"
         else:
             uri = f"ws://{self.host}:{self.port}"
