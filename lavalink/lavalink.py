@@ -88,7 +88,7 @@ async def initialize(
         secured=secured,
     )
 
-    await lavalink_node.connect(timeout=timeout, secured=secured)
+    await lavalink_node.connect(timeout=timeout)
     lavalink_node._retries = 0
 
     bot.add_listener(node.on_socket_response)

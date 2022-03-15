@@ -209,14 +209,12 @@ class Node:
             self._resume_key.__repr__()
             return self._resume_key
 
-    async def connect(self, timeout=None, secured=False):
+    async def connect(self, timeout=None):
         """
         Connects to the Lavalink player event websocket.
 
         Parameters
         ----------
-        secured: bool
-           Whether to use the `wss://` protocol.
         timeout : int
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
@@ -227,7 +225,6 @@ class Node:
         asyncio.TimeoutError
             If the websocket failed to connect after the given time.
         """
-        self.secured = secured
         self._is_shutdown = False
         if self.secured:
             uri = f"wss://{self.host}:{self.port}"
@@ -406,7 +403,7 @@ class Node:
         while self.state == NodeState.RECONNECTING:
             attempt += 1
             try:
-                await self.connect(secured=self.secured)
+                await self.connect()
             except asyncio.TimeoutError:
                 delay = backoff.delay()
                 ws_ll_log.info("[NODE] | Failed to reconnect to the Lavalink node.")
