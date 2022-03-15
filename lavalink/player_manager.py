@@ -185,7 +185,7 @@ class Player(RESTClient):
         await self.update_state(PlayerState.DISCONNECTING)
         guild_id = self.guild.id
         if not requested:
-            log.debug("Forcing player disconnect for %r due to player manager request.", self)
+            log.verbose("Forcing player disconnect for %r due to player manager request.", self)
             self.node.event_handler(
                 LavalinkIncomingOp.EVENT,
                 LavalinkEvents.FORCED_DISCONNECT,
@@ -341,13 +341,13 @@ class Player(RESTClient):
             track = self.queue.pop(0)
 
             self.current = track
-            log.debug("Assigned current track for player: %r.", self)
+            log.verbose("Assigned current track for player: %r.", self)
             await self.node.play(self.guild.id, track, start=track.start_timestamp, replace=True)
 
     async def resume(
         self, track: Track, replace: bool = True, start: int = 0, pause: bool = False
     ):
-        log.debug("Resuming current track for player: %r.", self)
+        log.verbose("Resuming current track for player: %r.", self)
         self._is_playing = False
         self._paused = True
         await self.node.play(self.guild.id, track, start=start, replace=replace, pause=True)
