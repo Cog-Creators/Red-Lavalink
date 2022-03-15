@@ -64,7 +64,7 @@ async def initialize(
     resume_timeout : inr
         How long the node should wait for a connection while disconnected before clearing all players.
     secured: bool
-           Whether to use the `wss://` protocol.
+           Whether to use the `wss://` and `https://` protocol.
     """
     global _loop
     _loop = bot.loop
