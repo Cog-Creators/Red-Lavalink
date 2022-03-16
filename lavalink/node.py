@@ -344,7 +344,10 @@ class Node:
                     self.loop.create_task(self._handle_op(op, data))
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 exc = self._ws.exception()
-                ws_ll_log.info("[NODE] | Exception in WebSocket!", exc_info=exc)
+                ws_ll_log.warning(
+                    "[NODE] | An exception occurred on the websocket - Attempting to reconnect"
+                )
+                ws_ll_log.debug("[NODE] | Exception in WebSocket!", exc_info=exc)
                 break
             else:
                 ws_ll_log.debug(
@@ -406,7 +409,7 @@ class Node:
                 await self.connect()
             except asyncio.TimeoutError:
                 delay = backoff.delay()
-                ws_ll_log.info(
+                ws_ll_log.warning(
                     "[NODE] | Lavalink WS reconnect connect attempt %s, retrying in %s",
                     attempt,
                     delay,
