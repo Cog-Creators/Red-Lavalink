@@ -350,11 +350,13 @@ async def close(bot):
     """
     Closes the lavalink connection completely.
     """
+    log.debug("Closing Lavalink connections")
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
     bot.remove_listener(node.on_socket_response)
     bot.remove_listener(_on_guild_remove, name="on_guild_remove")
     await node.disconnect()
+    log.debug("All Lavalink nodes have been disconnected")
 
 
 # Helper methods
