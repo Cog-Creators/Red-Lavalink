@@ -15,6 +15,7 @@ from . import __version__, ws_discord_log, ws_ll_log
 from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
+from .utils import task_callback_exception, task_callback_debug, task_callback_trace
 
 __all__ = ["Stats", "Node", "NodeStats", "get_node", "get_nodes_stats", "join_voice"]
 
@@ -239,7 +240,8 @@ class Node:
         if self._listener_task is not None:
             self._listener_task.cancel()
         self._listener_task = self.loop.create_task(self.listener())
-        self.loop.create_task(self._configure_resume())
+        self._listener_task.add_done_callback(task_callback_exception)
+        self.loop.create_task(self._configure_resume()).add_done_callback(task_callback_debug)
         if self._queue:
             for data in self._queue:
                 await self.send(data)
@@ -328,7 +330,9 @@ class Node:
                     if self.state != NodeState.RECONNECTING:
                         ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
                         self.update_state(NodeState.RECONNECTING)
-                        self.loop.create_task(self._reconnect())
+                        self.loop.create_task(self._reconnect()).add_done_callback(
+                            task_callback_debug
+                        )
                     return
                 else:
                     ws_ll_log.info("[NODE] | Listener closing: %s", msg.extra)
@@ -341,7 +345,9 @@ class Node:
                     ws_ll_log.verbose("[NODE] | Received unknown op: %s", data)
                 else:
                     ws_ll_log.trace("[NODE] | Received known op: %s", data)
-                    self.loop.create_task(self._handle_op(op, data))
+                    self.loop.create_task(self._handle_op(op, data)).add_done_callback(
+                        task_callback_trace
+                    )
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 exc = self._ws.exception()
                 ws_ll_log.warning(
@@ -360,7 +366,7 @@ class Node:
                 "[NODE] | %s - WS %s SHUTDOWN %s.", self, not self._ws.closed, self._is_shutdown
             )
             self.update_state(NodeState.RECONNECTING)
-            self.loop.create_task(self._reconnect())
+            self.loop.create_task(self._reconnect()).add_done_callback(task_callback_debug)
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
@@ -445,7 +451,9 @@ class Node:
             ws_ll_log.debug("Event loop closed, not notifying state handlers.")
             return
         for handler in self._state_handlers:
-            self.loop.create_task(handler(next_state, old_state))
+            self.loop.create_task(handler(next_state, old_state)).add_done_callback(
+                task_callback_trace
+            )
 
     def register_state_handler(self, func):
         if not asyncio.iscoroutinefunction(func):
