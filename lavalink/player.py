@@ -229,6 +229,9 @@ class Player(RESTClient, VoiceProtocol):
         self._last_resume = datetime.datetime.now(datetime.timezone.utc)
         self.connected_at = datetime.datetime.now(datetime.timezone.utc)
         self._connected = True
+        if self._monitor_task is not None:
+            self._monitor_task.cancel()
+        self._monitor_task = asyncio.create_task(self._monitor())
         self.node._players_dict[self.guild.id] = self
         await self.node.refresh_player_state(self)
         await self.guild.change_voice_state(
