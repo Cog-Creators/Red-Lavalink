@@ -3,7 +3,7 @@ __all__ = [
     "NodeException",
     "PlayerException",
     "NodeNotFound",
-    "AbortingNodeConnectionException",
+    "AbortingNodeConnection",
     "NodeNotReady",
     "PlayerNotFound",
 ]
@@ -21,7 +21,7 @@ class PlayerException(RedLavalinkException):
     """Base exception for all Player related exceptions"""
 
 
-class AbortingNodeConnectionException(NodeException):
+class AbortingNodeConnection(NodeException):
     """Error thrown when a connection attempt should be aborted"""
 
 

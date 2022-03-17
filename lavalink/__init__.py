@@ -48,7 +48,7 @@ __all__ = [
     "NodeException",
     "PlayerException",
     "NodeNotFound",
-    "AbortingNodeConnectionException",
+    "AbortingNodeConnection",
     "NodeNotReady",
     "PlayerNotFound",
 ]
