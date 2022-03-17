@@ -303,12 +303,12 @@ class Node:
             try:
                 ws = await self.session.ws_connect(url=uri, headers=self.headers, heartbeat=60)
             except (OSError, aiohttp.ClientConnectionError):
-                delay = backoff.delay()
-                ws_ll_log.error("Failed connect attempt %s, retrying in %s", attempt, delay)
-                await asyncio.sleep(delay)
-                attempt += 1
                 if attempt > 5:
                     raise asyncio.TimeoutError
+                delay = backoff.delay()
+                ws_ll_log.warning("Failed connect attempt %s, retrying in %s", attempt, delay)
+                await asyncio.sleep(delay)
+                attempt += 1
             except aiohttp.WSServerHandshakeError:
                 ws_ll_log.error("Failed connect WSServerHandshakeError")
                 raise asyncio.TimeoutError
