@@ -178,6 +178,7 @@ class Player(RESTClient):
         Disconnects this player from it's voice channel.
         """
         self._is_autoplaying = False
+        self._is_playing = False
         self._auto_play_sent = False
         self._connected = False
         if self.state == PlayerState.DISCONNECTING:
@@ -261,7 +262,6 @@ class Player(RESTClient):
         log.trace("Received player event for player: %r - %r - %r.", self, event, extra)
 
         if event == LavalinkEvents.TRACK_END:
-            self._is_playing = False
             if extra == TrackEndReason.FINISHED:
                 await self.play()
         elif event == LavalinkEvents.WEBSOCKET_CLOSED:
