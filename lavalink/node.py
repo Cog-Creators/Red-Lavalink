@@ -20,7 +20,7 @@ from .enums import (
 )
 from .player_manager import PlayerManager
 from .rest_api import Track
-from .utils import task_callback_exception, task_callback_debug, task_callback_trace
+from .utils import task_callback_exception, task_callback_debug, task_callback_verbose, task_callback_trace
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 
 __all__ = [
@@ -343,7 +343,9 @@ class Node:
         if self._is_shutdown is False:
             self._listener_task = self.loop.create_task(self.listener())
             self._listener_task.add_done_callback(task_callback_exception)
-            self.loop.create_task(self._configure_resume())
+            self.loop.create_task(self._configure_resume()).add_done_callback(
+                task_callback_verbose
+            )
             if self._queue:
                 temp = self._queue.copy()
                 self._queue.clear()
@@ -455,7 +457,7 @@ class Node:
             attempt += 1
             if attempt > 10:
                 ws_ll_log.info("[NODE] | Failed reconnection attempt too many times, aborting ...")
-                asyncio.create_task(self.disconnect())
+                asyncio.create_task(self.disconnect()).add_done_callback(task_callback_debug)
                 return
             try:
                 await self.connect(shutdown=shutdown)
