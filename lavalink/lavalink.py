@@ -6,7 +6,6 @@ from discord.ext.commands import Bot
 
 from . import enums, log, node, player_manager, utils, errors
 
-
 __all__ = [
     "initialize",
     "connect",
@@ -21,6 +20,7 @@ __all__ = [
     "all_players",
     "all_connected_players",
     "active_players",
+    "wait_until_ready",
 ]
 
 _event_listeners = []
@@ -378,3 +378,28 @@ def all_connected_players() -> Tuple[player_manager.Player]:
 def active_players() -> Tuple[player_manager.Player]:
     ps = all_connected_players()
     return tuple(p for p in ps if p.is_playing)
+
+
+async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Optional[int] = None):
+    if wait_if_no_node:
+        for iteration in range(0, abs(wait_if_no_node), 1):
+            if not node._nodes:
+                await asyncio.sleep(1)
+            else:
+                break
+    if not node._nodes:
+        raise asyncio.TimeoutError
+    tasks = [
+        asyncio.create_task(node_.wait_until_ready(timeout))
+        for node_ in node._nodes
+        if (not node_.ready) and not node_.state == NodeState.DISCONNECTING
+    ]
+    if tasks:
+        done, pending = await asyncio.wait(
+            tasks, timeout=timeout, return_when=asyncio.ALL_COMPLETED
+        )
+        for task in pending:
+            task.cancel()
+        if done:
+            for task_result in done:
+                task_result.result()
