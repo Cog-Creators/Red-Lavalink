@@ -3,8 +3,8 @@ from .log import set_logging_level, log, socket_log, ws_discord_log, ws_ll_log, 
 set_logging_level()
 __version__ = "0.9.2"
 
-from .lavalink import *
 from .node import Node, NodeStats, Stats, get_all_nodes
+from .lavalink import *
 from .player_manager import *
 from .enums import NodeState, PlayerState, TrackEndReason, LavalinkEvents
 from .rest_api import Track
