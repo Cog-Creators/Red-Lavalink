@@ -381,6 +381,7 @@ def active_players() -> Tuple[player_manager.Player]:
 
 
 async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Optional[int] = None):
+
     if wait_if_no_node:
         for iteration in range(0, abs(wait_if_no_node), 1):
             if not node._nodes:
@@ -392,7 +393,7 @@ async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Opt
     tasks = [
         asyncio.create_task(node_.wait_until_ready(timeout))
         for node_ in node._nodes
-        if (not node_.ready) and not node_.state == NodeState.DISCONNECTING
+        if (not node_.ready) and not node_.state == node.NodeState.DISCONNECTING
     ]
     if tasks:
         done, pending = await asyncio.wait(
