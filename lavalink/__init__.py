@@ -9,6 +9,7 @@ from .player_manager import *
 from .enums import NodeState, PlayerState, TrackEndReason, LavalinkEvents
 from .rest_api import Track
 from . import utils
+from .errors import *
 
 __all__ = [
     "set_logging_level",
@@ -43,4 +44,11 @@ __all__ = [
     "all_connected_players",
     "active_players",
     "get_all_nodes",
+    "RedLavalinkException",
+    "NodeException",
+    "PlayerException",
+    "NodeNotFound",
+    "AbortingNodeConnection",
+    "NodeNotReady",
+    "PlayerNotFound",
 ]

@@ -4,7 +4,8 @@ from typing import Optional, Tuple
 import discord
 from discord.ext.commands import Bot
 
-from . import enums, log, node, player_manager, utils
+from . import enums, log, node, player_manager, utils, errors
+
 
 __all__ = [
     "initialize",
@@ -130,7 +131,7 @@ def get_player(guild_id: int) -> player_manager.Player:
 async def _on_guild_remove(guild):
     try:
         p = get_player(guild.id)
-    except (IndexError, KeyError):
+    except (errors.NodeNotFound, errors.PlayerNotFound):
         pass
     else:
         await p.disconnect()
@@ -185,7 +186,7 @@ def _get_event_args(data: enums.LavalinkEvents, raw_data: dict):
     try:
         node_ = node.get_node(guild_id, ignore_ready_status=True)
         player = node_.player_manager.get_player(guild_id)
-    except (IndexError, KeyError):
+    except (errors.NodeNotFound, errors.PlayerNotFound):
         if data != enums.LavalinkEvents.TRACK_END:
             log.debug(
                 "Got an event for a guild that we have no player for."
@@ -264,7 +265,7 @@ def _get_update_args(data: enums.PlayerState, raw_data: dict):
 
     try:
         player = get_player(guild_id)
-    except (KeyError, IndexError):
+    except (errors.NodeNotFound, errors.PlayerNotFound):
         log.debug(
             "Got a player update for a guild that we have no player for."
             " This may be because of a forced voice channel disconnect."

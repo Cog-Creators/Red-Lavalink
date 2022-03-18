@@ -1,10 +1,9 @@
 from __future__ import annotations
 import asyncio
-import contextlib
 import secrets
 import string
 from collections import namedtuple
-from typing import Awaitable, List, Optional, cast
+from typing import List, Optional
 
 import aiohttp
 import typing
@@ -16,6 +15,7 @@ from .enums import *
 from .player_manager import PlayerManager
 from .rest_api import Track
 from .utils import task_callback_exception, task_callback_debug, task_callback_trace
+from .errors import NodeNotReady, NodeNotFound
 
 __all__ = [
     "Stats",
@@ -140,8 +140,6 @@ class Node:
             Password for the Lavalink player.
         port : int
             Port of the Lavalink player event websocket.
-        rest : int
-            Port for the Lavalink REST API.
         user_id : int
             User ID of the bot.
         num_shards : int
@@ -290,7 +288,7 @@ class Node:
     @property
     def lavalink_major_version(self):
         if not self.ready:
-            raise RuntimeError("Node not ready!")
+            raise NodeNotReady("Node not ready!")
         return self._ws.response_headers.get("Lavalink-Major-Version")
 
     @property
@@ -616,7 +614,7 @@ def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
             return node
 
     if least_used is None:
-        raise IndexError("No nodes found.")
+        raise NodeNotFound("No Lavalink nodes found.")
 
     return least_used
 
@@ -658,7 +656,7 @@ async def on_socket_response(data):
 
     try:
         node = get_node(guild_id, ignore_ready_status=True)
-    except IndexError:
+    except NodeNotFound:
         ws_discord_log.info(
             f"Received unhandled Discord WS voice response for guild: %d, %s", int(guild_id), data
         )

@@ -8,6 +8,7 @@ from discord.backoff import ExponentialBackoff
 
 from . import log, ws_rll_log
 from .enums import *
+from .errors import PlayerNotFound, NodeNotFound
 from .rest_api import RESTClient, Track
 
 if TYPE_CHECKING:
@@ -486,7 +487,7 @@ class PlayerManager:
         """
         if guild_id in self._player_dict:
             return self._player_dict[guild_id]
-        raise KeyError("No such player for that guild.")
+        raise PlayerNotFound("No such player for that guild.")
 
     def _ensure_player(
         self, guild_id: int, channel_id: int
@@ -498,7 +499,7 @@ class PlayerManager:
         if channel is not None:
             try:
                 p = self.get_player(guild_id)
-            except KeyError:
+            except (PlayerNotFound, NodeNotFound):
                 log.debug("Received voice channel connection without a player.")
                 p = Player(self, channel)
                 self._player_dict[guild_id] = p
@@ -507,7 +508,7 @@ class PlayerManager:
     async def _remove_player(self, guild_id: int):
         try:
             p = self.get_player(guild_id)
-        except KeyError:
+        except (PlayerNotFound, NodeNotFound):
             pass
         else:
             del self._player_dict[guild_id]
