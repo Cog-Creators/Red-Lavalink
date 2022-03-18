@@ -352,6 +352,7 @@ class Player(RESTClient):
         self._is_playing = False
         self._paused = True
         await self.node.play(self.guild.id, track, start=start, replace=replace, pause=True)
+        await self.set_volume(self.volume)
         await self.pause(True)
         await self.pause(pause, timed=1)
 
