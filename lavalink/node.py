@@ -1,10 +1,9 @@
 from __future__ import annotations
 import asyncio
-import contextlib
 import secrets
 import string
 from collections import namedtuple
-from typing import Awaitable, List, Optional, cast
+from typing import List, Optional
 
 import aiohttp
 import typing
@@ -142,8 +141,6 @@ class Node:
             Password for the Lavalink player.
         port : int
             Port of the Lavalink player event websocket.
-        rest : int
-            Port for the Lavalink REST API.
         user_id : int
             User ID of the bot.
         num_shards : int
