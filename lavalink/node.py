@@ -20,7 +20,12 @@ from .enums import (
 )
 from .player_manager import PlayerManager
 from .rest_api import Track
-from .utils import task_callback_exception, task_callback_debug, task_callback_verbose, task_callback_trace
+from .utils import (
+    task_callback_exception,
+    task_callback_debug,
+    task_callback_verbose,
+    task_callback_trace,
+)
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 
 __all__ = [
@@ -370,9 +375,7 @@ class Node:
                         self.reconnect_task = self.loop.create_task(
                             self._reconnect(self._is_shutdown)
                         )
-                        self.reconnect_task.add_done_callback(
-                            task_callback_debug
-                        )
+                        self.reconnect_task.add_done_callback(task_callback_debug)
                     return
                 else:
                     ws_ll_log.info("[NODE] | Listener closing: %s", msg.extra)
@@ -409,9 +412,8 @@ class Node:
                 self.reconnect_task.cancel()
             self.update_state(NodeState.RECONNECTING)
             self.reconnect_task = self.loop.create_task(self._reconnect(self._is_shutdown))
-            self.reconnect_task.add_done_callback(
-                task_callback_debug
-            )
+            self.reconnect_task.add_done_callback(task_callback_debug)
+
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
             try:
