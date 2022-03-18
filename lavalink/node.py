@@ -5,7 +5,6 @@ import secrets
 import string
 import typing
 from collections import namedtuple
-from typing import Awaitable, KeysView, List, Optional, ValuesView, cast
 
 import aiohttp
 from discord.backoff import ExponentialBackoff
@@ -23,6 +22,7 @@ from .player_manager import Player
 from .rest_api import RESTClient, Track
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 from .utils import VoiceChannel
+from .errors import NodeNotReady, NodeNotFound
 
 __all__ = [
     "Stats",
