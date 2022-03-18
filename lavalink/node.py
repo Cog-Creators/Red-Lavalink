@@ -20,12 +20,6 @@ from .enums import (
 )
 from .player_manager import PlayerManager
 from .rest_api import Track
-from .utils import (
-    task_callback_exception,
-    task_callback_debug,
-    task_callback_verbose,
-    task_callback_trace,
-)
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 
 __all__ = [
@@ -347,10 +341,7 @@ class Node:
         ws_ll_log.debug("Creating Lavalink WS listener.")
         if self._is_shutdown is False:
             self._listener_task = self.loop.create_task(self.listener())
-            self._listener_task.add_done_callback(task_callback_exception)
-            self.loop.create_task(self._configure_resume()).add_done_callback(
-                task_callback_verbose
-            )
+            self.loop.create_task(self._configure_resume())
             if self._queue:
                 temp = self._queue.copy()
                 self._queue.clear()
@@ -375,7 +366,6 @@ class Node:
                         self.reconnect_task = self.loop.create_task(
                             self._reconnect(self._is_shutdown)
                         )
-                        self.reconnect_task.add_done_callback(task_callback_debug)
                     return
                 else:
                     ws_ll_log.info("[NODE] | Listener closing: %s", msg.extra)
@@ -388,9 +378,7 @@ class Node:
                     ws_ll_log.verbose("[NODE] | Received unknown op: %s", data)
                 else:
                     ws_ll_log.trace("[NODE] | Received known op: %s", data)
-                    self.loop.create_task(self._handle_op(op, data)).add_done_callback(
-                        task_callback_trace
-                    )
+                    self.loop.create_task(self._handle_op(op, data))
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 exc = self._ws.exception()
                 ws_ll_log.warning(
@@ -412,7 +400,6 @@ class Node:
                 self.reconnect_task.cancel()
             self.update_state(NodeState.RECONNECTING)
             self.reconnect_task = self.loop.create_task(self._reconnect(self._is_shutdown))
-            self.reconnect_task.add_done_callback(task_callback_debug)
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
@@ -459,7 +446,7 @@ class Node:
             attempt += 1
             if attempt > 10:
                 ws_ll_log.info("[NODE] | Failed reconnection attempt too many times, aborting ...")
-                asyncio.create_task(self.disconnect()).add_done_callback(task_callback_debug)
+                asyncio.create_task(self.disconnect())
                 return
             try:
                 await self.connect(shutdown=shutdown)
@@ -503,9 +490,7 @@ class Node:
             ws_ll_log.debug("Event loop closed, not notifying state handlers.")
             return
         for handler in self._state_handlers:
-            self.loop.create_task(handler(next_state, old_state)).add_done_callback(
-                task_callback_trace
-            )
+            self.loop.create_task(handler(next_state, old_state))
 
     def register_state_handler(self, func):
         if not asyncio.iscoroutinefunction(func):

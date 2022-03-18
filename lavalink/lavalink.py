@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import discord
 from discord.ext.commands import Bot
 
-from . import enums, log, node, player_manager, utils, errors
+from . import enums, log, node, player_manager, errors
 
 __all__ = [
     "initialize",
@@ -344,7 +344,7 @@ def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
         return
 
     for coro in listeners:
-        _loop.create_task(coro(*args)).add_done_callback(utils.task_callback_trace)
+        _loop.create_task(coro(*args))
 
 
 async def close(bot):
