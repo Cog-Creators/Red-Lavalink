@@ -6,6 +6,7 @@ from discord.ext.commands import Bot
 
 from . import enums, log, node, player_manager, utils, errors
 
+
 __all__ = [
     "initialize",
     "connect",
