@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import discord
 from discord.ext.commands import Bot
 
-from . import enums, log, node, player_manager, errors
+from . import enums, log, node, player_manager, utils, errors
 
 __all__ = [
     "initialize",
@@ -21,7 +21,6 @@ __all__ = [
     "all_connected_players",
     "active_players",
 ]
-
 
 _event_listeners = []
 _update_listeners = []
@@ -256,7 +255,7 @@ def register_update_listener(coro):
         _update_listeners.append(coro)
 
 
-async def _handle_update(player, data: enums.PlayerState, raw_data: dict):
+async def _handle_update(player, data: node.PlayerState, raw_data: dict):
     await player.handle_player_update(data)
 
 
@@ -344,18 +343,20 @@ def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
         return
 
     for coro in listeners:
-        _loop.create_task(coro(*args))
+        _loop.create_task(coro(*args)).add_done_callback(utils.task_callback_trace)
 
 
 async def close(bot):
     """
     Closes the lavalink connection completely.
     """
+    log.debug("Closing Lavalink connections")
     unregister_event_listener(_handle_event)
     unregister_update_listener(_handle_update)
     bot.remove_listener(node.on_socket_response)
     bot.remove_listener(_on_guild_remove, name="on_guild_remove")
     await node.disconnect()
+    log.debug("All Lavalink nodes have been disconnected")
 
 
 # Helper methods
