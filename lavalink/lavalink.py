@@ -381,7 +381,6 @@ def active_players() -> Tuple[player_manager.Player]:
 
 
 async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Optional[int] = None):
-
     if wait_if_no_node:
         for iteration in range(0, abs(wait_if_no_node), 1):
             if not node._nodes:
@@ -390,17 +389,13 @@ async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Opt
                 break
     if not node._nodes:
         raise asyncio.TimeoutError
-    tasks = [
-        asyncio.create_task(node_.wait_until_ready(timeout))
-        for node_ in node._nodes
-        if (not node_.ready) and not node_.state == node.NodeState.DISCONNECTING
-    ]
-    if tasks:
-        done, pending = await asyncio.wait(
-            tasks, timeout=timeout, return_when=asyncio.ALL_COMPLETED
-        )
-        for task in pending:
-            task.cancel()
-        if done:
-            for task_result in done:
-                task_result.result()
+    for result in await asyncio.gather(
+        *(
+            node_.wait_until_ready(timeout)
+            for node_ in node._nodes
+            if (not node_.ready) and not node_.state == node.NodeState.DISCONNECTING
+        ),
+        return_exceptions=True,
+    ):
+        if result is not None:
+            raise result

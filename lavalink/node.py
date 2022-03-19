@@ -251,10 +251,9 @@ class Node:
         ws_ll_log.info("Lavalink WS connecting to %s with headers %s", uri, self.headers)
         if self.try_connect_task is not None:
             self.try_connect_task.cancel()
+        self.try_connect_task = asyncio.create_task(self._multi_try_connect(uri))
         try:
-            self.try_connect_task = asyncio.create_task(self._multi_try_connect(uri))
-            for task in asyncio.as_completed([self.try_connect_task], timeout=timeout):
-                await task
+            await asyncio.wait_for(self.try_connect_task, timeout=timeout)
         except asyncio.CancelledError:
             raise AbortingNodeConnection
 
