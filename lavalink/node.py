@@ -233,13 +233,14 @@ class Node:
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
             certain point.
-        shutdown: bool
+        shutdown : bool
             Whether the node was told to shut down
+
         Raises
         ------
         asyncio.TimeoutError
             If the websocket failed to connect after the given time.
-        AbortingConnection:
+        AbortingNodeConnection
             If the connection attempt must be aborted during a reconnect attempt
         """
         self._is_shutdown = shutdown
