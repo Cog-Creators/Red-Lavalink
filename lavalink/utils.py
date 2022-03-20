@@ -18,7 +18,7 @@ def format_time(time):
 VoiceChannel = Union[discord.VoiceChannel, discord.StageChannel]
 
 
-class CompositeMetaClass(type(Player), type(RESTClient), type(discord.VoiceProtocol), type(ABC)):
+class CompositeMetaClass(type(discord.VoiceProtocol), type(ABC)):
     """
     This allows the metaclass used for proper type detection to
     coexist with discord.py's metaclass
