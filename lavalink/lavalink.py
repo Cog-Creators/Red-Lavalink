@@ -33,7 +33,7 @@ async def initialize(
     bot: Bot,
     host,
     password,
-    ws_port,
+    port: Optional[int] = None,
     timeout=30,
     resume_key: Optional[str] = None,
     resume_timeout: int = 60,
@@ -55,7 +55,7 @@ async def initialize(
         The hostname or IP address of the Lavalink node.
     password : str
         The password of the Lavalink node.
-    ws_port : int
+    port : Optional[int]
         The websocket port on the Lavalink Node.
     timeout : int
         Amount of time to allow retries to occur, ``None`` is considered forever.
@@ -79,7 +79,7 @@ async def initialize(
         bot._connection._get_websocket,
         host,
         password,
-        port=ws_port,
+        port=port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
         resume_key=resume_key,

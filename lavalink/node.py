@@ -120,9 +120,9 @@ class Node:
         voice_ws_func: typing.Callable,
         host: str,
         password: str,
-        port: int,
         user_id: int,
         num_shards: int,
+        port: Optional[int] = None,
         resume_key: Optional[str] = None,
         resume_timeout: int = 60,
         bot: Bot = None,
@@ -143,7 +143,7 @@ class Node:
             Lavalink player host.
         password : str
             Password for the Lavalink player.
-        port : int
+        port : Optional[int]
             Port of the Lavalink player event websocket.
         user_id : int
             User ID of the bot.
@@ -162,6 +162,12 @@ class Node:
         self.get_voice_ws = voice_ws_func
         self.host = host
         self.port = port
+        self.secured = secured
+        if self.port is None:
+            if self.secured:
+                self.port = 443
+            else:
+                self.port = 80
         self.password = password
         self._resume_key = resume_key
         if self._resume_key is None:
@@ -170,7 +176,6 @@ class Node:
         self._resuming_configured = False
         self.num_shards = num_shards
         self.user_id = user_id
-        self.secured = secured
 
         self._ready_event = asyncio.Event()
 
