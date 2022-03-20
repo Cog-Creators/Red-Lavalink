@@ -9,7 +9,6 @@ import lavalink.node
 async def test_initialize(bot):
     await lavalink.initialize(bot, "localhost", "password", 2333, 2333)
 
-    assert lavalink.player_manager.user_id == bot.user.id
     assert len(lavalink.node._nodes) == bot.shard_count
 
     bot.add_listener.assert_called()

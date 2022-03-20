@@ -11,17 +11,10 @@ import aiohttp
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import __version__, ws_discord_log, ws_ll_log, log, ws_rll_log
-from .enums import (
-    LavalinkIncomingOp,
-    NodeState,
-    LavalinkEvents,
-    LavalinkOutgoingOp,
-    DiscordVoiceSocketResponses,
-)
+from . import log, ws_ll_log, ws_rll_log, __version__
+from .enums import LavalinkEvents, LavalinkIncomingOp, LavalinkOutgoingOp, NodeState, PlayerState
 from .player import Player
-from .rest_api import RESTClient, Track
-from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
+from .rest_api import Track
 from .utils import VoiceChannel
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound, PlayerNotFound
 
