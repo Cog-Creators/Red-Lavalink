@@ -22,7 +22,7 @@ from .player_manager import Player
 from .rest_api import RESTClient, Track
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 from .utils import VoiceChannel
-from .errors import NodeNotReady, NodeNotFound
+from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 
 __all__ = [
     "Stats",
