@@ -239,7 +239,7 @@ class Node:
         ------
         asyncio.TimeoutError
             If the websocket failed to connect after the given time.
-        AbortingConnectionException:
+        AbortingConnection:
             If the connection attempt must be aborted during a reconnect attempt
         """
         self._is_shutdown = shutdown
