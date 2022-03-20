@@ -111,7 +111,7 @@ class NodeStats:
 
 class Node:
 
-    _is_shutdown = False  # type: bool
+    _is_shutdown: bool = False
 
     def __init__(
         self,
@@ -124,7 +124,7 @@ class Node:
         num_shards: int,
         port: Optional[int] = None,
         resume_key: Optional[str] = None,
-        resume_timeout: int = 60,
+        resume_timeout: float = 60,
         bot: Bot = None,
         secured: bool = False,
     ):
@@ -151,7 +151,7 @@ class Node:
             Number of shards to which the bot is currently connected.
         resume_key : Optional[str]
             A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
-        resume_timeout : int
+        resume_timeout : float
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
             The Bot object that connects to discord.
@@ -234,7 +234,7 @@ class Node:
 
         Parameters
         ----------
-        timeout : int
+        timeout : float
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
             certain point.

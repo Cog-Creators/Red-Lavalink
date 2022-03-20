@@ -34,9 +34,9 @@ async def initialize(
     host,
     password,
     port: Optional[int] = None,
-    timeout=30,
+    timeout: float = 30,
     resume_key: Optional[str] = None,
-    resume_timeout: int = 60,
+    resume_timeout: float = 60,
     secured: bool = False,
 ):
     """
@@ -57,11 +57,11 @@ async def initialize(
         The password of the Lavalink node.
     port : Optional[int]
         The websocket port on the Lavalink Node.
-    timeout : int
+    timeout : float
         Amount of time to allow retries to occur, ``None`` is considered forever.
     resume_key : Optional[str]
         A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
-    resume_timeout : inr
+    resume_timeout : float
         How long the node should wait for a connection while disconnected before clearing all players.
     secured: bool
            Whether to use the `wss://` and `https://` protocol.
@@ -106,7 +106,10 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
 
     Parameters
     ----------
-    channel
+    channel : discord.VoiceChannel
+        The channel to connect to.
+    deafen: bool
+        Whether to deafen the bot user upon join.
 
     Returns
     -------
