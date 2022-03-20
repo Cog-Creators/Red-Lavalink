@@ -223,7 +223,7 @@ class Node:
             self._resume_key.__repr__()
             return self._resume_key
 
-    async def connect(self, timeout=None, shutdown=False):
+    async def connect(self, timeout=None, *, shutdown=False):
         """
         Connects to the Lavalink player event websocket.
 
