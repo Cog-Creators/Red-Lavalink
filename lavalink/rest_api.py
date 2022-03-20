@@ -1,15 +1,14 @@
 import re
 from collections import namedtuple
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import Tuple, Union
 from urllib.parse import quote, urlparse
 
 from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
 from .enums import ExceptionSeverity, LoadType, PlayerState
+from .utils import PlayerMeta, CompositeMetaClass
 
-if TYPE_CHECKING:
-    from . import player_manager
 
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
 
@@ -272,7 +271,7 @@ class LoadResult:
         return None
 
 
-class RESTClient:
+class RESTClient(PlayerMeta, metaclass=CompositeMetaClass):
     """
     Client class used to access the REST endpoints on a Lavalink node.
     """

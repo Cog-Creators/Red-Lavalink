@@ -83,7 +83,8 @@ class Player(RESTClient, VoiceProtocol):
         self._con_delay = None
         self._last_resume = None
 
-        super().__init__(self)
+        super(VoiceProtocol).__init__(self)
+        super(RESTClient).__init__()
 
     def __repr__(self):
         return (
@@ -312,7 +313,7 @@ class Player(RESTClient, VoiceProtocol):
                 if not self._con_delay:
                     self._con_delay = ExponentialBackoff(base=1)
 
-    async def handle_player_update(self, state: "node.PlayerState"):
+    async def handle_player_update(self, state: "node.PositionTime"):
         """
         Handles player updates from lavalink.
 

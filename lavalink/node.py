@@ -535,7 +535,7 @@ class Node:
             p = self.get_player(channel.guild.id)
             await p.move_to(channel, deafen=deafen)
         else:
-            p = await channel.connect(cls=Player)
+            p: Player = await channel.connect(cls=Player)  # type: ignore
             if deafen:
                 await p.guild.change_voice_state(channel=p.channel, self_deaf=True)
             self._players_dict[channel.guild.id] = p

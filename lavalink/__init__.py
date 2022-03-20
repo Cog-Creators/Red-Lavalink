@@ -7,7 +7,7 @@ from .lavalink import *
 from .node import Node, NodeStats, Stats, get_all_nodes
 from .player_manager import *
 from .enums import NodeState, PlayerState, TrackEndReason, LavalinkEvents
-from .rest_api import Track
+from .rest_api import Track, RESTClient
 from . import utils
 from .errors import *
 
