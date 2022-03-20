@@ -4,8 +4,7 @@ from typing import Optional, Tuple
 import discord
 from discord.ext.commands import Bot
 
-from . import enums, log, node, player_manager, utils, errors
-
+from . import enums, log, node, player_manager, errors
 
 __all__ = [
     "initialize",
@@ -21,6 +20,7 @@ __all__ = [
     "all_players",
     "all_connected_players",
     "active_players",
+    "wait_until_ready",
 ]
 
 _event_listeners = []
@@ -344,7 +344,7 @@ def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
         return
 
     for coro in listeners:
-        _loop.create_task(coro(*args)).add_done_callback(utils.task_callback_trace)
+        _loop.create_task(coro(*args))
 
 
 async def close(bot):
@@ -378,3 +378,24 @@ def all_connected_players() -> Tuple[player_manager.Player]:
 def active_players() -> Tuple[player_manager.Player]:
     ps = all_connected_players()
     return tuple(p for p in ps if p.is_playing)
+
+
+async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Optional[int] = None):
+    if wait_if_no_node:
+        for iteration in range(0, abs(wait_if_no_node), 1):
+            if not node._nodes:
+                await asyncio.sleep(1)
+            else:
+                break
+    if not node._nodes:
+        raise asyncio.TimeoutError
+    for result in await asyncio.gather(
+        *(
+            node_.wait_until_ready(timeout)
+            for node_ in node._nodes
+            if (not node_.ready) and not node_.state == node.NodeState.DISCONNECTING
+        ),
+        return_exceptions=True,
+    ):
+        if result is not None:
+            raise result

@@ -51,4 +51,5 @@ __all__ = [
     "AbortingNodeConnection",
     "NodeNotReady",
     "PlayerNotFound",
+    "wait_until_ready",
 ]
