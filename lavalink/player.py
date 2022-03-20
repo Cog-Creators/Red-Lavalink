@@ -83,8 +83,7 @@ class Player(RESTClient, VoiceProtocol):
         self._con_delay = None
         self._last_resume = None
 
-        super(VoiceProtocol).__init__(self)
-        super(RESTClient).__init__()
+        super().__init__()
 
     def __repr__(self):
         return (

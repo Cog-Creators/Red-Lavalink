@@ -1,7 +1,7 @@
 import pytest
 
 import lavalink
-import lavalink.player_manager
+import lavalink.player
 import lavalink.node
 
 

@@ -18,11 +18,11 @@ from .enums import (
     LavalinkOutgoingOp,
     DiscordVoiceSocketResponses,
 )
-from .player_manager import Player
+from .player import Player
 from .rest_api import RESTClient, Track
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
 from .utils import VoiceChannel
-from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
+from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound, PlayerNotFound
 
 __all__ = [
     "Stats",
@@ -566,7 +566,7 @@ class Node:
         """
         if guild_id in self._players_dict:
             return self._players_dict[guild_id]
-        raise KeyError("No such player for that guild.")
+        raise PlayerNotFound("No such player for that guild.")
 
     async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
         ws_rll_log.debug("Received node state update: %s -> %s", old_state.name, next_state.name)

@@ -7,7 +7,7 @@ from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
 from .enums import ExceptionSeverity, LoadType, PlayerState
-from .utils import PlayerMeta, CompositeMetaClass
+from .utils import PlayerMeta
 
 
 __all__ = ["Track", "RESTClient", "PlaylistInfo"]
@@ -271,7 +271,7 @@ class LoadResult:
         return None
 
 
-class RESTClient(PlayerMeta, metaclass=CompositeMetaClass):
+class RESTClient(PlayerMeta):
     """
     Client class used to access the REST endpoints on a Lavalink node.
     """

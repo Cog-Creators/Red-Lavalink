@@ -4,7 +4,8 @@ from typing import Union, TYPE_CHECKING
 import discord
 
 if TYPE_CHECKING:
-    from . import Player, Node, RESTClient, PlayerState
+    from .enums import PlayerState
+    from .node import Node
 
 
 def format_time(time):
@@ -18,18 +19,9 @@ def format_time(time):
 VoiceChannel = Union[discord.VoiceChannel, discord.StageChannel]
 
 
-class CompositeMetaClass(type(discord.VoiceProtocol), type(ABC)):
-    """
-    This allows the metaclass used for proper type detection to
-    coexist with discord.py's metaclass
-    """
-
-    pass
-
-
-class PlayerMeta(ABC, discord.VoiceProtocol, metaclass=CompositeMetaClass):
+class PlayerMeta(ABC, discord.VoiceProtocol):
     client: discord.Client
     channel: VoiceChannel
-    node: Node
-    state: PlayerState
+    node: "Node"
+    state: "PlayerState"
     guild: discord.Guild

@@ -4,7 +4,7 @@ from typing import Optional, Tuple
 import discord
 from discord.ext.commands import Bot
 
-from . import enums, log, node, player_manager, errors
+from . import enums, log, node, player, errors
 
 __all__ = [
     "initialize",
@@ -70,7 +70,6 @@ async def initialize(
     global _loop
     _loop = bot.loop
 
-    player_manager.user_id = bot.user.id
     register_event_listener(_handle_event)
     register_update_listener(_handle_update)
 
@@ -123,7 +122,7 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
     return p
 
 
-def get_player(guild_id: int) -> player_manager.Player:
+def get_player(guild_id: int) -> player.Player:
     node_ = node.get_node(guild_id)
     return node_.get_player(guild_id)
 
@@ -362,19 +361,19 @@ async def close(bot):
 # Helper methods
 
 
-def all_players() -> Tuple[player_manager.Player]:
+def all_players() -> Tuple[player.Player]:
     nodes = node._nodes
     ret = tuple(p for n in nodes for p in n.players)
     return ret
 
 
-def all_connected_players() -> Tuple[player_manager.Player]:
+def all_connected_players() -> Tuple[player.Player]:
     nodes = node._nodes
     ret = tuple(p for n in nodes for p in n.players if p.connected)
     return ret
 
 
-def active_players() -> Tuple[player_manager.Player]:
+def active_players() -> Tuple[player.Player]:
     ps = all_connected_players()
     return tuple(p for p in ps if p.is_playing)
 
