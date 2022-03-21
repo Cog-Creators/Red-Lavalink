@@ -95,6 +95,13 @@ class Player(RESTClient, VoiceProtocol):
                             and self.current.track_identifier not in self._previously_stuck_track
                         ):
                             if (
+                                (not self.paused)
+                                and self.ready
+                                and self.connected
+                                and self.current
+                            ):
+                                break
+                            if (
                                 now := time.time()
                             ) > self._last_update + self._consider_stuck_after:
                                 log.verbose(
