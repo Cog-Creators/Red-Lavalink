@@ -94,7 +94,7 @@ class Player(RESTClient, VoiceProtocol):
                             _temp_id == self.current.track_identifier
                             and self.current.track_identifier not in self._previously_stuck_track
                         ):
-                            if (
+                            if not (
                                 (not self.paused)
                                 and self.ready
                                 and self.connected
