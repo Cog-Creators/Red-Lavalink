@@ -76,6 +76,7 @@ class Player(RESTClient, VoiceProtocol):
             "<Player: "
             f"state={self.state.name}, connected={self.connected}, "
             f"last_node_update={self._last_update}, stuck_timer={self._consider_stuck_after}, "
+            f"monitor_task_running={not self._monitor_task.cancelled()}, "
             f"guild={self.guild.name!r} ({self.guild.id}), "
             f"channel={self.channel.name!r} ({self.channel.id}), "
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
