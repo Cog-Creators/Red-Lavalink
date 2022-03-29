@@ -275,7 +275,7 @@ class Node:
             self._resuming_configured = True
             ws_ll_log.debug("Node Resuming has been configured.")
 
-    async def wait_until_ready(self, timeout: Optional[float] = None):
+    async def wait_until_ready(self, *, timeout: Optional[float] = None):
         await asyncio.wait_for(self._ready_event.wait(), timeout=timeout)
 
     def _get_connect_headers(self) -> dict:
