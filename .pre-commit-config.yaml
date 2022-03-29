@@ -2,7 +2,9 @@ default_language_version:
   python: python3.8
 repos:
   - repo: https://github.com/psf/black
-    rev: '22.1.0'
+    # The `refs/tags/<tag>:refs/tags/<tag>` is needed for black's required-version to work:
+    # https://github.com/psf/black/issues/2493#issuecomment-1081987650
+    rev: 'refs/tags/22.3.0:refs/tags/22.3.0'
     hooks:
       - id: black
   - repo: https://github.com/Pierre-Sassoulas/black-disable-checker
