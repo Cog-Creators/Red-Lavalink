@@ -1,6 +1,13 @@
+import asyncio
 from typing import Union
 
 import discord
+
+
+__all__ = (
+    "format_time",
+    "is_loop_closed",
+)
 
 
 def format_time(time):
@@ -12,3 +19,13 @@ def format_time(time):
 
 
 VoiceChannel = Union[discord.VoiceChannel, discord.StageChannel]
+
+
+def is_loop_closed() -> bool:
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        # no running event loop
+        return True
+
+    return loop.is_closed()
