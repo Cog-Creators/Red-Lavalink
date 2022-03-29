@@ -162,13 +162,14 @@ class Node:
         self.event_handler = event_handler
         self.get_voice_ws = voice_ws_func
         self.host = host
-        self.port = port
         self.secured = secured
-        if self.port is None:
+        if port is None:
             if self.secured:
                 self.port = 443
             else:
                 self.port = 80
+        else:
+            self.port = port
         self.password = password
         self._resume_key = resume_key
         if self._resume_key is None:
