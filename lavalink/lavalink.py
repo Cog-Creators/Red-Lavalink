@@ -57,6 +57,7 @@ async def initialize(
         The password of the Lavalink node.
     port : Optional[int]
         The websocket port on the Lavalink Node.
+        If not provided, it will use 80 for unsecured connections and 443 for secured.
     timeout : float
         Amount of time to allow retries to occur, ``None`` is considered forever.
     resume_key : Optional[str]
