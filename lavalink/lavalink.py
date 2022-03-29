@@ -76,7 +76,6 @@ async def initialize(
     lavalink_node = node.Node(
         loop=_loop,
         event_handler=dispatch,
-        voice_ws_func=bot._connection._get_websocket,
         host=host,
         password=password,
         port=port,
