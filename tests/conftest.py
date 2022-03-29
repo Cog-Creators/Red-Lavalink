@@ -96,7 +96,7 @@ def voice_channel(guild, _voice_channel):
 
 
 @pytest.fixture
-async def bot(event_loop, user, guild, voice_channel):
+async def bot(user, guild, voice_channel):
     async def voice_state(guild_id=None, channel_id=None):
         pass
 
@@ -113,7 +113,6 @@ async def bot(event_loop, user, guild, voice_channel):
     conn._get_websocket = lambda guild_id: voice_websocket
 
     bot_ = MagicMock(spec=AutoShardedBot)
-    bot_.loop = event_loop
     bot_._connection = conn
     bot_.user = user
     bot_.get_guild = lambda guild_id: guild
@@ -141,7 +140,6 @@ def patch_node(monkeypatch):
 @pytest.fixture
 async def node(bot):
     node_ = lavalink.node.Node(
-        loop=bot.loop,
         event_handler=MagicMock(),
         host="localhost",
         password="password",

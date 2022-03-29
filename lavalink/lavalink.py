@@ -26,7 +26,6 @@ __all__ = [
 _event_listeners = []
 _update_listeners = []
 _stats_listeners = []
-_loop = None
 
 
 async def initialize(
@@ -67,14 +66,10 @@ async def initialize(
     secured: bool
         Whether to use the `wss://` and `https://` protocol.
     """
-    global _loop
-    _loop = bot.loop
-
     register_event_listener(_handle_event)
     register_update_listener(_handle_update)
 
     lavalink_node = node.Node(
-        loop=_loop,
         event_handler=dispatch,
         host=host,
         password=password,
@@ -351,7 +346,7 @@ def dispatch(
         return
 
     for coro in listeners:
-        _loop.create_task(coro(*args))
+        asyncio.create_task(coro(*args))
 
 
 async def close(bot):

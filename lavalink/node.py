@@ -15,7 +15,7 @@ from . import log, ws_ll_log, ws_rll_log, __version__
 from .enums import LavalinkEvents, LavalinkIncomingOp, LavalinkOutgoingOp, NodeState, PlayerState
 from .player import Player
 from .rest_api import Track
-from .utils import VoiceChannel
+from .utils import VoiceChannel, is_loop_closed
 from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound, PlayerNotFound
 
 __all__ = [
@@ -111,7 +111,6 @@ class Node:
     def __init__(
         self,
         *,
-        loop: asyncio.BaseEventLoop,
         event_handler: typing.Callable,
         host: str,
         password: str,
@@ -128,8 +127,6 @@ class Node:
 
         Parameters
         ----------
-        loop : asyncio.BaseEventLoop
-            The event loop of the bot.
         event_handler
             Function to dispatch events to.
         host : str
@@ -149,7 +146,6 @@ class Node:
         bot: AutoShardedBot
             The Bot object that connects to discord.
         """
-        self.loop = loop
         self.bot = bot
         self.event_handler = event_handler
         self.host = host
@@ -347,8 +343,8 @@ class Node:
         ws_ll_log.info("Lavalink WS connected to %s", uri)
         ws_ll_log.debug("Creating Lavalink WS listener.")
         if self._is_shutdown is False:
-            self._listener_task = self.loop.create_task(self.listener())
-            self.loop.create_task(self._configure_resume())
+            self._listener_task = asyncio.create_task(self.listener())
+            asyncio.create_task(self._configure_resume())
             if self._queue:
                 temp = self._queue.copy()
                 self._queue.clear()
@@ -370,7 +366,7 @@ class Node:
                             self.reconnect_task.cancel()
                         ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
                         self.update_state(NodeState.RECONNECTING)
-                        self.reconnect_task = self.loop.create_task(
+                        self.reconnect_task = asyncio.create_task(
                             self._reconnect(self._is_shutdown)
                         )
                     return
@@ -385,7 +381,7 @@ class Node:
                     ws_ll_log.verbose("[NODE] | Received unknown op: %s", data)
                 else:
                     ws_ll_log.trace("[NODE] | Received known op: %s", data)
-                    self.loop.create_task(self._handle_op(op, data))
+                    asyncio.create_task(self._handle_op(op, data))
             elif msg.type == aiohttp.WSMsgType.ERROR:
                 exc = self._ws.exception()
                 ws_ll_log.warning(
@@ -406,7 +402,7 @@ class Node:
             if self.reconnect_task is not None:
                 self.reconnect_task.cancel()
             self.update_state(NodeState.RECONNECTING)
-            self.reconnect_task = self.loop.create_task(self._reconnect(self._is_shutdown))
+            self.reconnect_task = asyncio.create_task(self._reconnect(self._is_shutdown))
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
@@ -493,11 +489,11 @@ class Node:
         ws_ll_log.verbose("Changing node state: %s -> %s", self.state.name, next_state.name)
         old_state = self.state
         self.state = next_state
-        if self.loop.is_closed():
+        if is_loop_closed():
             ws_ll_log.debug("Event loop closed, not notifying state handlers.")
             return
         for handler in self._state_handlers:
-            self.loop.create_task(handler(next_state, old_state))
+            asyncio.create_task(handler(next_state, old_state))
 
     def register_state_handler(self, func):
         if not asyncio.iscoroutinefunction(func):
@@ -605,13 +601,13 @@ class Node:
         if (
             self.try_connect_task is not None
             and not self.try_connect_task.cancelled()
-            and not self.loop.is_closed()
+            and not is_loop_closed()
         ):
             self.try_connect_task.cancel()
         if (
             self.reconnect_task is not None
             and not self.reconnect_task.cancelled()
-            and not self.loop.is_closed()
+            and not is_loop_closed()
         ):
             self.reconnect_task.cancel()
 
@@ -631,7 +627,7 @@ class Node:
         if (
             self._listener_task is not None
             and not self._listener_task.cancelled()
-            and not self.loop.is_closed()
+            and not is_loop_closed()
         ):
             self._listener_task.cancel()
 
