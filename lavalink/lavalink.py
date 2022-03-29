@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import discord
 from discord.ext.commands import Bot
@@ -261,7 +261,9 @@ async def _handle_update(player, data: node.PositionTime, raw_data: dict):
     await player.handle_player_update(data)
 
 
-def _get_update_args(data: enums.PlayerState, raw_data: dict):
+def _get_update_args(
+    data: Union[node.PositionTime, enums.LavalinkEvents, node.Stats], raw_data: dict
+):
     guild_id = int(raw_data.get("guildId"))
 
     try:
@@ -327,7 +329,11 @@ def unregister_stats_listener(coro):
         pass
 
 
-def dispatch(op: enums.LavalinkIncomingOp, data, raw_data: dict):
+def dispatch(
+    op: enums.LavalinkIncomingOp,
+    data: Union[node.PositionTime, enums.LavalinkEvents, node.Stats],
+    raw_data: dict,
+):
     listeners = []
     args = []
     if op == enums.LavalinkIncomingOp.EVENT:

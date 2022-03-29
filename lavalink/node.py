@@ -418,12 +418,12 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PositionTime(
+            position = PositionTime(
                 position=state.get("position", 0),
                 time=state.get("time", 0),
                 connected=state.get("connected", False),
             )
-            self.event_handler(op, state, data)
+            self.event_handler(op, position, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
                 memory=data.get("memory"),
