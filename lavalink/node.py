@@ -111,20 +111,21 @@ class NodeStats:
 
 class Node:
 
-    _is_shutdown = False  # type: bool
+    _is_shutdown: bool = False
 
     def __init__(
         self,
-        _loop: asyncio.BaseEventLoop,
+        *,
+        loop: asyncio.BaseEventLoop,
         event_handler: typing.Callable,
         voice_ws_func: typing.Callable,
         host: str,
         password: str,
-        port: int,
         user_id: int,
         num_shards: int,
+        port: Optional[int] = None,
         resume_key: Optional[str] = None,
-        resume_timeout: int = 60,
+        resume_timeout: float = 60,
         bot: Bot = None,
         secured: bool = False,
     ):
@@ -133,7 +134,7 @@ class Node:
 
         Parameters
         ----------
-        _loop : asyncio.BaseEventLoop
+        loop : asyncio.BaseEventLoop
             The event loop of the bot.
         event_handler
             Function to dispatch events to.
@@ -143,7 +144,7 @@ class Node:
             Lavalink player host.
         password : str
             Password for the Lavalink player.
-        port : int
+        port : Optional[int]
             Port of the Lavalink player event websocket.
         user_id : int
             User ID of the bot.
@@ -151,17 +152,24 @@ class Node:
             Number of shards to which the bot is currently connected.
         resume_key : Optional[str]
             A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
-        resume_timeout : int
+        resume_timeout : float
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
             The Bot object that connects to discord.
         """
-        self.loop = _loop
+        self.loop = loop
         self.bot = bot
         self.event_handler = event_handler
         self.get_voice_ws = voice_ws_func
         self.host = host
-        self.port = port
+        self.secured = secured
+        if port is None:
+            if self.secured:
+                self.port = 443
+            else:
+                self.port = 80
+        else:
+            self.port = port
         self.password = password
         self._resume_key = resume_key
         if self._resume_key is None:
@@ -170,7 +178,6 @@ class Node:
         self._resuming_configured = False
         self.num_shards = num_shards
         self.user_id = user_id
-        self.secured = secured
 
         self._ready_event = asyncio.Event()
 
@@ -223,13 +230,13 @@ class Node:
             self._resume_key.__repr__()
             return self._resume_key
 
-    async def connect(self, timeout=None, *, shutdown=False):
+    async def connect(self, timeout: float = None, *, shutdown: bool = False):
         """
         Connects to the Lavalink player event websocket.
 
         Parameters
         ----------
-        timeout : int
+        timeout : float
             Time after which to timeout on attempting to connect to the Lavalink websocket,
             ``None`` is considered never, but the underlying code may stop trying past a
             certain point.

@@ -33,10 +33,10 @@ async def initialize(
     bot: Bot,
     host,
     password,
-    ws_port,
-    timeout=30,
+    port: Optional[int] = None,
+    timeout: float = 30,
     resume_key: Optional[str] = None,
-    resume_timeout: int = 60,
+    resume_timeout: float = 60,
     secured: bool = False,
 ):
     """
@@ -55,16 +55,17 @@ async def initialize(
         The hostname or IP address of the Lavalink node.
     password : str
         The password of the Lavalink node.
-    ws_port : int
+    port : Optional[int]
         The websocket port on the Lavalink Node.
-    timeout : int
+        If not provided, it will use 80 for unsecured connections and 443 for secured.
+    timeout : float
         Amount of time to allow retries to occur, ``None`` is considered forever.
     resume_key : Optional[str]
         A resume key used for resuming a session upon re-establishing a WebSocket connection to Lavalink.
-    resume_timeout : inr
+    resume_timeout : float
         How long the node should wait for a connection while disconnected before clearing all players.
     secured: bool
-           Whether to use the `wss://` and `https://` protocol.
+        Whether to use the `wss://` and `https://` protocol.
     """
     global _loop
     _loop = bot.loop
@@ -74,12 +75,12 @@ async def initialize(
     register_update_listener(_handle_update)
 
     lavalink_node = node.Node(
-        _loop,
-        dispatch,
-        bot._connection._get_websocket,
-        host,
-        password,
-        port=ws_port,
+        loop=_loop,
+        event_handler=dispatch,
+        voice_ws_func=bot._connection._get_websocket,
+        host=host,
+        password=password,
+        port=port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
         resume_key=resume_key,
@@ -106,7 +107,10 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
 
     Parameters
     ----------
-    channel
+    channel : discord.VoiceChannel
+        The channel to connect to.
+    deafen: bool
+        Whether to deafen the bot user upon join.
 
     Returns
     -------

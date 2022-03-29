@@ -139,7 +139,7 @@ def patch_node(monkeypatch):
 @pytest.fixture
 async def node(bot):
     node_ = lavalink.node.Node(
-        _loop=bot.loop,
+        loop=bot.loop,
         event_handler=MagicMock(),
         voice_ws_func=bot._connection._get_websocket,
         host="localhost",
