@@ -136,7 +136,7 @@ class Player(RESTClient, VoiceProtocol):
                 self.channel = channel
         await self._send_lavalink_voice_update({**self._voice_state, "event": data})
 
-    async def _send_lavalink_voice_update(self, voice_state: dict):
+    async def _send_lavalink_voice_update(self, voice_state: dict) -> None:
         if voice_state.keys() != {"sessionId", "event"}:
             return
 
@@ -170,7 +170,9 @@ class Player(RESTClient, VoiceProtocol):
             else:
                 raise
 
-    async def connect(self, timeout: float = 2.0, reconnect: bool = False, deafen: bool = False):
+    async def connect(
+        self, timeout: float = 2.0, reconnect: bool = False, deafen: bool = False
+    ) -> None:
         """
         Connects to the voice channel associated with this Player.
         """
@@ -183,13 +185,14 @@ class Player(RESTClient, VoiceProtocol):
             channel=self.channel, self_mute=False, self_deaf=deafen
         )
 
-    async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False):
+    async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False) -> None:
         """
         Moves this player to a voice channel.
 
         Parameters
         ----------
         channel : discord.VoiceChannel
+        deafen : bool
         """
         if channel.guild != self.guild:
             raise TypeError(f"Cannot move {self!r} to a different guild.")
@@ -202,7 +205,7 @@ class Player(RESTClient, VoiceProtocol):
                 track=self.current, replace=True, start=self.position, pause=self._paused
             )
 
-    async def disconnect(self, force=False):
+    async def disconnect(self, force: bool = False) -> None:
         """
         Disconnects this player from it's voice channel.
         """
@@ -235,13 +238,13 @@ class Player(RESTClient, VoiceProtocol):
         self.node.remove_player(self)
         self.cleanup()
 
-    def store(self, key, value):
+    def store(self, key: Any, value: Any) -> None:
         """
         Stores a metadata value by key.
         """
         self._metadata[key] = value
 
-    def fetch(self, key, default=None):
+    def fetch(self, key: Any, default: Any = None) -> Any:
         """
         Returns a stored metadata value.
 
@@ -254,7 +257,7 @@ class Player(RESTClient, VoiceProtocol):
         """
         return self._metadata.get(key, default)
 
-    async def update_state(self, state: PlayerState):
+    async def update_state(self, state: PlayerState) -> None:
         if state == self.state:
             return
 
@@ -265,7 +268,7 @@ class Player(RESTClient, VoiceProtocol):
         if self._con_delay:
             self._con_delay = None
 
-    async def handle_event(self, event: "node.LavalinkEvents", extra):
+    async def handle_event(self, event: "node.LavalinkEvents", extra) -> None:
         """
         Handles various Lavalink Events.
 
@@ -291,7 +294,7 @@ class Player(RESTClient, VoiceProtocol):
                 if not self._con_delay:
                     self._con_delay = ExponentialBackoff(base=1)
 
-    async def handle_player_update(self, state: "node.PositionTime"):
+    async def handle_player_update(self, state: "node.PositionTime") -> None:
         """
         Handles player updates from lavalink.
 
@@ -305,7 +308,7 @@ class Player(RESTClient, VoiceProtocol):
         self.position = state.position
 
     # Play commands
-    def add(self, requester: discord.User, track: Track):
+    def add(self, requester: discord.User, track: Track) -> None:
         """
         Adds a track to the queue.
 
@@ -319,11 +322,11 @@ class Player(RESTClient, VoiceProtocol):
         track.requester = requester
         self.queue.append(track)
 
-    def maybe_shuffle(self, sticky_songs: int = 1):
+    def maybe_shuffle(self, sticky_songs: int = 1) -> None:
         if self.shuffle and self.queue:  # Keeps queue order consistent unless adding new tracks
             self.force_shuffle(sticky_songs)
 
-    def force_shuffle(self, sticky_songs: int = 1):
+    def force_shuffle(self, sticky_songs: int = 1) -> None:
         if not self.queue:
             return
         sticky = max(0, sticky_songs)  # Songs to  bypass shuffle
@@ -344,7 +347,7 @@ class Player(RESTClient, VoiceProtocol):
         # Keep next track in queue consistent while adding new tracks
         self.queue = to_keep
 
-    async def play(self):
+    async def play(self) -> None:
         """
         Starts playback from lavalink.
         """
@@ -368,7 +371,7 @@ class Player(RESTClient, VoiceProtocol):
 
     async def resume(
         self, track: Track, replace: bool = True, start: int = 0, pause: bool = False
-    ):
+    ) -> None:
         log.verbose("Resuming current track for player: %r.", self)
         self._is_playing = False
         self._paused = True
@@ -377,7 +380,7 @@ class Player(RESTClient, VoiceProtocol):
         await self.pause(True)
         await self.pause(pause, timed=1)
 
-    async def stop(self):
+    async def stop(self) -> None:
         """
         Stops playback from lavalink.
 
@@ -394,13 +397,13 @@ class Player(RESTClient, VoiceProtocol):
         self._auto_play_sent = False
         self._is_playing = False
 
-    async def skip(self):
+    async def skip(self) -> None:
         """
         Skips to the next song.
         """
         await self.play()
 
-    async def pause(self, pause: bool = True, timed: Optional[int] = None):
+    async def pause(self, pause: bool = True, timed: Optional[int] = None) -> None:
         """
         Pauses the current song.
 
@@ -417,7 +420,7 @@ class Player(RESTClient, VoiceProtocol):
         self._paused = pause
         await self.node.pause(self.guild.id, pause)
 
-    async def set_volume(self, volume: int):
+    async def set_volume(self, volume: int) -> None:
         """
         Sets the volume of Lavalink.
 
@@ -429,7 +432,7 @@ class Player(RESTClient, VoiceProtocol):
         self._volume = max(min(volume, 150), 0)
         await self.node.volume(self.guild.id, self.volume)
 
-    async def seek(self, position: int):
+    async def seek(self, position: int) -> None:
         """
         If the track allows it, seeks to a position.
 

@@ -36,15 +36,15 @@ CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
 # Originally Added in: https://github.com/PythonistaGuild/Wavelink/pull/66
 class _Key:
-    def __init__(self, Len: int = 32):
-        self.Len: int = Len
+    def __init__(self, length: int = 32):
+        self.length: int = length
         self.persistent: str = ""
         self.__repr__()
 
     def __repr__(self):
         """Generate a new key, return it and make it persistent"""
         alphabet = string.ascii_letters + string.digits + "#$%&()*+,-./:;<=>?@[]^_~!"
-        key = "".join(secrets.choice(alphabet) for i in range(self.Len))
+        key = "".join(secrets.choice(alphabet) for _ in range(self.length))
         self.persistent = key
         return key
 
@@ -526,15 +526,15 @@ class Node:
             The created Player object.
         """
         if self._already_in_guild(channel):
-            p = self.get_player(channel.guild.id)
-            await p.move_to(channel, deafen=deafen)
+            player = self.get_player(channel.guild.id)
+            await player.move_to(channel, deafen=deafen)
         else:
-            p: Player = await channel.connect(cls=Player)  # type: ignore
+            player: Player = await channel.connect(cls=Player)  # type: ignore
             if deafen:
-                await p.guild.change_voice_state(channel=p.channel, self_deaf=True)
-            self._players_dict[channel.guild.id] = p
-            await self.refresh_player_state(p)
-        return p
+                await player.guild.change_voice_state(channel=player.channel, self_deaf=True)
+            self._players_dict[channel.guild.id] = player
+            await self.refresh_player_state(player)
+        return player
 
     def _already_in_guild(self, channel: VoiceChannel) -> bool:
         return channel.guild.id in self._players_dict
