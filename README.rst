@@ -32,14 +32,12 @@ Usage
     import lavalink
     from discord.ext.commands import Bot
 
-    bot = Bot()
 
-
-    @bot.event
-    async def on_ready():
-        lavalink.initialize(
-            bot, host='localhost', password='password',  ws_port=2333
-        )
+    class MyBot(Bot):
+        async def setup_hook(self):
+            await lavalink.initialize(
+                self, host='localhost', password='password', port=2333
+            )
 
 
     async def search_and_play(voice_channel, search_terms):

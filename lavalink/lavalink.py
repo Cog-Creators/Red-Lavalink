@@ -30,6 +30,7 @@ _stats_listeners = []
 
 async def initialize(
     bot: Bot,
+    *,
     host,
     password,
     port: Optional[int] = None,
@@ -381,7 +382,9 @@ def active_players() -> Tuple[player.Player]:
     return tuple(p for p in ps if p.is_playing)
 
 
-async def wait_until_ready(timeout: Optional[float] = None, wait_if_no_node: Optional[int] = None):
+async def wait_until_ready(
+    *, timeout: Optional[float] = None, wait_if_no_node: Optional[int] = None
+):
     if wait_if_no_node:
         for iteration in range(0, abs(wait_if_no_node), 1):
             if not node._nodes:
