@@ -115,7 +115,8 @@ class Node:
 
     def __init__(
         self,
-        _loop: asyncio.BaseEventLoop,
+        *,
+        loop: asyncio.BaseEventLoop,
         event_handler: typing.Callable,
         voice_ws_func: typing.Callable,
         host: str,
@@ -133,7 +134,7 @@ class Node:
 
         Parameters
         ----------
-        _loop : asyncio.BaseEventLoop
+        loop : asyncio.BaseEventLoop
             The event loop of the bot.
         event_handler
             Function to dispatch events to.
@@ -156,7 +157,7 @@ class Node:
         bot: AutoShardedBot
             The Bot object that connects to discord.
         """
-        self.loop = _loop
+        self.loop = loop
         self.bot = bot
         self.event_handler = event_handler
         self.get_voice_ws = voice_ws_func

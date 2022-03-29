@@ -64,7 +64,7 @@ async def initialize(
     resume_timeout : float
         How long the node should wait for a connection while disconnected before clearing all players.
     secured: bool
-           Whether to use the `wss://` and `https://` protocol.
+        Whether to use the `wss://` and `https://` protocol.
     """
     global _loop
     _loop = bot.loop
@@ -74,11 +74,11 @@ async def initialize(
     register_update_listener(_handle_update)
 
     lavalink_node = node.Node(
-        _loop,
-        dispatch,
-        bot._connection._get_websocket,
-        host,
-        password,
+        loop=_loop,
+        event_handler=dispatch,
+        voice_ws_func=bot._connection._get_websocket,
+        host=host,
+        password=password,
         port=port,
         user_id=player_manager.user_id,
         num_shards=bot.shard_count if bot.shard_count is not None else 1,
