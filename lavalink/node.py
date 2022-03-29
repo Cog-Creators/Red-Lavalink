@@ -367,7 +367,7 @@ class Node:
                         ws_ll_log.info("[NODE] | NODE Resuming: %s", msg.extra)
                         self.update_state(NodeState.RECONNECTING)
                         self.reconnect_task = asyncio.create_task(
-                            self._reconnect(self._is_shutdown)
+                            self._reconnect(shutdown=self._is_shutdown)
                         )
                     return
                 else:
@@ -402,7 +402,7 @@ class Node:
             if self.reconnect_task is not None:
                 self.reconnect_task.cancel()
             self.update_state(NodeState.RECONNECTING)
-            self.reconnect_task = asyncio.create_task(self._reconnect(self._is_shutdown))
+            self.reconnect_task = asyncio.create_task(self._reconnect(shutdown=self._is_shutdown))
 
     async def _handle_op(self, op: LavalinkIncomingOp, data):
         if op == LavalinkIncomingOp.EVENT:
@@ -433,7 +433,7 @@ class Node:
         else:
             ws_ll_log.verbose("Unknown op type: %r", data)
 
-    async def _reconnect(self, shutdown: bool = False):
+    async def _reconnect(self, *, shutdown: bool = False):
         self._ready_event.clear()
 
         if self._is_shutdown is True or shutdown:
@@ -505,7 +505,7 @@ class Node:
     def unregister_state_handler(self, func):
         self._state_handlers.remove(func)
 
-    async def create_player(self, channel: VoiceChannel, deafen: bool = False) -> Player:
+    async def create_player(self, channel: VoiceChannel, *, deafen: bool = False) -> Player:
         """
         Connects to a discord voice channel.
 
@@ -718,7 +718,7 @@ class Node:
         )
 
 
-def get_node(guild_id: int = None, ignore_ready_status: bool = False) -> Node:
+def get_node(guild_id: int = None, *, ignore_ready_status: bool = False) -> Node:
     """
     Gets a node based on a guild ID, useful for noding separation. If the
     guild ID does not already have a node association, the least used

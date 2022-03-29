@@ -30,6 +30,7 @@ _stats_listeners = []
 
 async def initialize(
     bot: Bot,
+    *,
     host,
     password,
     port: Optional[int] = None,

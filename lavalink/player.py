@@ -161,7 +161,7 @@ class Player(RESTClient, VoiceProtocol):
         )
 
     async def wait_until_ready(
-        self, timeout: Optional[float] = None, no_raise: bool = False
+        self, *, timeout: Optional[float] = None, no_raise: bool = False
     ) -> bool:
         """
         Waits for the underlying node to become ready.
@@ -195,7 +195,7 @@ class Player(RESTClient, VoiceProtocol):
             channel=self.channel, self_mute=False, self_deaf=deafen
         )
 
-    async def move_to(self, channel: discord.VoiceChannel, deafen: bool = False) -> None:
+    async def move_to(self, channel: discord.VoiceChannel, *, deafen: bool = False) -> None:
         """
         Moves this player to a voice channel.
 
@@ -215,7 +215,7 @@ class Player(RESTClient, VoiceProtocol):
                 track=self.current, replace=True, start=self.position, pause=self._paused
             )
 
-    async def disconnect(self, force: bool = False) -> None:
+    async def disconnect(self, *, force: bool = False) -> None:
         """
         Disconnects this player from it's voice channel.
         """
@@ -380,7 +380,7 @@ class Player(RESTClient, VoiceProtocol):
             await self.node.play(self.guild.id, track, start=track.start_timestamp, replace=True)
 
     async def resume(
-        self, track: Track, replace: bool = True, start: int = 0, pause: bool = False
+        self, track: Track, *, replace: bool = True, start: int = 0, pause: bool = False
     ) -> None:
         log.verbose("Resuming current track for player: %r.", self)
         self._is_playing = False
@@ -413,7 +413,7 @@ class Player(RESTClient, VoiceProtocol):
         """
         await self.play()
 
-    async def pause(self, pause: bool = True, timed: Optional[int] = None) -> None:
+    async def pause(self, pause: bool = True, *, timed: Optional[int] = None) -> None:
         """
         Pauses the current song.
 
