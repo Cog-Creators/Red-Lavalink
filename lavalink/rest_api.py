@@ -3,15 +3,14 @@ from collections import namedtuple
 from typing import Tuple, Union
 from urllib.parse import quote, urlparse
 
+import discord
 from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
 from .enums import ExceptionSeverity, LoadType, PlayerState
-from .utils import PlayerMeta
+from .utils import VoiceChannel
 
-
-__all__ = ["Track", "RESTClient", "PlaylistInfo"]
-
+__all__ = ("Track", "RESTClient", "PlaylistInfo")
 
 _PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
 
@@ -271,12 +270,20 @@ class LoadResult:
         return None
 
 
-class RESTClient(PlayerMeta):
+class RESTClient:
     """
     Client class used to access the REST endpoints on a Lavalink node.
     """
 
-    def __init__(self):
+    def __init__(self, client: discord.Client, channel: VoiceChannel):
+        from lavalink.node import get_node
+
+        self.node = get_node()
+        self.client = client
+        self.state = PlayerState.CREATED
+        self.channel = channel
+        self.guild = channel.guild
+        self._last_channel_id = channel.id
         self.secured = self.node.secured
         self._session = self.node.session
         if self.secured:

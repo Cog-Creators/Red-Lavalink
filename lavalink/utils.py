@@ -1,11 +1,6 @@
-from abc import ABC
-from typing import Union, TYPE_CHECKING
+from typing import Union
 
 import discord
-
-if TYPE_CHECKING:
-    from .enums import PlayerState
-    from .node import Node
 
 
 def format_time(time):
@@ -17,11 +12,3 @@ def format_time(time):
 
 
 VoiceChannel = Union[discord.VoiceChannel, discord.StageChannel]
-
-
-class PlayerMeta(ABC, discord.VoiceProtocol):
-    client: discord.Client
-    channel: VoiceChannel
-    node: "Node"
-    state: "PlayerState"
-    guild: discord.Guild

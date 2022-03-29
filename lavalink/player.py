@@ -1,7 +1,7 @@
 import asyncio
 import datetime
 from random import shuffle
-from typing import TYPE_CHECKING, Optional
+from typing import Any, Dict, List, TYPE_CHECKING, Optional
 
 import discord
 from discord.backoff import ExponentialBackoff
@@ -44,46 +44,25 @@ class Player(RESTClient, VoiceProtocol):
     shuffle : bool
     """
 
-    def __call__(self, client: discord.Client, channel: VoiceChannel):
-        self.client: discord.Client = client
-        self.channel: VoiceChannel = channel
-
-        return self
-
-    def __init__(
-        self, client: discord.Client = None, channel: VoiceChannel = None, node: "node.Node" = None
-    ):
-        self.client = client
-        self.channel = channel
-        self.guild = channel.guild
-        self._last_channel_id = channel.id
-        self.queue = []
-        self.position = 0
-        self.current = None  # type: Track
-        self._paused = False
-        self.repeat = False
-        self.shuffle = False  # Shuffle is done client side now This is a breaking change
-        self.shuffle_bumped = True
-        self._is_autoplaying = False
-        self._auto_play_sent = False
-        self._volume = 100
-        self.state = PlayerState.CREATED
-        self._voice_state = {}
-        self.connected_at = None
-        self._connected = False
-
-        self._is_playing = False
-        self._metadata = {}
-        if node is None:
-            from .node import get_node
-
-            node = get_node()
-        self.node = node
-
-        self._con_delay = None
-        self._last_resume = None
-
-        super().__init__()
+    def __init__(self, client: discord.Client, channel: VoiceChannel):
+        self.queue: List[Track] = []
+        self.position: int = 0
+        self.current: Optional[Track] = None
+        self._paused: bool = False
+        self.repeat: bool = False
+        self.shuffle: bool = False
+        self.shuffle_bumped: bool = True
+        self._is_autoplaying: bool = False
+        self._auto_play_sent: bool = False
+        self._volume: int = 100
+        self._voice_state: Dict[str, Any] = {}
+        self.connected_at: Optional[datetime.datetime] = None
+        self._connected: bool = False
+        self._is_playing: bool = False
+        self._metadata: Dict[Any, Any] = {}
+        self._con_delay: Optional[ExponentialBackoff] = None
+        self._last_resume: Optional[datetime.datetime] = None
+        super().__init__(client=client, channel=channel)
 
     def __repr__(self):
         return (
