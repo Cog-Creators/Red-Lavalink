@@ -1,26 +1,22 @@
 from __future__ import annotations
+
 import asyncio
 import secrets
 import string
+import typing
 from collections import namedtuple
-from typing import List, Optional
+from typing import KeysView, List, Optional, ValuesView
 
 import aiohttp
-import typing
 from discord.backoff import ExponentialBackoff
 from discord.ext.commands import Bot
 
-from . import __version__, ws_discord_log, ws_ll_log
-from .enums import (
-    LavalinkIncomingOp,
-    NodeState,
-    LavalinkEvents,
-    LavalinkOutgoingOp,
-    DiscordVoiceSocketResponses,
-)
-from .player_manager import PlayerManager
+from . import log, ws_ll_log, ws_rll_log, __version__
+from .enums import LavalinkEvents, LavalinkIncomingOp, LavalinkOutgoingOp, NodeState, PlayerState
+from .player import Player
 from .rest_api import Track
-from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound
+from .utils import VoiceChannel
+from .errors import AbortingNodeConnection, NodeNotReady, NodeNotFound, PlayerNotFound
 
 __all__ = [
     "Stats",
@@ -29,27 +25,26 @@ __all__ = [
     "get_node",
     "get_nodes_stats",
     "get_all_nodes",
-    "join_voice",
 ]
 
 _nodes: List[Node] = []
 
-PlayerState = namedtuple("PlayerState", "position time connected")
+PositionTime = namedtuple("PositionTime", "position time connected")
 MemoryInfo = namedtuple("MemoryInfo", "reservable used free allocated")
 CPUInfo = namedtuple("CPUInfo", "cores systemLoad lavalinkLoad")
 
 
 # Originally Added in: https://github.com/PythonistaGuild/Wavelink/pull/66
 class _Key:
-    def __init__(self, Len: int = 32):
-        self.Len: int = Len
+    def __init__(self, length: int = 32):
+        self.length: int = length
         self.persistent: str = ""
         self.__repr__()
 
     def __repr__(self):
         """Generate a new key, return it and make it persistent"""
         alphabet = string.ascii_letters + string.digits + "#$%&()*+,-./:;<=>?@[]^_~!"
-        key = "".join(secrets.choice(alphabet) for i in range(self.Len))
+        key = "".join(secrets.choice(alphabet) for _ in range(self.length))
         self.persistent = key
         return key
 
@@ -118,7 +113,6 @@ class Node:
         *,
         loop: asyncio.BaseEventLoop,
         event_handler: typing.Callable,
-        voice_ws_func: typing.Callable,
         host: str,
         password: str,
         user_id: int,
@@ -138,8 +132,6 @@ class Node:
             The event loop of the bot.
         event_handler
             Function to dispatch events to.
-        voice_ws_func : typing.Callable
-            Function that takes one argument, guild ID, and returns a websocket.
         host : str
             Lavalink player host.
         password : str
@@ -160,7 +152,6 @@ class Node:
         self.loop = loop
         self.bot = bot
         self.event_handler = event_handler
-        self.get_voice_ws = voice_ws_func
         self.host = host
         self.secured = secured
         if port is None:
@@ -188,12 +179,11 @@ class Node:
         self.try_connect_task = None
 
         self._queue: List = []
+        self._players_dict = {}
 
         self.state = NodeState.CONNECTING
         self._state_handlers: List = []
         self._retries = 0
-
-        self.player_manager = PlayerManager(self)
 
         self.stats = None
 
@@ -205,6 +195,8 @@ class Node:
             aiohttp.WSMsgType.CLOSING,
             aiohttp.WSMsgType.CLOSED,
         )
+
+        self.register_state_handler(self.node_state_handler)
 
     def __repr__(self):
         return (
@@ -219,6 +211,14 @@ class Node:
     @property
     def headers(self) -> dict:
         return self._get_connect_headers()
+
+    @property
+    def players(self) -> ValuesView[Player]:
+        return self._players_dict.values()
+
+    @property
+    def guild_ids(self) -> KeysView[int]:
+        return self._players_dict.keys()
 
     def _gen_key(self):
         if self._resume_key is None:
@@ -418,12 +418,12 @@ class Node:
                 self.event_handler(op, event, data)
         elif op == LavalinkIncomingOp.PLAYER_UPDATE:
             state = data.get("state", {})
-            state = PlayerState(
+            position = PositionTime(
                 position=state.get("position", 0),
                 time=state.get("time", 0),
                 connected=state.get("connected", False),
             )
-            self.event_handler(op, state, data)
+            self.event_handler(op, position, data)
         elif op == LavalinkIncomingOp.STATS:
             stats = Stats(
                 memory=data.get("memory"),
@@ -473,7 +473,7 @@ class Node:
                 self._retries = 0
 
     def dispatch_reconnect(self):
-        for guild_id in self.player_manager.guild_ids:
+        for guild_id in self.guild_ids:
             self.event_handler(
                 LavalinkIncomingOp.EVENT,
                 LavalinkEvents.WEBSOCKET_CLOSED,
@@ -509,12 +509,90 @@ class Node:
     def unregister_state_handler(self, func):
         self._state_handlers.remove(func)
 
-    async def join_voice_channel(self, guild_id, channel_id, deafen: bool = False):
+    async def create_player(self, channel: VoiceChannel, deafen: bool = False) -> Player:
         """
-        Alternative way to join a voice channel if node is known.
+        Connects to a discord voice channel.
+
+        This function is safe to repeatedly call as it will return an existing
+        player if there is one.
+
+        Parameters
+        ----------
+        channel: VoiceChannel
+        deafen: bool
+
+        Returns
+        -------
+        Player
+            The created Player object.
         """
-        voice_ws = self.get_voice_ws(guild_id)
-        await voice_ws.voice_state(guild_id, channel_id, self_deaf=deafen)
+        if self._already_in_guild(channel):
+            player = self.get_player(channel.guild.id)
+            await player.move_to(channel, deafen=deafen)
+        else:
+            player: Player = await channel.connect(cls=Player)  # type: ignore
+            if deafen:
+                await player.guild.change_voice_state(channel=player.channel, self_deaf=True)
+        return player
+
+    def _already_in_guild(self, channel: VoiceChannel) -> bool:
+        return channel.guild.id in self._players_dict
+
+    def get_player(self, guild_id: int) -> Player:
+        """
+        Gets a Player object from a guild ID.
+
+        Parameters
+        ----------
+        guild_id : int
+            Discord guild ID.
+
+        Returns
+        -------
+        Player
+
+        Raises
+        ------
+        KeyError
+            If that guild does not have a Player, e.g. is not connected to any
+            voice channel.
+        """
+        if guild_id in self._players_dict:
+            return self._players_dict[guild_id]
+        raise PlayerNotFound("No such player for that guild.")
+
+    async def node_state_handler(self, next_state: NodeState, old_state: NodeState):
+        ws_rll_log.debug("Received node state update: %s -> %s", old_state.name, next_state.name)
+        if next_state == NodeState.READY:
+            await self.update_player_states(PlayerState.READY)
+        elif next_state == NodeState.DISCONNECTING:
+            await self.update_player_states(PlayerState.DISCONNECTING)
+        elif next_state in (NodeState.CONNECTING, NodeState.RECONNECTING):
+            await self.update_player_states(PlayerState.NODE_BUSY)
+
+    async def update_player_states(self, state: PlayerState):
+        for player in self.players:
+            await player.update_state(state)
+
+    async def refresh_player_state(self, player: Player):
+        if self.ready:
+            await player.update_state(PlayerState.READY)
+        elif self.state == NodeState.DISCONNECTING:
+            await player.update_state(PlayerState.DISCONNECTING)
+        else:
+            await player.update_state(PlayerState.NODE_BUSY)
+
+    def remove_player(self, player: Player):
+        if player.state != PlayerState.DISCONNECTING:
+            log.error(
+                "Attempting to remove a player (%r) from player list with state: %s",
+                player,
+                player.state.name,
+            )
+            return
+        guild_id = player.channel.guild.id
+        if guild_id in self._players_dict:
+            del self._players_dict[guild_id]
 
     async def disconnect(self):
         """
@@ -542,7 +620,10 @@ class Node:
         if self._resuming_configured and not (self._ws is None or self._ws.closed):
             await self.send(dict(op="configureResuming", key=None))
         self._resuming_configured = False
-        await self.player_manager.disconnect()
+
+        for p in tuple(self.players):
+            await p.disconnect(force=True)
+        log.debug("Disconnected all players.")
 
         if self._ws is not None and not self._ws.closed:
             await self._ws.close()
@@ -641,7 +722,7 @@ class Node:
         )
 
 
-def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
+def get_node(guild_id: int = None, ignore_ready_status: bool = False) -> Node:
     """
     Gets a node based on a guild ID, useful for noding separation. If the
     guild ID does not already have a node association, the least used
@@ -660,7 +741,7 @@ def get_node(guild_id: int, ignore_ready_status: bool = False) -> Node:
     least_used = None
 
     for node in _nodes:
-        guild_ids = node.player_manager.guild_ids
+        guild_ids = node.guild_ids
 
         if ignore_ready_status is False and not node.ready:
             continue
@@ -685,41 +766,6 @@ def get_all_nodes() -> List[Node]:
     return [node for node in _nodes]
 
 
-async def join_voice(guild_id: int, channel_id: int, deafen: bool = False):
-    """
-    Joins a voice channel by ID's.
-
-    Parameters
-    ----------
-    guild_id : int
-    channel_id : int
-    """
-    node = get_node(guild_id)
-    await node.join_voice_channel(guild_id, channel_id, deafen)
-
-
 async def disconnect():
     for node in _nodes.copy():
         await node.disconnect()
-
-
-async def on_socket_response(data):
-    raw_event = data.get("t")
-    try:
-        event = DiscordVoiceSocketResponses(raw_event)
-    except ValueError:
-        return
-
-    guild_id = data["d"]["guild_id"]
-
-    try:
-        node = get_node(guild_id, ignore_ready_status=True)
-    except NodeNotFound:
-        ws_discord_log.info(
-            f"Received unhandled Discord WS voice response for guild: %d, %s", int(guild_id), data
-        )
-    else:
-        ws_ll_log.trace(
-            f"Received Discord WS voice response for guild: %d, %s", int(guild_id), data
-        )
-        await node.player_manager.on_socket_response(data)

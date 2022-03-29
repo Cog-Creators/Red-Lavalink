@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import namedtuple
 from types import SimpleNamespace
 from typing import NamedTuple
@@ -141,7 +143,6 @@ async def node(bot):
     node_ = lavalink.node.Node(
         loop=bot.loop,
         event_handler=MagicMock(),
-        voice_ws_func=bot._connection._get_websocket,
         host="localhost",
         password="password",
         port=2333,
@@ -149,6 +150,7 @@ async def node(bot):
         num_shards=bot.shard_count,
         resume_key="Test",
         resume_timeout=60,
+        bot=bot,
     )
 
     # node_.send = MagicMock(wraps=send)

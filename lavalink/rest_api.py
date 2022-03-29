@@ -1,16 +1,17 @@
 import re
 from collections import namedtuple
-from typing import Tuple, Union
+from typing import Dict, Tuple, Union
 from urllib.parse import quote, urlparse
 
-from aiohttp import ClientSession
+import aiohttp
+import discord
 from aiohttp.client_exceptions import ServerDisconnectedError
 
 from . import log
-from .enums import *
+from .enums import ExceptionSeverity, LoadType, PlayerState
+from .utils import VoiceChannel
 
-__all__ = ["Track", "RESTClient", "PlaylistInfo"]
-
+__all__ = ("Track", "RESTClient", "PlaylistInfo")
 
 _PlaylistInfo = namedtuple("PlaylistInfo", "name selectedTrack")
 
@@ -275,24 +276,24 @@ class RESTClient:
     Client class used to access the REST endpoints on a Lavalink node.
     """
 
-    def __init__(self, node):
-        self.node = node
-        self.secured = node.secured
-        self._session = None
+    def __init__(self, client: discord.Client, channel: VoiceChannel):
+        from lavalink.node import get_node
+
+        self.node = get_node()
+        self.client = client
+        self.state: PlayerState = PlayerState.CREATED
+        self.channel: discord.VoiceChannel = channel
+        self.guild: discord.Guild = channel.guild
+        self._last_channel_id = channel.id
+        self.secured: bool = self.node.secured
+        self._session: aiohttp.ClientSession = self.node.session
         if self.secured:
             protocol = "https"
         else:
             protocol = "http"
-        self._uri = f"{protocol}://{node.host}:{node.port}/loadtracks?identifier="
-        self._headers = {"Authorization": node.password}
-
-        self.state = PlayerState.CONNECTING
-
-        self._warned = False
-
-    def reset_session(self):
-        if self._session is None or self._session.closed:
-            self._session = ClientSession(loop=self.node.loop)
+        self._uri: str = f"{protocol}://{self.node.host}:{self.node.port}/loadtracks?identifier="
+        self._headers: Dict[str, str] = {"Authorization": self.node.password}
+        self._warned: bool = False
 
     def __check_node_ready(self):
         if self.state != PlayerState.READY:
@@ -392,8 +393,3 @@ class RESTClient:
         list of Track
         """
         return await self.load_tracks("scsearch:{}".format(query))
-
-    async def close(self):
-        if self._session is not None:
-            await self._session.close()
-        log.debug("Closed REST session.")

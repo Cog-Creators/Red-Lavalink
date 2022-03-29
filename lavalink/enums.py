@@ -1,7 +1,6 @@
 import enum
 
 __all__ = [
-    "DiscordVoiceSocketResponses",
     "LavalinkEvents",
     "TrackEndReason",
     "LavalinkIncomingOp",
@@ -11,11 +10,6 @@ __all__ = [
     "LoadType",
     "ExceptionSeverity",
 ]
-
-
-class DiscordVoiceSocketResponses(enum.Enum):
-    VOICE_STATE_UPDATE = "VOICE_STATE_UPDATE"
-    VOICE_SERVER_UPDATE = "VOICE_SERVER_UPDATE"
 
 
 class LavalinkEvents(enum.Enum):
