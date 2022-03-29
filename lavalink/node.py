@@ -518,7 +518,8 @@ class Node:
 
         Parameters
         ----------
-        channel
+        channel: VoiceChannel
+        deafen: bool
 
         Returns
         -------
@@ -532,8 +533,6 @@ class Node:
             player: Player = await channel.connect(cls=Player)  # type: ignore
             if deafen:
                 await player.guild.change_voice_state(channel=player.channel, self_deaf=True)
-            self._players_dict[channel.guild.id] = player
-            await self.refresh_player_state(player)
         return player
 
     def _already_in_guild(self, channel: VoiceChannel) -> bool:
@@ -572,8 +571,8 @@ class Node:
             await self.update_player_states(PlayerState.NODE_BUSY)
 
     async def update_player_states(self, state: PlayerState):
-        for p in self.players:
-            await p.update_state(state)
+        for player in self.players:
+            await player.update_state(state)
 
     async def refresh_player_state(self, player: Player):
         if self.ready:

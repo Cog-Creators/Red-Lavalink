@@ -55,13 +55,14 @@ class Player(RESTClient, VoiceProtocol):
         self._is_autoplaying: bool = False
         self._auto_play_sent: bool = False
         self._volume: int = 100
-        self._voice_state: Dict[str, Any] = {}
         self.connected_at: Optional[datetime.datetime] = None
         self._connected: bool = False
         self._is_playing: bool = False
         self._metadata: Dict[Any, Any] = {}
         self._con_delay: Optional[ExponentialBackoff] = None
         self._last_resume: Optional[datetime.datetime] = None
+        self._session_id: Optional[str] = None
+        self._pending_server_update: Optional[dict] = None
         super().__init__(client=client, channel=channel)
 
     def __repr__(self):
@@ -119,36 +120,45 @@ class Player(RESTClient, VoiceProtocol):
         return self._connected
 
     async def on_voice_server_update(self, data: dict) -> None:
-        self._voice_state.update({"event": data})
-        await self._send_lavalink_voice_update(self._voice_state)
+        self._pending_server_update = data
+        await self._send_lavalink_voice_update()
 
     async def on_voice_state_update(self, data: dict) -> None:
-        self._voice_state.update({"sessionId": data["session_id"]})
+        self._session_id = data["session_id"]
         if (channel_id := data["channel_id"]) is None:
             ws_rll_log.info("Received voice disconnect from discord, removing player.")
-            self._voice_state.clear()
+            ws_rll_log.verbose("Voice disconnect from discord: %s -  %r", data, self)
+            self._session_id = None
+            self._pending_server_update = None
             await self.disconnect(force=True)
         else:
             channel = self.guild.get_channel(int(channel_id))
             if channel != self.channel:
                 if self.channel:
                     self._last_channel_id = self.channel.id
+                elif channel is None:
+                    self._session_id = None
+                    self._pending_server_update = None
+                    ws_rll_log.verbose(
+                        "Voice disconnect from discord (Deleted VC): %s -  %r", data, self
+                    )
                 self.channel = channel
-        await self._send_lavalink_voice_update({**self._voice_state, "event": data})
+        await self._send_lavalink_voice_update()
 
-    async def _send_lavalink_voice_update(self, voice_state: dict) -> None:
-        if voice_state.keys() != {"sessionId", "event"}:
+    async def _send_lavalink_voice_update(self) -> None:
+        if self._session_id is None or self._pending_server_update is None:
             return
 
-        if voice_state["event"].keys() == {"token", "guild_id", "endpoint"}:
-            await self.node.send(
-                {
-                    "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
-                    "guildId": str(self.guild.id),
-                    "sessionId": voice_state["sessionId"],
-                    "event": voice_state["event"],
-                }
-            )
+        data = self._pending_server_update
+        self._pending_server_update = None
+        await self.node.send(
+            {
+                "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
+                "guildId": str(self.guild.id),
+                "sessionId": self._session_id,
+                "event": data,
+            }
+        )
 
     async def wait_until_ready(
         self, timeout: Optional[float] = None, no_raise: bool = False
@@ -171,7 +181,7 @@ class Player(RESTClient, VoiceProtocol):
                 raise
 
     async def connect(
-        self, timeout: float = 2.0, reconnect: bool = False, deafen: bool = False
+        self, *, timeout: float = 2.0, reconnect: bool = False, deafen: bool = False
     ) -> None:
         """
         Connects to the voice channel associated with this Player.

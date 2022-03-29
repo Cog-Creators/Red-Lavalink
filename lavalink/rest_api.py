@@ -1,8 +1,9 @@
 import re
 from collections import namedtuple
-from typing import Tuple, Union
+from typing import Dict, Tuple, Union
 from urllib.parse import quote, urlparse
 
+import aiohttp
 import discord
 from aiohttp.client_exceptions import ServerDisconnectedError
 
@@ -280,19 +281,19 @@ class RESTClient:
 
         self.node = get_node()
         self.client = client
-        self.state = PlayerState.CREATED
-        self.channel = channel
-        self.guild = channel.guild
+        self.state: PlayerState = PlayerState.CREATED
+        self.channel: discord.VoiceChannel = channel
+        self.guild: discord.Guild = channel.guild
         self._last_channel_id = channel.id
-        self.secured = self.node.secured
-        self._session = self.node.session
+        self.secured: bool = self.node.secured
+        self._session: aiohttp.ClientSession = self.node.session
         if self.secured:
             protocol = "https"
         else:
             protocol = "http"
-        self._uri = f"{protocol}://{self.node.host}:{self.node.port}/loadtracks?identifier="
-        self._headers = {"Authorization": self.node.password}
-        self._warned = False
+        self._uri: str = f"{protocol}://{self.node.host}:{self.node.port}/loadtracks?identifier="
+        self._headers: Dict[str, str] = {"Authorization": self.node.password}
+        self._warned: bool = False
 
     def __check_node_ready(self):
         if self.state != PlayerState.READY:
