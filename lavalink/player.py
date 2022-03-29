@@ -136,7 +136,7 @@ class Player(RESTClient, VoiceProtocol):
             if channel != self.channel:
                 if self.channel:
                     self._last_channel_id = self.channel.id
-                elif channel is None:
+                if channel is None:
                     self._session_id = None
                     self._pending_server_update = None
                     ws_rll_log.verbose(
