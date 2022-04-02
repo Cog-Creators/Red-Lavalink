@@ -447,7 +447,8 @@ class Node:
         attempt = 1
         while self.state == NodeState.RECONNECTING:
             attempt += 1
-            if attempt > 10:
+            # Each attempt is ~5 minutes, setting this to 3 allows Red to recover in ~15 minutes intead of an hour.
+            if attempt > 3:
                 ws_ll_log.info("[NODE] | Failed reconnection attempt too many times, aborting ...")
                 asyncio.create_task(self.disconnect())
                 return
