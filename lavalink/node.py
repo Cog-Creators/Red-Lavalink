@@ -121,6 +121,7 @@ class Node:
         resume_timeout: float = 60,
         bot: Bot = None,
         secured: bool = False,
+        is_managed: bool = False,
     ):
         """
         Represents a Lavalink node.
@@ -145,11 +146,14 @@ class Node:
             How long the node should wait for a connection while disconnected before clearing all players.
         bot: AutoShardedBot
             The Bot object that connects to discord.
+        is_managed
+            Whether this node is managed by the bot.
         """
         self.bot = bot
         self.event_handler = event_handler
         self.host = host
         self.secured = secured
+        self.is_managed = is_managed
         if port is None:
             if self.secured:
                 self.port = 443
@@ -197,7 +201,7 @@ class Node:
     def __repr__(self):
         return (
             "<Node: "
-            f"state={self.state.name}, "
+            f"is_managed={self.is_managed}, state={self.state.name}, "
             f"host={self.host}, "
             f"port={self.port}, "
             f"password={'*' * len(self.password)}, resume_key={self._resume_key}, "
@@ -445,10 +449,11 @@ class Node:
             return
         backoff = ExponentialBackoff(base=1)
         attempt = 1
+        max_attempts = 2 if self.is_managed else 10
         while self.state == NodeState.RECONNECTING:
             attempt += 1
-            # Each attempt is ~5 minutes, setting this to 3 allows Red to recover in ~15 minutes intead of an hour.
-            if attempt > 3:
+            # Each attempt is ~5 minutes, setting this to 2 allows Red to recover in ~10 minutes intead of an hour.
+            if attempt > max_attempts:
                 ws_ll_log.info("[NODE] | Failed reconnection attempt too many times, aborting ...")
                 asyncio.create_task(self.disconnect())
                 return
