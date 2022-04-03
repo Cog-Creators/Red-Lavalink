@@ -68,14 +68,15 @@ class Player(RESTClient, VoiceProtocol):
         self._consider_stuck_after: int = 15
         self._monitor_task: asyncio.Task = None
         self._previously_stuck_track: Set[str] = set()
-        self._last_update: float = time.time()
+        self._last_position_change: float = time.time()
         super().__init__(client=client, channel=channel)
 
     def __repr__(self):
         return (
             "<Player: "
             f"state={self.state.name}, connected={self.connected}, "
-            f"last_node_update={self._last_update}, stuck_timer={self._consider_stuck_after}, "
+            f"last_position_change={self._last_position_change}, "
+            f"stuck_timer={self._consider_stuck_after}, "
             f"monitor_task_running={not self._monitor_task.cancelled()}, "
             f"guild={self.guild.name!r} ({self.guild.id}), "
             f"channel={self.channel.name!r} ({self.channel.id}), "
@@ -104,7 +105,7 @@ class Player(RESTClient, VoiceProtocol):
                                 break
                             if (
                                 now := time.time()
-                            ) > self._last_update + self._consider_stuck_after:
+                            ) > self._last_position_change + self._consider_stuck_after:
                                 log.verbose(
                                     "Monitor believes track is stuck - %s - %r.", now, self
                                 )
@@ -367,7 +368,7 @@ class Player(RESTClient, VoiceProtocol):
         """
         if state.position > self.position:
             self._is_playing = True
-            self._last_update = time.time()
+            self._last_position_change = time.time()
         log.trace("Updated player position for player: %r - %ds.", self, state.position // 1000)
         self.position = state.position
 
@@ -422,7 +423,7 @@ class Player(RESTClient, VoiceProtocol):
         self.current = None
         self.position = 0
         self._paused = False
-        self._last_update = time.time()
+        self._last_position_change = time.time()
 
         if not self.queue:
             await self.stop()
@@ -485,7 +486,7 @@ class Player(RESTClient, VoiceProtocol):
             await asyncio.sleep(timed)
 
         self._paused = pause
-        self._last_update = time.time()
+        self._last_position_change = time.time()
         await self.node.pause(self.guild.id, pause)
 
     async def set_volume(self, volume: int) -> None:
