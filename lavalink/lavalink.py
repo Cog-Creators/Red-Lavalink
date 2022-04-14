@@ -91,7 +91,7 @@ async def initialize(
     return lavalink_node
 
 
-async def connect(channel: discord.VoiceChannel, deafen: bool = False):
+async def connect(channel: discord.VoiceChannel, *, self_deaf: bool = False):
     """
     Connects to a discord voice channel.
 
@@ -102,7 +102,7 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
     ----------
     channel : discord.VoiceChannel
         The channel to connect to.
-    deafen: bool
+    self_deaf: bool
         Whether to deafen the bot user upon join.
 
     Returns
@@ -116,7 +116,7 @@ async def connect(channel: discord.VoiceChannel, deafen: bool = False):
         If there are no available lavalink nodes ready to connect to discord.
     """
     node_ = node.get_node(channel.guild.id)
-    p = await node_.create_player(channel, deafen=deafen)
+    p = await node_.create_player(channel, self_deaf=self_deaf)
     return p
 
 
