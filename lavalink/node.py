@@ -296,7 +296,9 @@ class Node:
         if self._ws is not None:
             await self._ws.close(code=4006, message=b"Reconnecting")
 
-        while self._is_shutdown is False and (self._ws is None or self._ws.closed):
+        while (
+            self._is_shutdown is False and (self._ws is None or self._ws.closed)
+        ) or self.state != NodeState.RECONNECTING:
             self._retries += 1
             try:
                 ws = await self.session.ws_connect(url=uri, headers=self.headers, heartbeat=60)
@@ -309,6 +311,9 @@ class Node:
                     raise asyncio.TimeoutError
             except aiohttp.WSServerHandshakeError:
                 ws_ll_log.error("Failed connect WSServerHandshakeError")
+                raise asyncio.TimeoutError
+            except RuntimeError:
+                ws_ll_log.error("Failed connect RuntimeError")
                 raise asyncio.TimeoutError
             else:
                 self.session_resumed = ws._response.headers.get("Session-Resumed", False)
