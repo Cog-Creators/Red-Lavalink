@@ -5,7 +5,6 @@ import lavalink.player
 import lavalink.node
 
 
-@pytest.mark.asyncio
 async def test_initialize(bot):
     await lavalink.initialize(bot, host="localhost", password="password", port=2333)
 

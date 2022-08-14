@@ -7,3 +7,6 @@ line-length = 99
 required-version = '22.3.0'
 target-version = ['py38']
 include = '\.py$'
+
+[tool.pytest.ini_options]
+asyncio_mode = 'auto'

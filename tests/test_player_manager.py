@@ -40,7 +40,6 @@ def voice_state_update(bot, voice_channel):
     return func
 
 
-@pytest.mark.asyncio
 async def test_autoconnect(bot, voice_channel, voice_server_update, voice_state_update):
     node = lavalink.node.get_node(voice_channel.guild.id)
     node._players_dict[voice_channel.guild.id] = lavalink.player.Player(bot, voice_channel)
