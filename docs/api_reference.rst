@@ -4,9 +4,9 @@ API Reference
 
 .. py:currentmodule:: lavalink
 
-.. autocofunction:: initialize
+.. autofunction:: initialize
 
-.. autocofunction:: connect
+.. autofunction:: connect
 
 .. autofunction:: get_player
 
@@ -22,7 +22,7 @@ API Reference
 
 .. autofunction:: unregister_stats_listener
 
-.. autocofunction:: close
+.. autofunction:: close
 
 .. automodule:: lavalink.utils
     :members:

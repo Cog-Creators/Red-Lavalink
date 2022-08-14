@@ -22,13 +22,16 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "Red-Lavalink"
-copyright = f"2018-{time.strftime('%Y')}, tekulvw Cog-Creators"
-author = "tekulvw Cog-Creators"
+copyright = f"2019-{time.strftime('%Y')} Cog Creators, 2018 tekulvw"
+author = "Cog Creators, tekulvw"
+
+from lavalink import __version__
+from discord import __version__ as dpy_version, version_info as dpy_version_info
 
 # The short X.Y version
-version = ""
+version = __version__
 # The full version, including alpha/beta/rc tags
-release = ""
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -44,8 +47,8 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
-    "sphinxcontrib.asyncio",
     "sphinx.ext.napoleon",
+    "sphinxcontrib_trio",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -65,7 +68,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -136,7 +139,7 @@ latex_documents = [
         master_doc,
         "Red-Lavalink.tex",
         "Red-Lavalink Documentation",
-        "tekulvw Cog-Creators",
+        "Cog Creators, tekulvw",
         "manual",
     )
 ]
@@ -146,7 +149,9 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "red-lavalink", "Red-Lavalink Documentation", [author], 1)]
+man_pages = [
+    (master_doc, "red-lavalink", "Red-Lavalink Documentation", ["Cog Creators", "tekulvw"], 1)
+]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -171,8 +176,32 @@ texinfo_documents = [
 
 # -- Options for intersphinx extension ---------------------------------------
 
-# Example configuration for intersphinx: refer to the Python standard library.
+if dpy_version_info.releaselevel == "final":
+    # final release - versioned docs should be available
+    dpy_docs_url = f"https://discordpy.readthedocs.io/en/v{dpy_version}/"
+else:
+    # alpha release - `latest` version of docs should be used
+    dpy_docs_url = "https://discordpy.readthedocs.io/en/latest/"
+
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.8", None),
-    "dpy": ("https://discordpy.readthedocs.io/en/rewrite/", None),
+    "dpy": (dpy_docs_url, None),
 }
+
+
+from docutils import nodes
+from sphinx.transforms import SphinxTransform
+
+
+# d.py's |coro| substitution leaks into our docs because we don't replace some of the docstrings
+class IgnoreCoroSubstitution(SphinxTransform):
+    default_priority = 210
+
+    def apply(self, **kwargs) -> None:
+        for ref in self.document.traverse(nodes.substitution_reference):
+            if ref["refname"] == "coro":
+                ref.replace_self(nodes.Text("", ""))
+
+
+def setup(app):
+    app.add_transform(IgnoreCoroSubstitution)
