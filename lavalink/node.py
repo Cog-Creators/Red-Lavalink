@@ -241,9 +241,10 @@ class Node:
         self._listener_task = self.loop.create_task(self.listener())
         self.loop.create_task(self._configure_resume())
         if self._queue:
-            for data in self._queue:
-                await self.send(data)
+            temp = self._queue.copy()
             self._queue.clear()
+            for data in temp:
+                await self.send(data)
         self._ready_event.set()
         self.update_state(NodeState.READY)
 
