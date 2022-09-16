@@ -119,11 +119,11 @@ class Player(RESTClient, VoiceProtocol):
         """
         return self._connected
 
-    async def on_voice_server_update(self, data: dict) -> None:
+    async def on_voice_server_update(self, data: dict, /) -> None:
         self._pending_server_update = data
         await self._send_lavalink_voice_update()
 
-    async def on_voice_state_update(self, data: dict) -> None:
+    async def on_voice_state_update(self, data: dict, /) -> None:
         self._session_id = data["session_id"]
         if (channel_id := data["channel_id"]) is None:
             ws_rll_log.info("Received voice disconnect from discord, removing player.")
