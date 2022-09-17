@@ -119,11 +119,11 @@ class Player(RESTClient, VoiceProtocol):
         """
         return self._connected
 
-    async def on_voice_server_update(self, data: dict) -> None:
+    async def on_voice_server_update(self, data: dict, /) -> None:
         self._pending_server_update = data
         await self._send_lavalink_voice_update()
 
-    async def on_voice_state_update(self, data: dict) -> None:
+    async def on_voice_state_update(self, data: dict, /) -> None:
         self._session_id = data["session_id"]
         if (channel_id := data["channel_id"]) is None:
             ws_rll_log.info("Received voice disconnect from discord, removing player.")
@@ -181,7 +181,12 @@ class Player(RESTClient, VoiceProtocol):
                 raise
 
     async def connect(
-        self, *, timeout: float = 2.0, reconnect: bool = False, deafen: bool = False
+        self,
+        *,
+        timeout: float = 2.0,
+        reconnect: bool = False,
+        self_mute: bool = False,
+        self_deaf: bool = False,
     ) -> None:
         """
         Connects to the voice channel associated with this Player.
@@ -192,24 +197,24 @@ class Player(RESTClient, VoiceProtocol):
         self.node._players_dict[self.guild.id] = self
         await self.node.refresh_player_state(self)
         await self.guild.change_voice_state(
-            channel=self.channel, self_mute=False, self_deaf=deafen
+            channel=self.channel, self_mute=self_mute, self_deaf=self_deaf
         )
 
-    async def move_to(self, channel: discord.VoiceChannel, *, deafen: bool = False) -> None:
+    async def move_to(self, channel: discord.VoiceChannel, *, self_deaf: bool = False) -> None:
         """
         Moves this player to a voice channel.
 
         Parameters
         ----------
         channel : discord.VoiceChannel
-        deafen : bool
+        self_deaf : bool
         """
         if channel.guild != self.guild:
             raise TypeError(f"Cannot move {self!r} to a different guild.")
         if self.channel:
             self._last_channel_id = self.channel.id
         self.channel = channel
-        await self.connect(deafen=deafen)
+        await self.connect(self_deaf=self_deaf)
         if self.current:
             await self.resume(
                 track=self.current, replace=True, start=self.position, pause=self._paused

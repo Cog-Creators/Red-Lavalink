@@ -505,7 +505,7 @@ class Node:
     def unregister_state_handler(self, func):
         self._state_handlers.remove(func)
 
-    async def create_player(self, channel: VoiceChannel, *, deafen: bool = False) -> Player:
+    async def create_player(self, channel: VoiceChannel, *, self_deaf: bool = False) -> Player:
         """
         Connects to a discord voice channel.
 
@@ -515,7 +515,7 @@ class Node:
         Parameters
         ----------
         channel: VoiceChannel
-        deafen: bool
+        self_deaf: bool
 
         Returns
         -------
@@ -524,11 +524,9 @@ class Node:
         """
         if self._already_in_guild(channel):
             player = self.get_player(channel.guild.id)
-            await player.move_to(channel, deafen=deafen)
+            await player.move_to(channel, self_deaf=self_deaf)
         else:
-            player: Player = await channel.connect(cls=Player)  # type: ignore
-            if deafen:
-                await player.guild.change_voice_state(channel=player.channel, self_deaf=True)
+            player: Player = await channel.connect(cls=Player, self_deaf=self_deaf)  # type: ignore
         return player
 
     def _already_in_guild(self, channel: VoiceChannel) -> bool:
