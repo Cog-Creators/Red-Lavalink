@@ -43,6 +43,8 @@ class Player(RESTClient, VoiceProtocol):
     repeat : bool
     repeat_current : bool
     shuffle : bool
+    keep_in_queue : bool
+    next_queue_position : int
     """
 
     def __init__(self, client: discord.Client, channel: VoiceChannel):
@@ -54,6 +56,9 @@ class Player(RESTClient, VoiceProtocol):
         self.repeat_current: bool = False
         self.shuffle: bool = False
         self.shuffle_bumped: bool = True
+        self.keep_in_queue: bool = False
+        self._current_in_queue: bool = False
+        self.next_queue_position: int = 0
         self._is_autoplaying: bool = False
         self._auto_play_sent: bool = False
         self._volume: int = 100
@@ -371,13 +376,25 @@ class Player(RESTClient, VoiceProtocol):
         if self.repeat_current and self.current is not None:
             track = self.current
         else:
-            if self.repeat and self.current is not None:
-                self.queue.append(self.current)
+            if self.repeat:
+                # There is an edge case here if keep_in_queue was turned off while the current
+                # song was playing: even though it is in the queue, next_queue_position will point
+                # past it, so it needs to be added again to ensure it will repeat
+                if (self.current is not None and
+                        (not self.keep_in_queue or not self._current_in_queue)):
+                    self.queue.append(self.current)
+                if self.keep_in_queue and self.next_queue_position >= len(self.queue):
+                    self.next_queue_position = 0
 
-            if not self.queue:
+            self._current_in_queue = self.keep_in_queue
+            if self.next_queue_position >= len(self.queue):
+                self.next_queue_position = len(self.queue)
                 track = None
+            elif self.keep_in_queue:
+                track = self.queue[self.next_queue_position]
+                self.next_queue_position += 1
             else:
-                track = self.queue.pop(0)
+                track = self.queue.pop(self.next_queue_position)
 
         self.current = track
         self.position = 0
@@ -408,10 +425,12 @@ class Player(RESTClient, VoiceProtocol):
 
         .. important::
 
-            This method will clear the queue.
+            This method will clear the queue unless keep_in_queue is set.
         """
         await self.node.stop(self.guild.id)
-        self.queue = []
+        if not self.keep_in_queue:
+            self.queue = []
+            self.next_queue_position = 0
         self.current = None
         self.position = 0
         self._paused = False
