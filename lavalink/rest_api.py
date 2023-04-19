@@ -182,7 +182,8 @@ class Track:
             f"track_identifier={self.track_identifier!r}, "
             f"author={self.author!r}, "
             f"length={self.length}, "
-            f"is_stream={self.is_stream}, uri={self.uri!r}, title={self.title!r}>"
+            f"is_stream={self.is_stream}, uri={self.uri!r}, title={self.title!r}, "
+            f"start_timestamp={self.start_timestamp}, is_seekable={self.seekable}>"
         )
 
 

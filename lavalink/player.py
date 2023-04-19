@@ -1,7 +1,9 @@
 import asyncio
+import contextlib
 import datetime
+import time
 from random import shuffle
-from typing import Any, Dict, List, TYPE_CHECKING, Optional
+from typing import Any, Dict, List, Set, TYPE_CHECKING, Optional
 
 import discord
 from discord.backoff import ExponentialBackoff
@@ -63,12 +65,19 @@ class Player(RESTClient, VoiceProtocol):
         self._last_resume: Optional[datetime.datetime] = None
         self._session_id: Optional[str] = None
         self._pending_server_update: Optional[dict] = None
+        self._consider_stuck_after: int = 15
+        self._monitor_task: asyncio.Task = None
+        self._previously_stuck_track: Set[str] = set()
+        self._last_position_change: float = time.time()
         super().__init__(client=client, channel=channel)
 
     def __repr__(self):
         return (
             "<Player: "
             f"state={self.state.name}, connected={self.connected}, "
+            f"last_position_change={self._last_position_change}, "
+            f"stuck_timer={self._consider_stuck_after}, "
+            f"monitor_task_running={not self._monitor_task.cancelled()}, "
             f"guild={self.guild.name!r} ({self.guild.id}), "
             f"channel={self.channel.name!r} ({self.channel.id}), "
             f"playing={self.is_playing}, paused={self.paused}, volume={self.volume}, "
@@ -76,6 +85,46 @@ class Player(RESTClient, VoiceProtocol):
             f"position={self.position}, "
             f"length={self.current.length if self.current else 0}, node={self.node!r}>"
         )
+
+    async def _monitor(self):
+        while True:
+            with contextlib.suppress(AttributeError):
+                if (not self.paused) and self.ready and self.connected and self.current:
+                    _temp_id = self.current.track_identifier
+                    try:
+                        while (
+                            _temp_id == self.current.track_identifier
+                            and self.current.track_identifier not in self._previously_stuck_track
+                        ):
+                            if not (
+                                (not self.paused)
+                                and self.ready
+                                and self.connected
+                                and self.current
+                            ):
+                                break
+                            if (
+                                now := time.time()
+                            ) > self._last_position_change + self._consider_stuck_after:
+                                log.verbose(
+                                    "Monitor believes track is stuck - %s - %r.", now, self
+                                )
+                                raise asyncio.TimeoutError
+                            await asyncio.sleep(0.5)
+                    except asyncio.TimeoutError:
+                        if self.current.track_identifier not in self._previously_stuck_track:
+                            log.debug("Dispatching track stuck manually.")
+                            self.node.event_handler(
+                                LavalinkIncomingOp.EVENT,
+                                LavalinkEvents.TRACK_STUCK,
+                                {
+                                    "guildId": self.guild.id,
+                                    "reason": f"Track is stuck for longer than {self._consider_stuck_after} seconds.",
+                                    "thresholdMs": 15000,
+                                },
+                            )
+                            self._previously_stuck_track.add(_temp_id)
+            await asyncio.sleep(1)
 
     @property
     def is_auto_playing(self) -> bool:
@@ -194,6 +243,9 @@ class Player(RESTClient, VoiceProtocol):
         self._last_resume = datetime.datetime.now(datetime.timezone.utc)
         self.connected_at = datetime.datetime.now(datetime.timezone.utc)
         self._connected = True
+        if self._monitor_task is not None:
+            self._monitor_task.cancel()
+        self._monitor_task = asyncio.create_task(self._monitor())
         self.node._players_dict[self.guild.id] = self
         await self.node.refresh_player_state(self)
         await self.guild.change_voice_state(
@@ -228,6 +280,8 @@ class Player(RESTClient, VoiceProtocol):
         self._is_playing = False
         self._auto_play_sent = False
         self._connected = False
+        if self._monitor_task is not None:
+            self._monitor_task.cancel()
         if self.state == PlayerState.DISCONNECTING:
             return
 
@@ -319,6 +373,7 @@ class Player(RESTClient, VoiceProtocol):
         """
         if state.position > self.position:
             self._is_playing = True
+            self._last_position_change = time.time()
         log.trace("Updated player position for player: %r - %ds.", self, state.position // 1000)
         self.position = state.position
 
@@ -368,10 +423,12 @@ class Player(RESTClient, VoiceProtocol):
         """
         if self.repeat and self.current is not None:
             self.queue.append(self.current)
-
+        if self.current:
+            self._previously_stuck_track.discard(self.current.track_identifier)
         self.current = None
         self.position = 0
         self._paused = False
+        self._last_position_change = time.time()
 
         if not self.queue:
             await self.stop()
@@ -404,6 +461,7 @@ class Player(RESTClient, VoiceProtocol):
             This method will clear the queue.
         """
         await self.node.stop(self.guild.id)
+        self._previously_stuck_track.clear()
         self.queue = []
         self.current = None
         self.position = 0
@@ -433,6 +491,7 @@ class Player(RESTClient, VoiceProtocol):
             await asyncio.sleep(timed)
 
         self._paused = pause
+        self._last_position_change = time.time()
         await self.node.pause(self.guild.id, pause)
 
     async def set_volume(self, volume: int) -> None:

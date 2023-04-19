@@ -38,6 +38,7 @@ async def initialize(
     resume_key: Optional[str] = None,
     resume_timeout: float = 60,
     secured: bool = False,
+    is_managed: bool = False,
 ):
     """
     Initializes the websocket connection to the lavalink player.
@@ -66,6 +67,8 @@ async def initialize(
         How long the node should wait for a connection while disconnected before clearing all players.
     secured: bool
         Whether to use the `wss://` and `https://` protocol.
+    is_managed: bool
+        Whether the node is managed by the bot.
     """
     register_event_listener(_handle_event)
     register_update_listener(_handle_update)
@@ -81,6 +84,7 @@ async def initialize(
         resume_timeout=resume_timeout,
         bot=bot,
         secured=secured,
+        is_managed=is_managed,
     )
 
     await lavalink_node.connect(timeout=timeout)
