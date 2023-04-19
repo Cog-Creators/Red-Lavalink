@@ -19,3 +19,6 @@
 
 # Reformat with Black 22.1.0
 82c9389031802d2b88f54332135bc6d49778a2a6
+
+# Reformat with Black 2023 formatting changes
+bef08ff72b43f430076436a7b56aac3fa8ba25cc
