@@ -30,6 +30,7 @@ jobs:
       - name: Upload packaged distributions
         uses: actions/upload-artifact@v3
         with:
+          name: build-output
           path: ./dist
 
   release_to_pypi:
@@ -43,6 +44,7 @@ jobs:
       - name: Download packaged distributions
         uses: actions/download-artifact@v3
         with:
+          name: build-output
           path: dist/
 
       - name: Publish package distributions to PyPI
