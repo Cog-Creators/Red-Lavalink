@@ -30,7 +30,6 @@ _re_twitch_timestamp = re.compile(r"\?t=(\d+)h(\d+)m(\d+)s")
 
 
 def parse_timestamps(data):
-
     if data["loadType"] == LoadType.PLAYLIST_LOADED:
         return data["tracks"]
 
@@ -212,7 +211,7 @@ class LoadResult:
             "playlistInfo": {},
             "tracks": [],
         }
-        for (k, v) in _fallback.items():
+        for k, v in _fallback.items():
             if k not in data:
                 if (
                     k == "exception"

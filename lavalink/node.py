@@ -105,7 +105,6 @@ class NodeStats:
 
 
 class Node:
-
     _is_shutdown: bool = False
 
     def __init__(
