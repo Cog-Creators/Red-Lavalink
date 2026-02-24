@@ -644,12 +644,13 @@ class Node:
             ws_ll_log.trace("Sending data to Lavalink node: %s", data)
             await self._ws.send_json(data)
 
-    async def send_lavalink_voice_update(self, guild_id, session_id, event):
+    async def send_lavalink_voice_update(self, guild_id, session_id, channel_id, event):
         await self.send(
             {
                 "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
                 "guildId": str(guild_id),
                 "sessionId": session_id,
+                "channelId": str(channel_id),
                 "event": event,
             }
         )

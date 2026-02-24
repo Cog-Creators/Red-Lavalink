@@ -155,6 +155,7 @@ class Player(RESTClient, VoiceProtocol):
             {
                 "op": LavalinkOutgoingOp.VOICE_UPDATE.value,
                 "guildId": str(self.guild.id),
+                "channelId": str(self.channel.id),
                 "sessionId": self._session_id,
                 "event": data,
             }
