@@ -44,3 +44,7 @@ jobs:
           done
           echo 'The PR got merged!'
           echo "-   The version bump PR has been merged" >> "$GITHUB_STEP_SUMMARY"
+
+  draft_release:
+    needs: wait_for_pr_merge
+    uses: ./.github/workflows/z_prepare_release_3_draft_release.yaml

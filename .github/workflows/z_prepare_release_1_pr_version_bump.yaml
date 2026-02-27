@@ -96,3 +96,9 @@ jobs:
         run: |
           gh pr review --approve
           echo "-   Approved the version bump PR" >> "$GITHUB_STEP_SUMMARY"
+
+  wait_for_pr_merge:
+    needs: pr_version_bump
+    uses: ./.github/workflows/z_prepare_release_2_wait_for_pr_merge.yaml
+    with:
+      new_version: ${{ needs.pr_version_bump.outputs.new_version }}
