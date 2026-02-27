@@ -79,6 +79,7 @@ jobs:
             ${{ needs.build.outputs.sdist_artifact_id }},
             ${{ needs.build.outputs.wheel_artifact_id }}
           path: dist/
+          merge-multiple: true
 
       - name: Create a draft release
         env:
