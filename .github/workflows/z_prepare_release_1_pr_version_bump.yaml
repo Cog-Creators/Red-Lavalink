@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   pr_version_bump:
+    name: Generate version bump PR
     runs-on: ubuntu-latest
     environment: Prepare Release
     outputs:

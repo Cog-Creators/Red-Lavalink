@@ -9,6 +9,7 @@ on:
 
 jobs:
   wait_for_pr_merge:
+    name: Wait for version bump PR to be merged
     runs-on: ubuntu-latest
     env:
       GH_REPO: ${{ github.repository }}
