@@ -1,6 +1,7 @@
 name: Prepare Release - Step 3 - Build artifacts and draft a release
 on:
   workflow_call:
+  workflow_dispatch:
 
 jobs:
   build:

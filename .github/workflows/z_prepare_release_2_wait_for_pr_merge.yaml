@@ -6,6 +6,12 @@ on:
         description: Version number for the new release
         required: true
         type: string
+  workflow_dispatch:
+    inputs:
+      new_version:
+        description: Version number for the new release
+        required: true
+        type: string
 
 jobs:
   wait_for_pr_merge:
