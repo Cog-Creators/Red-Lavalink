@@ -64,7 +64,10 @@ jobs:
       - name: Get version to release
         id: version_to_release
         run: |
-          python .github/workflows/scripts/bump_version.py
+          venv_dir=$(mktemp -d)
+          python -m venv "$venv_dir"
+          "$venv_dir"/bin/pip install -U packaging
+          "$venv_dir"/bin/python .github/workflows/scripts/bump_version.py
         env:
           JUST_RETURN_VERSION: '1'
 
