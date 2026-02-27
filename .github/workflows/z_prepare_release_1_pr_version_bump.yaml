@@ -58,11 +58,12 @@ jobs:
       - name: Commit and push changes
         env:
           NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
+          BRANCH_NAME: automated/release/${{ steps.bump_version.outputs.new_version }}/bump_pr
         run: |
-          git checkout -b "automated/release/$NEW_VERSION/bump_pr"
+          git checkout -b "$BRANCH_NAME"
           git add lavalink/__init__.py
           git commit -m "Version bump to $NEW_VERSION"
-          git push
+          git push -u origin "$BRANCH_NAME"
 
       - name: Generate a PR
         env:
