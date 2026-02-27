@@ -14,6 +14,11 @@ permissions:
 jobs:
   pr_version_bump:
     uses: ./.github/workflows/z_prepare_release_1_pr_version_bump.yaml
+    # Even though there are no secrets in this workflow, the called workflow
+    # won't be able to access any secrets without explicit `secrets: inherit`
+    # https://github.com/orgs/community/discussions/25238#discussioncomment-3247035
+    # https://docs.github.com/en/actions/how-tos/reuse-automations/reuse-workflows#passing-secrets-to-nested-workflows
+    secrets: inherit
     with:
       new_version_spec: ${{ github.event.inputs.new_version_spec }}
 
