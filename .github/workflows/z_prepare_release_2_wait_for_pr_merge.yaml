@@ -13,10 +13,15 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   wait_for_pr_merge:
     name: Wait for version bump PR to be merged
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     env:
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
