@@ -1,0 +1,45 @@
+name: Prepare Release - Step 2 - Wait for version bump PR to be merged
+on:
+  workflow_call:
+    inputs:
+      new_version:
+        description: Version number for the new release
+        required: true
+        type: string
+
+jobs:
+  wait_for_pr_merge:
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Find version bump PR
+        id: find_pr
+        env:
+          PR_BRANCH: automated/release/${{ inputs.new_version }}/bump_pr
+        run: |
+          PR_URL=$(gh pr view --json url -q .url "$PR_BRANCH")
+          echo "Version bump PR: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "pr_url=$PR_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for required PR checks
+        env:
+          PR_URL: ${{ steps.find_pr.outputs.pr_url }}
+        run: |
+          gh pr checks --required --watch "$PR_URL"
+          echo "-   All the required checks on the version bump PR have passed" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Wait for PR to be merged
+        env:
+          PR_URL: ${{ steps.find_pr.outputs.pr_url }}
+        run: |
+          echo 'Checking if the PR got merged...'
+          while gh pr view "$PR_BRANCH" --json state | jq -e '.state != "MERGED"'
+          do
+            echo 'Not yet, waiting another 5 seconds...'
+            sleep 5
+            echo 'Checking if the PR got merged...'
+          done
+          echo 'The PR got merged!'
+          echo "-   The version bump PR has been merged" >> "$GITHUB_STEP_SUMMARY"

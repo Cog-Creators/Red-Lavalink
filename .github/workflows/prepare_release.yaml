@@ -1,0 +1,28 @@
+name: Prepare Release
+on:
+  workflow_dispatch:
+    inputs:
+      new_version_spec:
+        description: Version number for the new release (leave empty to just strip `.dev1`)
+        required: false
+        default: 'auto'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  pr_version_bump:
+    uses: ./.github/workflows/z_prepare_release_1_pr_version_bump.yaml
+    with:
+      new_version_spec: ${{ github.event.inputs.new_version_spec }}
+
+  wait_for_pr_merge:
+    needs: pr_version_bump
+    uses: ./.github/workflows/z_prepare_release_2_wait_for_pr_merge.yaml
+    with:
+      new_version: ${{ needs.pr_version_bump.outputs.new_version }}
+
+  draft_release:
+    needs: wait_for_pr_merge
+    uses: ./.github/workflows/z_prepare_release_3_draft_release.yaml
