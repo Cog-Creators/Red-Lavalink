@@ -87,7 +87,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
-          gh pr merge --auto
+          gh pr merge --squash --auto
           echo "-   Enabled auto-merge on the version bump PR" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Approve PR
