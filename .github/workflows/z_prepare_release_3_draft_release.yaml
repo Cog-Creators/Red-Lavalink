@@ -7,10 +7,18 @@ jobs:
   build:
     name: Build package
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     outputs:
+      attestation_artifact_id: ${{ steps.attestations_upload.outputs.artifact-id }}
+      sums_artifact_id: ${{ steps.sums_upload.outputs.artifact-id }}
       sdist_artifact_id: ${{ steps.sdist_upload.outputs.artifact-id }}
       wheel_artifact_id: ${{ steps.wheel_upload.outputs.artifact-id }}
+      attestation_url: ${{ steps.attest.outputs.attestation-url }}
+      run_id: ${{ github.run_id }}
+      run_attempt: ${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v6
 
@@ -28,10 +36,35 @@ jobs:
         run: |
           SOURCE_DATE_EPOCH=$(git log -1 --pretty=%ct)
           python -m build
-          sha256sum dist/*
 
       - name: Check built distributions
         run: python -m twine check dist/*
+
+      - name: Generate checksums
+        working-directory: dist
+        run: |
+          sha256sum * | tee SHA256SUMS
+
+      - name: Generate attestations
+        id: attest
+        uses: actions/attest@v4
+        with:
+          subject-checksums: dist/SHA256SUMS
+
+      - name: Upload attestations bundle
+        id: attestations_upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: attestation.json
+          path: ${{ steps.attest.outputs.bundle-path }}
+          archive: false
+
+      - name: Upload checksums
+        id: sums_upload
+        uses: actions/upload-artifact@v7
+        with:
+          path: ./dist/SHA256SUMS
+          archive: false
 
       - name: Upload sdist
         id: sdist_upload
@@ -77,10 +110,41 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           artifact-ids: >-
+            ${{ needs.build.outputs.attestation_artifact_id }},
+            ${{ needs.build.outputs.sums_artifact_id }},
             ${{ needs.build.outputs.sdist_artifact_id }},
             ${{ needs.build.outputs.wheel_artifact_id }}
           path: dist/
           merge-multiple: true
+
+      # This is done solely to verify that the attestations work as expected,
+      # not to actually verify the integrity since GitHub has control over
+      # both the artifacts and attestations here.
+      - name: Verify integrity of artifacts
+        env:
+          GH_REPO: ${{ github.repository }}
+          BUILD_RUN_ID: ${{ needs.build.outputs.run_id }}
+          BUILD_RUN_ATTEMPT: ${{ needs.build.outputs.run_attempt }}
+        working-directory: dist
+        run: |
+          expected_run_invocation_uri=(
+            "https://github.com/$GH_REPO/actions/runs/$BUILD_RUN_ID/attempts/$BUILD_RUN_ATTEMPT"
+          )
+          for file in *; do
+            if [[ "$file" == 'SHA256SUMS' || "$file" == 'attestations.json' ]]; then
+              continue
+            fi
+            run_invocation_uri=$(
+              GH_FORCE_TTY=1 gh attestation verify "$file" --repo "$GH_REPO" \
+                --json --jq '.[0].verificationResult.signature.certificate.runInvocationURI'
+            )
+            if [[ "$run_invocation_uri" != "$expected_run_invocation_uri" ]]; then
+              echo "Got unexpected invocation URI for file: $file"
+              echo "Expected: $expected_run_invocation_uri"
+              echo "Actual: $run_invocation_uri"
+              exit 1
+            fi
+          done
 
       - name: Create a draft release
         env:
@@ -93,8 +157,13 @@ jobs:
                 && '--prerelease'
                 || ''
             }}
+          RELEASE_NOTES: |
+            TODO: UPDATE RELEASE DESCRIPTION
+
+            Artifact attestations available at:
+            ${{ needs.build.outputs.attestation_url }}
         run: |
           gh release create $PRERELEASE_FLAG "$VERSION" dist/* \
             --draft \
             --title "v$VERSION" \
-            --notes 'TODO: UPDATE RELEASE DESCRIPTION' \
+            --notes "$RELEASE_NOTES" \

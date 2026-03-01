@@ -15,7 +15,10 @@ on:
 
 permissions:
   # needed by nested jobs
+  artifact-metadata: write
+  attestations: write
   contents: write
+  id-token: write
 
 jobs:
   wait_for_pr_merge:

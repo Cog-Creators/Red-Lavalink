@@ -16,7 +16,10 @@ permissions:
   # needed by jobs in this workflows
   pull-requests: write
   # needed by nested jobs
+  artifact-metadata: write
+  attestations: write
   contents: write
+  id-token: write
 
 jobs:
   pr_version_bump:
