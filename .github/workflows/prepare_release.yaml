@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   pr_version_bump:
+    name: Generate version bump PR
     uses: ./.github/workflows/z_prepare_release_1_pr_version_bump.yaml
     # Even though there are no secrets in this workflow, the called workflow
     # won't be able to access any secrets without explicit `secrets: inherit`

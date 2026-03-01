@@ -101,6 +101,7 @@ jobs:
           echo "-   Approved the version bump PR" >> "$GITHUB_STEP_SUMMARY"
 
   wait_for_pr_merge:
+    name: Wait for version bump PR to be merged
     needs: pr_version_bump
     uses: ./.github/workflows/z_prepare_release_2_wait_for_pr_merge.yaml
     with:
