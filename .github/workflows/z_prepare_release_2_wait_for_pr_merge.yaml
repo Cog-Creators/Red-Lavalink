@@ -14,14 +14,14 @@ on:
         type: string
 
 permissions:
+  # needed by nested jobs
   contents: write
 
 jobs:
   wait_for_pr_merge:
     name: Wait for version bump PR to be merged
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    permissions: {}
     env:
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

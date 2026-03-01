@@ -13,8 +13,10 @@ on:
         value: ${{ jobs.pr_version_bump.outputs.new_version }}
 
 permissions:
-  contents: write
+  # needed by jobs in this workflows
   pull-requests: write
+  # needed by nested jobs
+  contents: write
 
 jobs:
   pr_version_bump:
@@ -22,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Prepare Release
     permissions:
-      contents: read
+      pull-requests: write
     outputs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
     steps:

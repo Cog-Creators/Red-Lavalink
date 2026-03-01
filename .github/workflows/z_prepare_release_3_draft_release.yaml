@@ -7,6 +7,7 @@ jobs:
   build:
     name: Build package
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       sdist_artifact_id: ${{ steps.sdist_upload.outputs.artifact-id }}
       wheel_artifact_id: ${{ steps.wheel_upload.outputs.artifact-id }}
