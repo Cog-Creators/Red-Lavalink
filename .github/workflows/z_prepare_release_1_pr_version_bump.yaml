@@ -63,6 +63,7 @@ jobs:
       - name: Get milestone number by its title
         id: get_milestone_number
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MILESTONE_TITLE: ${{ steps.bump_version.outputs.new_version }}
         run: |
           milestone_number=$(
