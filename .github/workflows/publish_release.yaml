@@ -28,3 +28,91 @@ jobs:
         with:
           # This is already checked during the build.
           verify-metadata: false
+
+  pr_dev_version_bump:
+    name: Generate dev version bump PR
+    runs-on: ubuntu-latest
+    environment: Prepare Release
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.RED_RELEASER_CLIENT_ID }}
+          private-key: ${{ secrets.RED_RELEASER_PRIVATE_KEY }}
+
+      - name: Get base branch
+        env:
+          TAG_BASE_BRANCH: ${{ github.event.base_ref }}
+        run: |
+          echo "BASE_BRANCH=${TAG_BASE_BRANCH#'refs/heads/'}" >> $GITHUB_ENV
+
+      - name: Checkout the repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.BASE_BRANCH }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.8'
+
+      - name: Update version number
+        id: bump_version
+        run: |
+          venv_dir=$(mktemp -d)
+          python -m venv "$venv_dir"
+          "$venv_dir"/bin/pip install -U packaging
+          "$venv_dir"/bin/python .github/workflows/scripts/bump_version.py
+        env:
+          DEV_BUMP: '1'
+
+      - name: Configure Git user
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          git config user.name "$APP_SLUG[bot]"
+          git config user.email "263745220+$APP_SLUG[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        env:
+          NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
+          BRANCH_NAME: automated/release/${{ steps.bump_version.outputs.old_version }}/dev_bump_pr
+        run: |
+          git checkout -b "$BRANCH_NAME"
+          git add lavalink/__init__.py
+          git commit -m "Version bump to $NEW_VERSION"
+          git push -u origin "$BRANCH_NAME"
+
+      - name: Generate a PR
+        env:
+          NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
+          PR_BODY: |-
+            This is an automated PR that is part of the Publish Release automated workflow.
+            It will be merged automatically once the checks pass.
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          PR_URL=$(
+            gh pr create \
+              --fill \
+              --body "$PR_BODY" \
+              --label 'Automated PR' \
+              --milestone "$NEW_VERSION"
+          )
+          echo "-   Created a dev version bump PR: $PR_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Mark the PR for auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          gh pr merge --squash --auto
+          echo "-   Enabled auto-merge on the dev version bump PR" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Approve PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr review --approve
+          echo "-   Approved the dev version bump PR" >> "$GITHUB_STEP_SUMMARY"
