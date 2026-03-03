@@ -142,7 +142,7 @@ jobs:
             "https://github.com/$GH_REPO/actions/runs/$BUILD_RUN_ID/attempts/$BUILD_RUN_ATTEMPT"
           )
           for file in *; do
-            if [[ "$file" == 'SHA256SUMS' || "$file" == 'attestations.json' ]]; then
+            if [[ "$file" == 'SHA256SUMS' || "$file" == 'attestation.json' ]]; then
               continue
             fi
             run_invocation_uri=$(
