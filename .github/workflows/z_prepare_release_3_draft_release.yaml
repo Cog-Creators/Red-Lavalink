@@ -87,6 +87,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
+      attestations: read
       contents: write
     steps:
       - uses: actions/checkout@v6
@@ -123,6 +124,7 @@ jobs:
       - name: Verify integrity of artifacts
         env:
           GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BUILD_RUN_ID: ${{ needs.build.outputs.run_id }}
           BUILD_RUN_ATTEMPT: ${{ needs.build.outputs.run_attempt }}
         working-directory: dist
