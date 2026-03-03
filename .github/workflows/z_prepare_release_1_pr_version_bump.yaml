@@ -78,7 +78,7 @@ jobs:
         env:
           NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
           PR_BODY: |-
-            This is an automated PR that is part of Prepare Release automated workflow.
+            This is an automated PR that is part of the Prepare Release automated workflow.
             It will be merged automatically once the checks pass.
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
