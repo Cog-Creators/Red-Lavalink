@@ -31,22 +31,27 @@ jobs:
 
   pr_dev_version_bump:
     name: Generate dev version bump PR
+    needs: release_to_pypi
     runs-on: ubuntu-latest
     environment: Prepare Release
     permissions:
       pull-requests: write
     steps:
+      - name: Get base branch
+        run: |
+          attestation_dir=$(mktemp -d)
+          gh release download "$GITHUB_REF_NAME" -D "$attestation_dir" -p attestation.json
+          TAG_BASE_BRANCH=$(
+            jq '.dsseEnvelope.payload | @base64d | fromjson' "$attestation_dir/attestation.json" \
+              | jq '.predicate.buildDefinition.externalParameters.workflow.ref'
+          )
+          echo "BASE_BRANCH=${TAG_BASE_BRANCH#'refs/heads/'}" >> $GITHUB_ENV
+
       - uses: actions/create-github-app-token@v2
         id: app-token
         with:
           app-id: ${{ secrets.RED_RELEASER_CLIENT_ID }}
           private-key: ${{ secrets.RED_RELEASER_PRIVATE_KEY }}
-
-      - name: Get base branch
-        env:
-          TAG_BASE_BRANCH: ${{ github.event.base_ref }}
-        run: |
-          echo "BASE_BRANCH=${TAG_BASE_BRANCH#'refs/heads/'}" >> $GITHUB_ENV
 
       - name: Checkout the repository
         uses: actions/checkout@v6
@@ -97,6 +102,7 @@ jobs:
           PR_URL=$(
             gh pr create \
               --fill \
+              --base "$BASE_BRANCH" \
               --body "$PR_BODY" \
               --label 'Automated PR' \
               --milestone "$NEW_VERSION"
