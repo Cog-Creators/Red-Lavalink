@@ -1,6 +1,11 @@
 name: Prepare Release - Step 3 - Build artifacts and draft a release
 on:
   workflow_call:
+    inputs:
+      sha:
+        description: Full SHA of the commit to release from
+        required: true
+        type: string
   workflow_dispatch:
 
 jobs:
@@ -21,6 +26,8 @@ jobs:
       run_attempt: ${{ github.run_attempt }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.sha || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -91,6 +98,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.commit || github.sha }}
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -164,8 +173,10 @@ jobs:
 
             Artifact attestations available at:
             ${{ needs.build.outputs.attestation_url }}
+          RELEASE_TARGET: ${{ inputs.commit || github.sha }}
         run: |
           gh release create $PRERELEASE_FLAG "$VERSION" dist/* \
             --draft \
             --title "v$VERSION" \
             --notes "$RELEASE_NOTES" \
+            --target $RELEASE_TARGET

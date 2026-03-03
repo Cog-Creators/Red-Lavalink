@@ -46,20 +46,27 @@ jobs:
           echo "-   All the required checks on the version bump PR have passed" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Wait for PR to be merged
+        id: pr_info
         env:
           PR_URL: ${{ steps.find_pr.outputs.pr_url }}
         run: |
-          echo 'Checking if the PR got merged...'
-          while gh pr view "$PR_BRANCH" --json state | jq -e '.state != "MERGED"'
-          do
+          while true; do
+            echo 'Checking if the PR got merged...'
+            pr_info=$(gh pr view "$PR_BRANCH" --json mergeCommit,state)
+            if jq -e '.state == "MERGED"'; then
+              break
+            fi
             echo 'Not yet, waiting another 5 seconds...'
             sleep 5
-            echo 'Checking if the PR got merged...'
           done
+          merge_commit=$(echo "$pr_info" | jq -r .mergeCommit.oid)
           echo 'The PR got merged!'
-          echo "-   The version bump PR has been merged" >> "$GITHUB_STEP_SUMMARY"
+          echo "-   The version bump PR has been merged in $merge_commit" >> "$GITHUB_STEP_SUMMARY"
+          echo "merge_commit=$merge_commit" >> "$GITHUB_OUTPUT"
 
   draft_release:
     name: Build artifacts and draft a release
     needs: wait_for_pr_merge
     uses: ./.github/workflows/z_prepare_release_3_draft_release.yaml
+    with:
+      sha: ${{ needs.pr_info.outputs.merge_commit }}
