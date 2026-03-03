@@ -123,6 +123,7 @@ jobs:
           PR_URL=$(
             gh pr create \
               --fill \
+              --base "$GITHUB_REF" \
               --body "$PR_BODY" \
               --label 'Automated PR' \
               --milestone "$NEW_VERSION"
