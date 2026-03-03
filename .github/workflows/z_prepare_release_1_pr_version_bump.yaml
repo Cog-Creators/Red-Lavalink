@@ -14,6 +14,7 @@ on:
 
 permissions:
   # needed by jobs in this workflows
+  issues: read
   pull-requests: write
   # needed by nested jobs
   artifact-metadata: write
@@ -27,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: Prepare Release
     permissions:
+      issues: read
       pull-requests: write
     outputs:
       new_version: ${{ steps.bump_version.outputs.new_version }}
@@ -56,6 +58,41 @@ jobs:
           "$venv_dir"/bin/python .github/workflows/scripts/bump_version.py
         env:
           NEW_VERSION_SPEC: ${{ inputs.new_version_spec }}
+
+      # we don't really need the milestone number, we just need to make sure the milestone exists
+      - name: Get milestone number by its title
+        id: get_milestone_number
+        env:
+          MILESTONE_TITLE: ${{ steps.bump_version.outputs.new_version }}
+        run: |
+          milestone_number=$(
+            gh api graphql -F milestone_title="$MILESTONE_TITLE" -F owner='{owner}' -F name='{repo}' \
+              -q '.data.repository.milestones.nodes[] | select(.title == env.MILESTONE_TITLE) | .number' \
+              -f query='
+                query getMilestoneNumberByTitle(
+                  $owner: String!
+                  $name: String!
+                  $milestone_title: String!
+                ) {
+                  repository(owner:$owner name:$name) {
+                    milestones(query:$milestone_title states:OPEN first:100) {
+                      nodes {
+                        number
+                        title
+                      }
+                      pageInfo {
+                        hasNextPage
+                      }
+                    }
+                  }
+                }
+              '
+          )
+          if [[ -z "$milestone_number" ]]; then
+            echo 'Could not find the milestone' >&2
+            exit 1
+          fi
+          echo "milestone_number=$milestone_number" >> "$GITHUB_OUTPUT"
 
       - name: Configure Git user
         env:
