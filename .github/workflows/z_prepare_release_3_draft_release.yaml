@@ -136,7 +136,7 @@ jobs:
             fi
             run_invocation_uri=$(
               GH_FORCE_TTY=1 gh attestation verify "$file" --repo "$GH_REPO" \
-                --json --jq '.[0].verificationResult.signature.certificate.runInvocationURI'
+                --format=json --jq '.[0].verificationResult.signature.certificate.runInvocationURI'
             )
             if [[ "$run_invocation_uri" != "$expected_run_invocation_uri" ]]; then
               echo "Got unexpected invocation URI for file: $file"
