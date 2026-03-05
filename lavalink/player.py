@@ -41,6 +41,7 @@ class Player(RESTClient, VoiceProtocol):
         The seeked position in the track of the current playback.
     current : Track
     repeat : bool
+    repeat_current : bool
     shuffle : bool
     """
 
@@ -50,6 +51,7 @@ class Player(RESTClient, VoiceProtocol):
         self.current: Optional[Track] = None
         self._paused: bool = False
         self.repeat: bool = False
+        self.repeat_current: bool = False
         self.shuffle: bool = False
         self.shuffle_bumped: bool = True
         self._is_autoplaying: bool = False
@@ -367,21 +369,26 @@ class Player(RESTClient, VoiceProtocol):
         """
         Starts playback from lavalink.
         """
-        if self.repeat and self.current is not None:
-            self.queue.append(self.current)
+        if self.repeat_current and self.current is not None:
+            track = self.current
+        else:
+            if self.repeat and self.current is not None:
+                self.queue.append(self.current)
 
-        self.current = None
+            if not self.queue:
+                track = None
+            else:
+                track = self.queue.pop(0)
+
+        self.current = track
         self.position = 0
         self._paused = False
 
-        if not self.queue:
+        if track is None:
             await self.stop()
         else:
             self._is_playing = True
 
-            track = self.queue.pop(0)
-
-            self.current = track
             log.verbose("Assigned current track for player: %r.", self)
             await self.node.play(self.guild.id, track, start=track.start_timestamp, replace=True)
 
